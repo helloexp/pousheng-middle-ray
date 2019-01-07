@@ -42,7 +42,7 @@ public class ItemMappingCacher {
     @PostConstruct
     public void init() {
         this.mappingCacher = CacheBuilder.newBuilder()
-                .expireAfterWrite(duration*30, TimeUnit.SECONDS).weakKeys().weakValues()
+                .expireAfterWrite(duration*5, TimeUnit.SECONDS)
                 .maximumSize(5000)
                 .build(new CacheLoader<String, List<ItemMapping>>() {
                     @Override

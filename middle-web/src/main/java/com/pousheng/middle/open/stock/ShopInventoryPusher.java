@@ -116,6 +116,7 @@ public class ShopInventoryPusher {
                     shopIds = Lists.newArrayList(changeDTO.getShopId());
                 }
                 //计算库存分配并将库存推送到每个外部店铺去
+                log.info("start to push sku to shopIds: {},skuCode:{}", shopIds, skuCode);
                 shopStockPusher.handle(shopIds,skuCode,logs);
             } catch (Exception e) {
                 log.error("failed to push stock,sku is {}", skuCode,e);

@@ -4,13 +4,17 @@
 
 package com.pousheng.middle.web.biz.controller;
 
+import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import io.swagger.annotations.Api;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Author:  songrenfeiu
@@ -24,6 +28,9 @@ public class BizOperationApis {
 
     @Autowired
     private PoushengCompensateBizWriteService compensateBizWriteService;
+
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
 
     /**
@@ -54,5 +61,17 @@ public class BizOperationApis {
             log.debug("API-UPDATE-BIZ-FAIL-REASON param: id {} fail reason :{} count:{}",id,failReason,count);
         }
         return compensateBizWriteService.updateLastFailedReason(id,failReason,count);
+    }
+
+
+    /**
+     * 消费Biz
+     * @param id id
+     * @return 更新结果
+     */
+    @RequestMapping(value = "/consume", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void consume(@RequestParam String id) {
+        log.debug("API-CONSUME-BIZ param: id {} ",id);
+        compensateBizLogic.consumeMqMessage(id);
     }
 }

@@ -569,8 +569,6 @@ public class StockPusherLogic {
             return null;
         }
         if (!ObjectUtils.isEmpty(getRes.getResult())) {
-            log.info("availableInventoryDTO size {}", getRes.getResult().size());
-            log.info("availableInventoryDTO:{}", getRes.getResult().toString());
             //先计算不包含仓库和商品级别的库存
             stockSum = calculateWarehouseStockForShop(getRes.getResult(), shopStockRuleDto);
             //再累加仓库商品级别的库存

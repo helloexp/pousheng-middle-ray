@@ -38,6 +38,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.job.order.component.DefaultOrderReceiver;
 import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
+import io.terminus.open.client.common.utils.ItemUtils;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.dto.OpenClientOrderConsignee;
 import io.terminus.open.client.order.dto.OpenClientOrderInvoice;
@@ -71,6 +72,7 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Created by cp on 7/25/17
@@ -729,28 +731,42 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
      * 平台级别优惠分摊到子订单上面
      * @param richSkusByShop 店铺订单
      */
-    private void calculatePlatformDiscountForSkus(RichSkusByShop richSkusByShop){
+    protected void calculatePlatformDiscountForSkus(RichSkusByShop richSkusByShop){
         Map<String,String> extra = richSkusByShop.getExtra();
         String platformDiscount = extra.get(TradeConstants.PLATFORM_DISCOUNT_FOR_SHOP);
+
         if (!StringUtils.isEmpty(platformDiscount)){
             Map<String,Long> skuIdAndShareDiscount = Maps.newHashMap();
             List<RichSku> richSkus = richSkusByShop.getRichSkus();
+
+            Map<String,Long> excludeItemMap=Maps.newHashMapWithExpectedSize(richSkus.size());
+
             Long fees = 0L;
             for (RichSku richSku:richSkus){
                 fees += richSku.getFee();
+                // 记录需要排除实际支付金额为0的商品。此类商品不参与分摊平台优惠
+                // key格式为"{outSkuId}-{numIid}" 以避免相同skuCode不同商品映射的情况
+                if(richSku.getFee().compareTo(richSku.getDiscount())==0){
+                    String key= ItemUtils.buildUniqueKey(richSku.getOuterSkuId(),"");
+                    excludeItemMap.put(key,richSku.getDiscount());
+                }
             }
             Long alreadyShareDiscout = 0L;
-            for (int i = 0;i<richSkus.size()-1;i++){
+            List<RichSku> richSkuList = richSkus.stream().filter(
+                richSku -> !excludeItemMap
+                    .containsKey(ItemUtils.buildUniqueKey(richSku.getOuterSkuId(),"")))
+                .collect(Collectors.toList());
+            for (int i = 0;i<richSkuList.size()-1;i++){
                 Long itemShareDiscount=0L;
                 if (fees>0){
-                    itemShareDiscount =  (richSkus.get(i).getFee()*Long.valueOf(platformDiscount))/fees;
+                    itemShareDiscount =  (richSkuList.get(i).getFee()*Long.valueOf(platformDiscount))/fees;
                 }
                 alreadyShareDiscout += itemShareDiscount;
-                skuIdAndShareDiscount.put(richSkus.get(i).getOuterSkuId(),itemShareDiscount);
+                skuIdAndShareDiscount.put(richSkuList.get(i).getOuterSkuId(),itemShareDiscount);
             }
             //计算剩余没有分配的平台优惠
             Long remainShareDiscount = Long.valueOf(platformDiscount)-alreadyShareDiscout;
-            for (RichSku richSku:richSkus){
+            for (RichSku richSku:richSkuList){
                 Long shareDiscount = skuIdAndShareDiscount.get(richSku.getOuterSkuId());
                 Map<String, String> skuExtra = richSku.getExtra();
                 //子订单插入平台优惠金额

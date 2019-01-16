@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.component;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -32,6 +33,7 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
 import lombok.extern.slf4j.Slf4j;
+import org.mockito.internal.util.collections.ListUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -736,6 +738,43 @@ public class OrderReadLogic {
         }
         return mapper.fromJson(extraMap.get(TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST),
                 mapper.createCollectionType(List.class,RejectShipmentOccupy.class));
+    }
+
+    //
+    /**
+     * 判断子单是否经过拆单,true 表示拆过，false 标识没有拆过
+     * @param skuOrderId
+     * @return
+     */
+    public boolean isSkuOrderHasSeparated(Long shopOrderId, Long skuOrderId){
+
+        Response<SkuOrder> resp = this.skuOrderReadService.findById(skuOrderId);
+        if(!resp.isSuccess()){
+            log.error("fail to find sku order(id:{}),cause by {}",skuOrderId,resp.getError());
+            throw new ServiceException("find.skuOrder.failed");
+        }
+        //子单商品数量大于1,已发货数量大于1，且待发货数量大于0，则认为已经经过数量级拆单
+        if(resp.getResult()!=null && resp.getResult().getQuantity().intValue()>1 && (resp.getResult().getShipped().intValue()+resp.getResult().getShipping().intValue())>=1 && resp.getResult().getWithHold().intValue()>0){
+            log.debug("sku order(id={}) has separated",skuOrderId);
+            return true;
+        }
+
+        //一个子单对应多个发货单，则认为已经经过数量级拆单
+        List<Shipment> originShipments = this.shipmentReadLogic.findByShopOrderId(shopOrderId);
+        List<Shipment> shipments = originShipments.stream().
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.REJECTED.getValue()))
+                .collect(Collectors.toList());
+        //获取订单下对应发货单的所有发货商品列表
+        List<ShipmentItem> shipmentItems = this.shipmentReadLogic.getShipmentItemsForList(shipments);
+        List<ShipmentItem> shipmentItemsBySkuOrderId = shipmentItems.stream().filter(shipmentItem ->
+                Objects.equals(shipmentItem.getSkuOrderId(),skuOrderId)&&
+                        !Objects.equals(shipmentItem.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) &&
+                        !Objects.equals(shipmentItem.getStatus(), MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
+        if(!CollectionUtils.isEmpty(shipmentItemsBySkuOrderId) && shipmentItemsBySkuOrderId.size()>1){
+            log.debug("sku order(id={}) has separated",skuOrderId);
+            return true;
+        }
+        return false;
     }
 
 

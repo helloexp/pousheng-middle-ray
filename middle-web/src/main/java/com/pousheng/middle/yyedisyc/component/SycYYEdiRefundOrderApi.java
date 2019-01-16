@@ -4,9 +4,12 @@ import com.github.kevinsawicki.http.HttpRequest;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.yyedisyc.dto.trade.*;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +32,11 @@ public class SycYYEdiRefundOrderApi {
     @Value("${gateway.yyedi.accessKey}")
     private String accessKey;
 
+    private String yjGateway;
+    private String yjAccessKey;
+    @Autowired
+    OpenShopCacher openShopCacher;
+
     private final static String SID = "PS_ERP_WMS_bcrefunds";
 
     public String doSyncRefundOrder(YYEdiReturnInfo requestData) {
@@ -49,12 +57,14 @@ public class SycYYEdiRefundOrderApi {
     }
 
 
-    public String doSyncYJErpRefundOrder(List<YJErpRefundInfo> requestData) {
-
+    public String doSyncYJErpRefundOrder(List<YJErpRefundInfo> requestData,Long shopId) {
+        OpenShop openshop = openShopCacher.findById(shopId);
+        this.yjGateway = openshop.getGateway();
+        this.yjAccessKey = openshop.getAccessToken();
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData.get(0));
         log.info("sync refund to yj erp paramJson:{} serialNo:{}", paramJson, serialNo);
-        String gateway = hkGateway + "/common-yjerp/yjerp/default/pushmgorderexchangeset";
+        String gateway = hkGateway + "/pushmgorderexchangeset";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode", accessKey)
                 .header("serialNo", serialNo)

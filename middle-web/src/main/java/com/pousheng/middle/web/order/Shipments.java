@@ -234,6 +234,10 @@ public class Shipments {
             log.error("find shipment by criteria:{} fail,error:{}", shipmentCriteria, response.getError());
             throw new JsonResponseException(response.getError());
         }
+        //如果结果集为空直接返回
+        if(response.getResult().isEmpty()){
+            return response.getResult();
+        }
         List<ShipmentPagingInfo> shipmentPagingInfos = response.getResult().getData();
         Flow flow = orderFlowPicker.pickShipments();
         shipmentPagingInfos.forEach(shipmentPagingInfo -> {

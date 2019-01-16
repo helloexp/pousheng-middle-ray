@@ -14,7 +14,10 @@ public class ShopConstants {
     //渠道
     public static final String CHANNEL = "official";
 
-
+    /**
+     * 店铺手动派单是否检查默认发货仓
+     */
+    public static final String MANUAL_SHIPMENT_CHECK_WAREHOUSE_FLAG="manualShipmentCheckWarehouseFlag";
 
 
 }

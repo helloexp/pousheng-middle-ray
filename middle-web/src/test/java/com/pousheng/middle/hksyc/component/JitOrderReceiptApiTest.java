@@ -17,8 +17,9 @@ public class JitOrderReceiptApiTest {
     @Test
     public void sendReceipt() {
         String successStr="{\"error\":0,\"error_info\":\"\",\"data\":[]}";
+        Long shopId = 1l;
         //PowerMockito.mockStatic(HttpRequest.class);
         //when(HttpRequest.post(anyString()).body()).thenReturn(successStr);
-        jitOrderReceiptApi.sendReceipt(new JitOrderReceiptRequest());
+        jitOrderReceiptApi.sendReceipt(new JitOrderReceiptRequest(), shopId);
     }
 }

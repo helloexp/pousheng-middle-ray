@@ -326,7 +326,8 @@ public class StockPusherLogic {
             String traceId = UUID.randomUUID().toString().replace("-", "");
             if (!yunjuStockInfoList.isEmpty()) {
                 Response<Boolean> resp = yjStockPushClient.syncStocks(traceId,
-                        YjStockRequest.builder().stockInfo(yunjuStockInfoList).build());
+                        YjStockRequest.builder().stockInfo(yunjuStockInfoList).build(),
+                        shopId);
                 //成功则写入缓存
                 if (stockPusherCacheEnable && resp.isSuccess()) {
                     yunjuStockInfoList.stream().forEach(yjStockInfo -> {

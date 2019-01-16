@@ -62,6 +62,11 @@ public class ExportController {
         if(log.isDebugEnabled()){
             log.debug("API-ORDER-EXPORT-START param: middleOrderCriteria [{}] ]",criteriaStr);
         }
+
+        if (middleOrderCriteria.getStatus().contains(99)) {
+            throw new JsonResponseException("this status not support export");
+        }
+
         //获取当前用户负责的商铺id
         List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
         if (middleOrderCriteria.getShopId() == null) {

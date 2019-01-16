@@ -8,10 +8,13 @@ import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Throwables;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -28,26 +31,26 @@ public class SycYunjuRefundOrderApi {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
-    @Value("${gateway.hk.host}")
-    private String hkGateway;
+    private String yjGateway;
+    private String yjAccessKey;
+    @Autowired
+    OpenShopCacher openShopCacher;
 
-    @Value("${gateway.hk.accessKey}")
-    private String accessKey;
-
-    public YJRespone doSyncRefundOrder(YJExchangeReturnRequest returnRequest){
+    public YJRespone doSyncRefundOrder(YJExchangeReturnRequest returnRequest,Long shopId){
 
        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
-
-
+       OpenShop openshop = openShopCacher.findById(shopId);
+       this.yjGateway = openshop.getGateway();
+       this.yjAccessKey = openshop.getAccessToken();
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(returnRequest);
         log.info("rpc yunju mgexchangereturn exchange_id:{} paramJson:{}",returnRequest.getExchange_id(),paramJson);
-        String uri="/common-yjerp/yjerp/default/pushmgexchangereturn"; // FIXME: 2018/4/12
-        String gateway =hkGateway+uri;
+        String uri="/pushmgexchangereturn"; // FIXME: 2018/4/12
+        String gateway =yjGateway+uri;
         String responseBody="";
         try {
             responseBody= HttpRequest.post(gateway)
-                    .header("verifycode",accessKey)
+                    .header("verifycode",yjAccessKey)
                     .header("serialNo",serialNo)
                     .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
                     .contentType("application/json")

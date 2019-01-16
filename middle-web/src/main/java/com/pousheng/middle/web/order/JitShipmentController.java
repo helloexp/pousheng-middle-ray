@@ -24,10 +24,10 @@ public class JitShipmentController {
      * @param request
      */
     @RequestMapping(value = "/fix/callback", method = RequestMethod.GET)
-    public void callbackJitShipment(String request) {
+    public void callbackJitShipment(String request,Long shopId) {
 
         YJSyncShipmentRequest data=MAPPER.fromJson(request,YJSyncShipmentRequest.class);
-        syncYunJuJitShipmentApi.doSyncShipmentOrder(data);
+        syncYunJuJitShipmentApi.doSyncShipmentOrder(data,shopId);
     }
 
 }

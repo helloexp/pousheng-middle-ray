@@ -23,6 +23,7 @@ import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.spu.model.SkuTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,6 +46,8 @@ public class ShopSkuSupplyRules {
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
+    @Value("${item.supply.import.mq.queue.index:0}")
+    public Integer queueIndex;
 
     @Autowired
     public ShopSkuSupplyRules(PoushengCompensateBizReadService poushengCompensateBizReadService,
@@ -68,7 +71,7 @@ public class ShopSkuSupplyRules {
         biz.setBizType(PoushengCompensateBizType.IMPORT_ITEM_SUPPLY_RULE.toString());
         biz.setContext(mapper.toJson(info));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC,queueIndex);
     }
 
     /**

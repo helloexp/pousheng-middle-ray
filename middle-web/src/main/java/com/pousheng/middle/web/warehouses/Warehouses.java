@@ -4,18 +4,23 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
+import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogReadSerive;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogWriteService;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.warehouses.dto.StockPushLogCriteria;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Splitters;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +54,12 @@ public class Warehouses {
     private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
     @Autowired
     private WarehouseCacher warehouseCacher;
+
+    @Autowired
+    private WarehouseClient warehouseClient;
+
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
 
 
     @RequestMapping(value = "/create/push/log", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -145,6 +156,46 @@ public class Warehouses {
     @GetMapping(value = "/{id}")
     public WarehouseDTO findById(@PathVariable("id") Long id) {
         return warehouseCacher.findById(id);
+    }
+
+
+    @ApiOperation("根据名称或者外码获取仓库信息")
+    @RequestMapping(value = "/paging/by/name", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Paging<WarehouseDTO> pagingByOutCodeOrName(@RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                                              @RequestParam(required = false, value = "pageSize") Integer pageSize,
+                                                              @RequestParam(required = false, value = "name") String namePrefix,
+                                                              @RequestParam(required = false, value ="shopId") Long shopId) {
+        Map<String, Object> params = Maps.newHashMap();
+        params.put("nameOrCodePrefix", namePrefix);
+
+        if (Objects.isNull(shopId)) {
+            return pagingWarehouse(pageNo, pageSize, namePrefix, null);
+        }
+        Response<OpenShop> response = openShopReadService.findById(shopId);
+        boolean checkDefaultWarehouseFlag = false;
+        if (response.isSuccess()
+            && !Objects.isNull(response.getResult())) {
+            Map<String, String> extra = response.getResult().getExtra();
+            // 若存在检查默认发货仓的标志位且为1 则设置标志位为true
+            if (!Objects.isNull(extra)
+                && "1".equals(extra.get(ShopConstants.MANUAL_SHIPMENT_CHECK_WAREHOUSE_FLAG))) {
+                checkDefaultWarehouseFlag = true;
+            }
+        }
+
+        //检查店铺的默认发货仓
+        if (checkDefaultWarehouseFlag) {
+            return pagingWarehouse(pageNo, pageSize, namePrefix, shopId);
+        }
+        return pagingWarehouse(pageNo, pageSize, namePrefix, null);
+    }
+
+    private Paging<WarehouseDTO> pagingWarehouse(Integer pageNo, Integer pageSize, String namePrefix, Long shopId) {
+        Response<Paging<WarehouseDTO>> response = warehouseClient.pagingBy(pageNo, pageSize, namePrefix, shopId);
+        if (response.isSuccess()) {
+            return response.getResult();
+        }
+        return new Paging<WarehouseDTO>();
     }
 
 }

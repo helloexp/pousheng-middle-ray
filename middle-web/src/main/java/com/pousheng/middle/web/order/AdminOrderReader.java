@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.ych.logger.events.OrderOpEvent;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -48,9 +49,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -109,7 +110,80 @@ public class AdminOrderReader {
         //不显示jit时效订单来源
         middleOrderCriteria.setExcludeOutFrom(JitConsts.YUNJU_REALTIME);
 
-        Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
+        Response<Paging<ShopOrder>> pagingRes;
+        if (middleOrderCriteria.getStatus() != null && middleOrderCriteria.getStatus().contains(99)) {
+        	try {
+        		SimpleDateFormat formatter  = new SimpleDateFormat("yyyy-MM-dd");
+        		if(middleOrderCriteria.getOutCreatedStartAt()==null){
+            		Calendar caStart = Calendar.getInstance();
+            		caStart.setTime(formatter.parse(formatter.format(new Date())));
+            		caStart.add(Calendar.MONTH, -1);
+                    middleOrderCriteria.setOutCreatedStartAt(new DateTime(caStart.getTime()).toDate());
+                }
+        		if(middleOrderCriteria.getOutCreatedEndAt()==null){
+        			Calendar caEnd = Calendar.getInstance();
+        			caEnd.setTime(formatter.parse(formatter.format(new Date())));
+                    caEnd.add(Calendar.DATE, 1);
+                    caEnd.add(Calendar.SECOND,-1);
+                    middleOrderCriteria.setOutCreatedEndAt(new DateTime(caEnd.getTime()).toDate());
+        		}
+        		// compare 
+        		
+        		long diff = middleOrderCriteria.getOutCreatedEndAt().getTime() - middleOrderCriteria.getOutCreatedStartAt().getTime();
+        		diff = diff/1000/60/60/24;
+        		if (diff > 31) {
+        			return Response.fail("over 30 days");
+        		}
+        	}catch(Exception e) {
+        		return Response.fail(e.getMessage());
+        	}
+        	
+        	SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Map<String, Object> params = Maps.newHashMap();
+            params.put("dtStart",sdf.format(middleOrderCriteria.getOutCreatedStartAt()));
+            params.put("dtEnd",sdf.format(middleOrderCriteria.getOutCreatedEndAt()));
+            if (middleOrderCriteria.getPageSize() !=null){
+                params.put("limit",middleOrderCriteria.getPageSize());
+            }else{
+                params.put("limit",20);
+            }
+
+            if (middleOrderCriteria.getPageNo() !=null){
+                params.put("offset",(middleOrderCriteria.getPageNo()-1)*middleOrderCriteria.getPageSize());
+            }else{
+                params.put("offset",0);
+            }
+            if (middleOrderCriteria.getOrderCode() != null){
+                params.put("order_code",middleOrderCriteria.getOrderCode());
+            }
+            if (middleOrderCriteria.getOutId() != null){
+                params.put("out_id",middleOrderCriteria.getOutId());
+            }
+            if (middleOrderCriteria.getBuyerName() != null){
+                params.put("buyer_name",middleOrderCriteria.getBuyerName());
+            }
+            if (middleOrderCriteria.getShopName() != null){
+                params.put("shop_name",middleOrderCriteria.getShopName());
+            }
+            if (middleOrderCriteria.getMobile() != null){
+                params.put("mobile",middleOrderCriteria.getMobile());
+            }
+            if (middleOrderCriteria.getShopIds() != null){
+                params.put("allow_shop_ids",middleOrderCriteria.getShopIds());
+            }
+            if (middleOrderCriteria.getCompanyId() != null){
+                params.put("company_id",middleOrderCriteria.getCompanyId());
+            }
+
+            //不显示jit时效订单来源
+            if (middleOrderCriteria.getExcludeOutFrom() != null){
+                params.put("exclude_out_from",middleOrderCriteria.getExcludeOutFrom());
+            }
+        	pagingRes = middleOrderReadService.findByecpOrderStatus(params);
+        }else {
+        	pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria); 
+        }
+         
         if(!pagingRes.isSuccess()){
             return Response.fail(pagingRes.getError());
         }

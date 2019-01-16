@@ -93,6 +93,50 @@
         </foreach>
         AND out_from = #{outFrom}
     </select>
-
-
+    
+    <select id="findByecpOrderStatus" parameterType="map" resultMap="ShopOrderMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        WHERE JSON_VALID(extra_json) = 1 AND JSON_UNQUOTE(JSON_EXTRACT(extra_json, "$.ecpOrderStatus") ) = -1
+		AND `status` in (4,5)
+		<if test="dtStart != null">AND <![CDATA[created_at >= #{dtStart}]]> </if>
+        <if test="dtEnd != null">AND <![CDATA[created_at <= #{dtEnd}]]> </if>
+        <if test="shop_name != null">AND <![CDATA[shop_name = #{shop_name}]]> </if>
+        <if test="out_id != null">AND <![CDATA[out_id = #{out_id}]]> </if>
+        <if test="buyer_name != null">AND <![CDATA[buyer_name = #{buyer_name}]]> </if>
+        <if test="order_code != null">AND <![CDATA[order_code = #{order_code}]]> </if>
+        <if test="mobile != null">AND <![CDATA[out_buyer_id = #{mobile}]]> </if>
+        <if test="exclude_out_from != null">AND <![CDATA[out_from != #{exclude_out_from}]]> </if>
+        <if test="company_id != null">AND <![CDATA[company_id = #{company_id}]]> </if>
+        <if test="allow_shop_ids != null">AND shop_id IN
+            <foreach collection="allow_shop_ids" open="(" separator="," close=")" item="shop_id">
+                #{shop_id}
+            </foreach>
+        </if>
+		LIMIT #{limit} OFFSET #{offset}
+    </select>
+    
+    <select id="findByecpOrderStatusCount" parameterType="map" resultType="long">
+        SELECT COUNT(1)
+        FROM
+        <include refid="tb"/>
+        WHERE JSON_VALID(extra_json) = 1 AND JSON_UNQUOTE(JSON_EXTRACT(extra_json, "$.ecpOrderStatus") ) = -1
+		AND `status` in (4,5)
+		<if test="dtStart != null">AND <![CDATA[created_at >= #{dtStart}]]> </if>
+        <if test="dtEnd != null">AND <![CDATA[created_at <= #{dtEnd}]]> </if>
+        <if test="shop_name != null">AND <![CDATA[shop_name = #{shop_name}]]> </if>
+        <if test="out_id != null">AND <![CDATA[out_id = #{out_id}]]> </if>
+        <if test="buyer_name != null">AND <![CDATA[buyer_name = #{buyer_name}]]> </if>
+        <if test="order_code != null">AND <![CDATA[order_code = #{order_code}]]> </if>
+        <if test="mobile != null">AND <![CDATA[out_buyer_id = #{mobile}]]> </if>
+        <if test="exclude_out_from != null">AND <![CDATA[out_from != #{exclude_out_from}]]> </if>
+        <if test="company_id != null">AND <![CDATA[company_id = #{company_id}]]> </if>
+        <if test="allow_shop_ids != null">AND shop_id IN
+            <foreach collection="allow_shop_ids" open="(" separator="," close=")" item="shop_id">
+                #{shop_id}
+            </foreach>
+        </if>
+    </select>
 </mapper>

@@ -112,7 +112,7 @@ public class SyncRefundPosLogic {
             String url ="/common/pserp/pos/donetsalrefuse";
             String result = sycHkShipmentPosApi.doSyncSaleRefuse(requestData,url);
             SycShipmentPosResponse response = JsonMapper.nonEmptyMapper().fromJson(result,SycShipmentPosResponse.class);
-            if(!Objects.equal(response.getCode(),"00000")){
+            if(!Objects.equal(response.getCode(),"00000") && !Objects.equal(response.getCode(),"10010")){
                 log.error("sync refund(code:{}) sale refuse to hk fail,error:{}",refund.getRefundCode(),response.getMessage());
                 return Response.fail(response.getMessage());
             }

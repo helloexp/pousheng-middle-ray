@@ -76,7 +76,7 @@ public class SyncYJErpReturnLogic {
             Integer targetStatus = flow.target(refund.getStatus(),orderOperation);
             refund.setStatus(targetStatus);
             List<YJErpRefundInfo> list = getSycYJErpRefundInfo(refund);
-            String response = sycYYEdiRefundOrderApi.doSyncYJErpRefundOrder(list);
+            String response = sycYYEdiRefundOrderApi.doSyncYJErpRefundOrder(list,refund.getShopId());
             JSONObject responseObj = JSONObject.parseObject(response);
             if (Objects.equals(responseObj.get("error"), 0)) {
                 //同步调用成功后，更新售后单的状态，及冗余恒康售后单号

@@ -10,6 +10,7 @@ import com.pousheng.auth.service.MiddleOperatorReadService;
 import com.pousheng.auth.service.PsUserReadService;
 import com.pousheng.auth.service.PsUserWriteService;
 import com.pousheng.middle.constants.Constants;
+import com.pousheng.middle.web.user.OperatorApis.OperatorPost;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import com.pousheng.middle.web.user.component.UserManageShopReader;
 import io.swagger.annotations.ApiOperation;
@@ -29,6 +30,7 @@ import io.terminus.parana.auth.service.OperatorReadService;
 import io.terminus.parana.auth.service.OperatorWriteService;
 import io.terminus.parana.common.enums.UserRole;
 import io.terminus.parana.common.enums.UserType;
+import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.common.utils.UserUtil;
 import lombok.Data;
@@ -213,6 +215,43 @@ public class OperatorApis {
         if(log.isDebugEnabled()){
             log.debug("API-OPERATOR-UPDATEOPERATOR-END param: userId [{}] operator: [{}]",userId,operatorStr);
         }
+        return Boolean.TRUE;
+    }
+    
+    @ApiOperation("修改密碼")
+    @LogMe(description = "修改密碼",ignore = true)
+    @RequestMapping(value = "/passwordchange", method = RequestMethod.PUT)
+    public Boolean passwordchange(@RequestBody @LogMeContext OperatorPost operator) {
+    	String operatorStr = JsonMapper.nonEmptyMapper().toJson(operator);
+        ParanaUser paranaUser = UserUtil.getCurrentUser();
+    	
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-PASSWORDCHANGE-START param: userId [{}] operator: [{}]",paranaUser.getId(),operatorStr);
+        }
+
+        Response<MiddleUser> userRes = userReadService.findById(paranaUser.getId());
+        if (!userRes.isSuccess()) {
+            log.error("find user(id:{}) fail,error:{}", paranaUser.getId(), userRes.getError());
+            throw new JsonResponseException(userRes.getError());
+        }
+
+        MiddleUser existMiddleUser = userRes.getResult();
+        if(log.isDebugEnabled()){
+            log.debug("GET MIDDLEUSER param: OUTID [{}] NAME: [{}]",existMiddleUser.getOutId(),existMiddleUser.getName());
+        }
+
+        String password = Params.trimToNull(operator.getPassword());
+        if (password != null) {
+            judgePassword(password);
+        }
+        
+      //更新用户中心用户信息
+        Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.updateUcUser(existMiddleUser.getOutId(),existMiddleUser.getName(), operator.getPassword());
+        if (!ucUserInfoRes.isSuccess()) {
+            log.error("update user center user(id:{}) fail,error:{}", existMiddleUser.getOutId(), ucUserInfoRes.getError());
+            throw new JsonResponseException(ucUserInfoRes.getError());
+        }
+        
         return Boolean.TRUE;
     }
 

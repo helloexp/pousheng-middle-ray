@@ -3,6 +3,7 @@ package com.pousheng.middle.web.biz.impl;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.component.SycYunJuShipmentOrderApi;
 import com.pousheng.middle.hksyc.dto.YJSyncCancelRequest;
+import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -11,6 +12,7 @@ import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.ShopOrder;
@@ -52,13 +54,15 @@ public class SyncCancelResultToYJService implements CompensateBizService {
             return;
         }
         YJSyncCancelRequest yjSyncCancelRequest = JsonMapper.nonEmptyMapper().fromJson(poushengCompensateBiz.getContext(), YJSyncCancelRequest.class);
-        Response<List<ShopOrder>> resp =  middleOrderReadService.findByOutIdsAndOutFrom(Lists.newArrayList(yjSyncCancelRequest.getOrder_sn()),MiddleChannel.YUNJUJIT.getValue());
-        if(!resp.isSuccess() || resp.getResult().isEmpty()){
+        MiddleOrderCriteria criteria = new MiddleOrderCriteria();
+        criteria.setOutId(yjSyncCancelRequest.getOrder_sn());
+        Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(criteria);
+        if(!pagingRes.isSuccess() || pagingRes.getResult().isEmpty()){
             log.error("failed to find order by out order Id()",yjSyncCancelRequest.getOrder_sn());
             throw new BizException("could not handle the order receipt.");
         }
         try {
-            sycYunJuShipmentOrderApi.doSyncCancelResult(yjSyncCancelRequest,resp.getResult().get(0).getShopId());
+            sycYunJuShipmentOrderApi.doSyncCancelResult(yjSyncCancelRequest,pagingRes.getResult().getData().get(0).getShopId());
         }catch (Exception e){
             throw new BizException("sync cancel result fail,caused by {}", e);
         }

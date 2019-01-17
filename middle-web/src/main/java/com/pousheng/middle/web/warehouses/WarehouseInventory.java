@@ -65,7 +65,8 @@ public class WarehouseInventory {
                                        @RequestParam(required = false, value = "pageSize") Integer pageSize,
                                        @RequestParam(required = false, value = "materialCode") @ApiParam(value = "货号") String materialCode,
                                        @RequestParam(required = false, value = "skuCode") @ApiParam(value = "货品条码") String skuCode,
-                                       @RequestParam(required = false, value = "warehouseName") @ApiParam(value = "仓库名称") String warehouseName) {
+                                       @RequestParam(required = false, value = "warehouseName") @ApiParam(value = "仓库名称") String warehouseName,
+                                       @RequestParam(required = false, value = "realQuantity") @ApiParam(value = "基准库存数量") Integer realQuantity) {
 
         // 检查，如果参数都是空，直接返回空页
         if (ObjectUtils.isEmpty(materialCode) && ObjectUtils.isEmpty(skuCode) && ObjectUtils.isEmpty(warehouseName)) {
@@ -106,7 +107,7 @@ public class WarehouseInventory {
             }
         }
 
-        Paging<SkuInventory> retPage = inventoryClient.inventoryPaging(pageNo, pageSize, skuCodeList, warehouseName);
+        Paging<SkuInventory> retPage = inventoryClient.inventoryPaging(pageNo, pageSize, skuCodeList, warehouseName, realQuantity);
 
         // 补充货号信息
         if (!ObjectUtils.isEmpty(retPage.getData())) {

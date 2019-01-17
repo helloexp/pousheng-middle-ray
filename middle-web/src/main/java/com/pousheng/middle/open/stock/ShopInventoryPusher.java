@@ -23,6 +23,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -85,21 +86,19 @@ public class ShopInventoryPusher {
             String skuCode=changeDTO.getSkuCode();
             try {
                 List<Long> shopIds = Lists.newArrayList();
-
-                //根据商品映射查询店铺
-                //找到对应的店铺id, 这些店铺需要进行库存推送
-                List<ItemMapping> itemMappings = itemMappingCacher.findBySkuCode(skuCode);
-                if (CollectionUtils.isEmpty(itemMappings)) {
-                    log.error("failed to find out shops by skuCode={}, error code:{}", skuCode);
-                    continue;
-                }
-                //计算库存分配并将库存推送到每个外部店铺去
-                List<Long> shopIdsByItemMapping = itemMappings.stream().map(ItemMapping::getOpenShopId).collect(Collectors.toList());
-                log.info("find shopIds({}) by skuCode({})",shopIdsByItemMapping.toString(),skuCode);
-
-                //若仓库不为空
-                //更加默认发货仓查找店铺
+                //若仓库不为空 根据默认发货仓查找店铺
                 if (!Objects.isNull(changeDTO.getWarehouseId())) {
+                    //根据商品映射查询店铺
+                    //找到对应的店铺id, 这些店铺需要进行库存推送
+                    List<ItemMapping> itemMappings = itemMappingCacher.findBySkuCode(skuCode);
+                    if (CollectionUtils.isEmpty(itemMappings)) {
+                        log.error("failed to find out shops by skuCode={}, error code:{}", skuCode);
+                        continue;
+                    }
+                    //计算库存分配并将库存推送到每个外部店铺去
+                    Set<Long> shopIdsByItemMapping = itemMappings.stream().map(ItemMapping::getOpenShopId).collect(Collectors.toSet());
+                    log.info("find shopIds({}) by skuCode({})",shopIdsByItemMapping.toString(),skuCode);
+
                     //找到对应的店铺id, 这些店铺需要进行库存推送
                     Response<List<Long>> shopRespByWarehouse = warehouseShopRuleClient.findShopIdsByWarehouseId(
                         changeDTO.getWarehouseId());

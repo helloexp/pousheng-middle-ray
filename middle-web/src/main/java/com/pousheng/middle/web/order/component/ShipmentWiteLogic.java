@@ -68,6 +68,7 @@ import io.terminus.parana.order.service.*;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -1423,6 +1424,12 @@ public class ShipmentWiteLogic {
         }
 
         ReceiverInfo receiverInfo = receiverInfos.get(0);
+        String address = StringEscapeUtils.unescapeHtml4(receiverInfo.getDetail());
+        String[] ignoreWords = new String[]{ "\\t", "\\n", "\t", "\n", "@", "&", "#", "\\", "amp;", "mdash;" };
+        for(String word : ignoreWords) {
+            address = address.replace(word, "");
+        }
+        receiverInfo.setDetail(address);
 
         try {
             return objectMapper.writeValueAsString(receiverInfo);

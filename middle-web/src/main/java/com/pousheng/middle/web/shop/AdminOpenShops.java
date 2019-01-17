@@ -235,6 +235,18 @@ public class AdminOpenShops {
                 map.put(TradeConstants.IS_TAOBAO_SHOP, jsonMap.get(TradeConstants.IS_TAOBAO_SHOP));
             }
         }
+        if (jsonMap.containsKey(TradeConstants.EXCHANGE_PULL)) {
+            //第三方换货拉取标记
+            map.put(TradeConstants.EXCHANGE_PULL, jsonMap.get(TradeConstants.EXCHANGE_PULL));
+        }
+        if (jsonMap.containsKey(TradeConstants.IS_NEW_DISPATCH_ORDER_LOGIC)) {
+            //派单规则：同公司账套优先/优先发货优先
+            map.put(TradeConstants.IS_NEW_DISPATCH_ORDER_LOGIC, jsonMap.get(TradeConstants.IS_NEW_DISPATCH_ORDER_LOGIC));
+        }
+        if (jsonMap.containsKey(TradeConstants.MANUAL_SHIPMENT_CHECK_WAREHOUSE_FLAG)) {
+            //手动派单只限默认发货仓：是/否
+            map.put(TradeConstants.MANUAL_SHIPMENT_CHECK_WAREHOUSE_FLAG, jsonMap.get(TradeConstants.MANUAL_SHIPMENT_CHECK_WAREHOUSE_FLAG));
+        }
         // 云聚类型订单
         if(Objects.equals(MiddleChannel.YUNJUBBC.getValue(), openShop.getChannel())) {
             jsonMap.put("isCareStock","0");

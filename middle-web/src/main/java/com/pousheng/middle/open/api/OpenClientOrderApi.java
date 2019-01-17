@@ -22,6 +22,7 @@ import io.terminus.open.client.order.dto.*;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
+import io.terminus.parana.common.exception.InvalidException;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -108,7 +109,7 @@ public class OpenClientOrderApi {
                 if (!"shop.order.is.exist".equals(se.getMessage())) {
                     throw new OPServerException(200, se.getMessage());
                 }
-            } catch (Exception e) {
+            }catch (Exception e) {
                 log.error("create open  order:{} failed,caused by {}",orderInfo, Throwables.getStackTraceAsString(e));
                 throw new OPServerException(200,"create.middle.order.fail");
             }

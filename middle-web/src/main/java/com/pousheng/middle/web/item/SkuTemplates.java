@@ -938,16 +938,18 @@ public class SkuTemplates {
     // 计算所有仓库下的可用库存（物理-占用-安全-所有指定）
     @ApiOperation("货品分页查询用于赠品活动")
     @RequestMapping(value = "/api/sku-template/for/gift/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<SkuTemplate> getGiftSkuPagination(@RequestParam(value = "ids", required = false) List<Long> ids, @RequestParam(value = "skuCode", required = false) String skuCode,
-                                          @RequestParam(value = "name", required = false) String name,
-                                          @RequestParam(value = "spuId", required = false) Long spuId,
-                                          @RequestParam(value = "type", required = false) Integer type,
-                                          @RequestParam(value = "pageNo", required = false) Integer pageNo,
-                                          @RequestParam(value = "pageSize", required = false) Integer pageSize,
-                                          @RequestParam(value = "statuses", required = false) List<Integer> statuses){
+    public Paging<SkuTemplate> getGiftSkuPagination(@RequestParam(value = "ids", required = false) List<Long> ids,
+                                                    @RequestParam(value = "skuCode", required = false) String skuCode,
+                                                    @RequestParam(value = "name", required = false) String name,
+                                                    @RequestParam(value = "material", required = false) String material,
+                                                    @RequestParam(value = "spuId", required = false) Long spuId,
+                                                    @RequestParam(value = "type", required = false) Integer type,
+                                                    @RequestParam(value = "pageNo", required = false) Integer pageNo,
+                                                    @RequestParam(value = "pageSize", required = false) Integer pageSize,
+                                                    @RequestParam(value = "statuses", required = false) List<Integer> statuses){
         if(log.isDebugEnabled()){
-            log.debug("API-SKU-TEMPLATE-PAGINATION-START param: ids [{}] skuCode [{}] name [{}] spuId [{}] type [{}] pageNo [{}] pageSize [{}] statuses [{}]",
-                    ids,skuCode,name,spuId,type,pageNo,pageSize,statuses);
+            log.debug("API-SKU-TEMPLATE-PAGINATION-START param: ids [{}] skuCode [{}] name [{}] material [{}]  spuId [{}] type [{}] pageNo [{}] pageSize [{}] statuses [{}]",
+                    ids,skuCode,name,material,spuId,type,pageNo,pageSize,statuses);
         }
         Map<String, Object> params = Maps.newHashMap();
         if (Objects.nonNull(ids)) {
@@ -971,11 +973,24 @@ public class SkuTemplates {
         } else if (!statuses.isEmpty()) {
             params.put("statuses", statuses);
         }
-        Response<Paging<SkuTemplate>> r = skuTemplateReadService.findBy(pageNo, pageSize, params);
-        if (!r.isSuccess()) {
-            log.error("failed to pagination skuTemplates with params({}), error code:{}", params, r.getError());
-            throw new JsonResponseException(r.getError());
+
+        if (material !=null){
+            params.put("material", material);
         }
+
+        Response<Paging<SkuTemplate>> r;
+        if (material !=null){
+            pageNo = (pageNo == null)?1:pageNo;
+            pageSize = (pageSize == null)?20:pageSize;
+            r = skuTemplateSearchReadService.findByMaterial(pageNo,pageSize,params);
+        }else{
+             r = skuTemplateReadService.findBy(pageNo, pageSize, params);
+            if (!r.isSuccess()) {
+                log.error("failed to pagination skuTemplates with params({}), error code:{}", params, r.getError());
+                throw new JsonResponseException(r.getError());
+            }
+        }
+
         //赠品活动商品列表转skuCode列表
         List<String> skus = r.getResult().getData().stream().map(temp ->
             temp.getSkuCode()).collect(Collectors.toList());

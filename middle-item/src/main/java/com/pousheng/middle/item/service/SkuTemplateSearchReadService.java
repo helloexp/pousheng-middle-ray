@@ -6,9 +6,10 @@ package com.pousheng.middle.item.service;
 
 import io.terminus.common.model.Response;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
+import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.search.api.model.Pagination;
 import io.terminus.search.api.model.WithAggregations;
-
+import io.terminus.common.model.Paging;
 import java.util.Map;
 
 /**
@@ -61,6 +62,13 @@ public interface SkuTemplateSearchReadService {
     <T> Response<? extends Pagination<T>> searchWithScroll(String scrollId,Integer pageNo, Integer pageSize,
                                                          String templateName, Map<String, String> params,
                                                          Class<T> clazz);
+
+    /**
+     * 根據料號過濾資料
+     * @param params
+     * @return
+     */
+    Response<Paging<SkuTemplate>> findByMaterial(Integer offset, Integer limit, Map<String, Object> params);
 
 }
 

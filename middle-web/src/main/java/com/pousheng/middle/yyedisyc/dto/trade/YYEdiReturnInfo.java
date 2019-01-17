@@ -23,6 +23,8 @@ public class YYEdiReturnInfo implements java.io.Serializable {
     private String shopbillno;
     @JsonProperty(value = "billtype")
     private String billtype;
+    @JsonProperty(value = "channel")
+    private String channel;
     @JsonProperty(value = "shopcode")
     private String shopcode;
     @JsonProperty(value = "shopname")
@@ -117,6 +119,14 @@ public class YYEdiReturnInfo implements java.io.Serializable {
     @JsonIgnore
     public void setBilltype(String billtype) {
         this.billtype = billtype;
+    }
+    @JsonIgnore
+    public String getChannel() {
+        return channel;
+    }
+    @JsonIgnore
+    public void setChannel(String channel) {
+        this.channel = channel;
     }
     @JsonIgnore
     public String getShopcode() {

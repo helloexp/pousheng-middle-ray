@@ -59,6 +59,7 @@ import io.terminus.parana.shop.service.ShopReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -918,6 +919,12 @@ public class Shipments {
         }
 
         ReceiverInfo receiverInfo = receiverInfos.get(0);
+        String address = StringEscapeUtils.unescapeHtml4(receiverInfo.getDetail());
+        String[] ignoreWords = new String[]{ "\\t", "\\n", "\t", "\n", "@", "&", "#", "\\", "amp;", "mdash;" };
+        for(String word : ignoreWords) {
+            address = address.replace(word, "");
+        }
+        receiverInfo.setDetail(address);
 
         try {
             return objectMapper.writeValueAsString(receiverInfo);

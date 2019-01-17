@@ -92,7 +92,7 @@ public class InventoryApiTests {
     private boolean batchHandle(int pageNo, int size,Integer batchSize,String warehouseName,List<SkuInventory> skuInventories) {
 
 
-        Paging<SkuInventory> retPage = inventoryClient.inventoryPaging(pageNo, size, null, warehouseName);
+        Paging<SkuInventory> retPage = inventoryClient.inventoryPaging(pageNo, size, null, warehouseName, null);
         List<SkuInventory> list = retPage.getData();
 
         if (retPage.getTotal().equals(0L)  || CollectionUtils.isEmpty(list)) {

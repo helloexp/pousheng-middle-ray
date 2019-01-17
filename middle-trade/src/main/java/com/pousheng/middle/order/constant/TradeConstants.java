@@ -297,6 +297,13 @@ public class TradeConstants {
     public static final String  ITEM_MAPPING_STOCK = "itemMappingStock";
     // 淘宝C店
     public static final String  IS_TAOBAO_SHOP = "isTaobaoShop";
+    // 第三方换货拉取标记： 值Y/N
+    public static final String  EXCHANGE_PULL = "exchangePull";
+    // 派单规则：同公司账套优先/优先发货优先
+    public static final String  IS_NEW_DISPATCH_ORDER_LOGIC = "isNewDispatchOrderLogic";
+    // 手动派单只限默认发货仓：是/否
+    public static final String  MANUAL_SHIPMENT_CHECK_WAREHOUSE_FLAG = "manualShipmentCheckWarehouseFlag";
+
 
     // 共享仓标记
     public static final String IS_SHARED_STOCK = "sharedStock";

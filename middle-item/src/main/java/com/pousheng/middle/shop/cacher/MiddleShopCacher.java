@@ -55,7 +55,6 @@ public class MiddleShopCacher {
                 .build(new CacheLoader<String, Shop>() {
                     @Override
                     public Shop load(String joinStr) throws Exception {
-                        log.info("joinStr:{}",joinStr);
                         List<String> stringList = Splitters.COLON.splitToList(joinStr);
                         String outerId = stringList.get(0);
                         Long businessId = Long.valueOf(stringList.get(1));
@@ -106,11 +105,8 @@ public class MiddleShopCacher {
      */
     public Shop findByOuterIdAndBusinessId(String outerId, Long businessId) {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        log.info("findByOuterIdAndBusinessId by outerId:{} and businessId:{}",outerId,businessId);
-        log.info("current shopCacher size:{}",this.shopCacher.asMap().size());
         Shop shop = shopCacher.getUnchecked(Joiners.COLON.join(outerId, businessId));
         stopwatch.stop();
-        log.info("end to findByOuterIdAndBusinessId,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
         return shop;
     }
 

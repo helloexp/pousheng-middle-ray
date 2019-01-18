@@ -171,7 +171,7 @@ public class SyncYJErpShipmentLogic {
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
             shipment.setStatus(targetStatus);
             List<YJErpCancelInfo> list = getSycYJErpCancelInfo(shipment);
-            String response = sycYYEdiOrderCancelApi.doYJErpCancelOrder(list,shipment.getShopId());
+            String response = sycYYEdiOrderCancelApi.doYJErpCancelOrder(list);
             JSONObject responseObj = JSONObject.parseObject(response);
             if (Objects.equals(responseObj.get("error"), 0)) {
                 OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();

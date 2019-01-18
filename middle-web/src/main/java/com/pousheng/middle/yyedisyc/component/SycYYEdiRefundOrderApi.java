@@ -57,14 +57,12 @@ public class SycYYEdiRefundOrderApi {
     }
 
 
-    public String doSyncYJErpRefundOrder(List<YJErpRefundInfo> requestData,Long shopId) {
-        OpenShop openshop = openShopCacher.findById(shopId);
-        this.yjGateway = openshop.getGateway();
-        this.yjAccessKey = openshop.getAccessToken();
+    public String doSyncYJErpRefundOrder(List<YJErpRefundInfo> requestData) {
+
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData.get(0));
         log.info("sync refund to yj erp paramJson:{} serialNo:{}", paramJson, serialNo);
-        String gateway = hkGateway + "/pushmgorderexchangeset";
+        String gateway = hkGateway + "/common-yjerp/yjerp/default/pushmgorderexchangeset";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode", accessKey)
                 .header("serialNo", serialNo)

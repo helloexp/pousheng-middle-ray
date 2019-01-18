@@ -31,10 +31,6 @@ public class SycYYEdiOrderCancelApi {
     @Value("${gateway.yyedi.accessKey}")
     private String accessKey;
 
-    private String yjGateway;
-    private String yjAccessKey;
-    @Autowired
-    OpenShopCacher openShopCacher;
 
     private static final String SID = "PS_ERP_WMS_bccancelorders";
 
@@ -61,16 +57,13 @@ public class SycYYEdiOrderCancelApi {
         return responseBody;
     }
 
-    public String doYJErpCancelOrder(List<YJErpCancelInfo> requestData,Long shopId){
-        OpenShop openshop = openShopCacher.findById(shopId);
-        this.yjGateway = openshop.getGateway();
-        this.yjAccessKey = openshop.getAccessToken();
+    public String doYJErpCancelOrder(List<YJErpCancelInfo> requestData){
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData.get(0));
         log.info("sync cancel shipment to yj erp paramJson :{}, serialNo:{}",paramJson,serialNo);
-        String gateway = yjGateway + "/pushmgordercancel";
+        String gateway = hkGateway + "/common-yjerp/yjerp/default/pushmgordercancel";
         String responseBody = HttpRequest.post(gateway)
-                .header("verifycode",yjAccessKey)
+                .header("verifycode",accessKey)
                 .header("serialNo",serialNo)
                 .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
                 .contentType("application/json")

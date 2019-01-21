@@ -63,7 +63,8 @@ public class ExportController {
             log.debug("API-ORDER-EXPORT-START param: middleOrderCriteria [{}] ]",criteriaStr);
         }
 
-        if (middleOrderCriteria.getStatus().contains(99)) {
+
+        if (middleOrderCriteria.getStatus() != null && middleOrderCriteria.getStatus().contains(99)) {
             throw new JsonResponseException("this status not support export");
         }
 

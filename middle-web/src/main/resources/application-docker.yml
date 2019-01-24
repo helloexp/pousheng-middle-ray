@@ -119,6 +119,8 @@ open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}
 open.api.gateway: ${OPEN_API_GATEWAY}
 middle.api.gateway: ${MIDDLE_API_GATEWAY}
+ps.middle.system.gateway: ${PS_MIDDLE_SYSTEM_GATEWAY}
+ps.middle.system.accesskey: ${PS_MIDDLE_SYSTEM_ACCESSKEY}
 
 
 azure:
@@ -376,7 +378,7 @@ open.client.refresh.token.job.enable: ${OPEN_CLIENT_REFRESH_TOKEN_JOB_ENABLE:fal
 terminus.erp.gateway: ${TERMINUS.ERP.GETEWAY:https://retail-gateway-pagoda-prod.app.terminus.io/api/gateway}
 
 ### 中台补拍邮费商品SKU_CODE
-postage.sku.code: ${POSTAGE_SKU_CODE:BYC0001$}
+postage.sku.code: ${POSTAGE_SKU_CODE}
 
 ### 补偿bizMq队列大小
 common.biz.mq.queue.size: ${COMMON_BIZ_MQ_QUEUE_SIZE:0}

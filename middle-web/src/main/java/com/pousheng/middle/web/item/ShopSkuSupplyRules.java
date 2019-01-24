@@ -1,7 +1,9 @@
 package com.pousheng.middle.web.item;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
+import com.pousheng.middle.common.utils.component.AzureOSSBlobClient;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.SkuStockRuleImportInfo;
@@ -10,10 +12,12 @@ import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
+import com.pousheng.middle.web.item.component.ShopSkuExcelComponent;
 import com.pousheng.middle.web.item.component.ShopSkuSupplyRuleComponent;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -21,11 +25,13 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.spu.model.SkuTemplate;
+import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+
 
 
 /**
@@ -61,12 +67,25 @@ public class ShopSkuSupplyRules {
     }
     @Autowired
     private CompensateBizLogic compensateBizLogic;
+    @Autowired
+    private AzureOSSBlobClient azureOssBlobClient;
+    @RpcConsumer
+    private SkuTemplateReadService skuTemplateReadService;
+
+    @Autowired
+    private  ShopSkuExcelComponent excelComponent;
 
     /**
      * 导入模板
      */
     @RequestMapping(value = "/import", method = RequestMethod.POST)
     public void importExcel(@RequestBody SkuStockRuleImportInfo info) {
+        try {
+            excelComponent.replaceMaterialIdToBarcodeInExcel(info);
+        } catch (Exception e) {
+            log.error("fail to replace material_id to barcode in excel, cause:{}", Throwables.getStackTraceAsString(e));
+        }
+
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
         biz.setBizType(PoushengCompensateBizType.IMPORT_ITEM_SUPPLY_RULE.toString());
         biz.setContext(mapper.toJson(info));
@@ -137,5 +156,4 @@ public class ShopSkuSupplyRules {
         }
         return response.getResult();
     }
-
 }

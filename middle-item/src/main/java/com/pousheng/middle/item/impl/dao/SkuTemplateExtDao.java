@@ -5,6 +5,12 @@ import com.google.common.collect.ImmutableMap;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import io.terminus.parana.spu.model.SkuTemplate;
 import org.springframework.stereotype.Repository;
+import com.google.common.collect.Maps;
+import io.terminus.common.model.Paging;
+import io.terminus.common.utils.Constants;
+import java.util.Collections;
+import java.util.Map;
+
 
 import java.util.List;
 
@@ -61,6 +67,29 @@ public class SkuTemplateExtDao extends MyBatisDao<SkuTemplate> {
         return getSqlSession().update(sqlId("updateBatch"),skuTemplates)>0;
 
     }
+
+    /**
+     * 根據料號過濾資料
+     * @param params
+     * @return
+     */
+    public Paging<SkuTemplate> findByMaterial(Integer offset, Integer limit, Map<String, Object> params){
+
+        params.put("offset", (offset-1) * limit);
+        params.put("limit", limit);
+        // get total count
+        Long total = sqlSession.selectOne(sqlId("findByMaterialCount"), params);
+        if (total <= 0){
+            return new Paging<SkuTemplate>(0L, Collections.<SkuTemplate>emptyList());
+        }
+
+        // get data
+        List<SkuTemplate> datas = getSqlSession().selectList(sqlId("findByMaterial"),params);
+        return new Paging<SkuTemplate>(total, datas);
+
+
+    }
+
 
 
 

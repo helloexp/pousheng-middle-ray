@@ -17,6 +17,7 @@ import io.terminus.open.client.order.dto.*;
 import io.terminus.open.client.order.enums.OpenClientOrderPayType;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
 import io.terminus.parana.common.constants.JitConsts;
+import io.terminus.parana.common.exception.InvalidException;
 import io.terminus.parana.order.dto.fsm.OrderStatus;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
@@ -311,13 +312,13 @@ public class OpenOrderConverter {
         Response<List<SkuTemplate>> sP = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(skuCode));
         if (!sP.isSuccess()) {
             log.error("find skuTemplate failed, skuCode is {},caused by {}", skuCode, sP.getError());
-            throw new ServiceException("find.skuTemplate.failed");
+            throw new ServiceException("skuTemplate(skuCode="+skuCode+") not found");
         }
         List<SkuTemplate> skuTemplates = sP.getResult();
         List<SkuTemplate> skuTemplateList = skuTemplates.stream().filter(skuTemplate -> !Objects.equals(skuTemplate.getStatus(), -3)).collect(Collectors.toList());
         if (skuTemplateList == null || skuTemplateList.isEmpty()) {
             log.error("sku template status is error,cant not be -3,skuCode is {}", skuCode);
-            throw new ServiceException("find.skuTemplate.failed");
+            throw new ServiceException("skuTemplate(skuCode="+skuCode+") not found");
         }
         return skuTemplateList.get(0).getSpuId();
     }

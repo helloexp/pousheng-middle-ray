@@ -92,6 +92,32 @@
         </foreach>
     </update>
 
+    <select id="findByMaterial" parameterType="map" resultMap="SkuTemplateMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        WHERE json_unquote(json_extract(extra,'$.materialCode')) = #{material}
+        <if test="statuses != null">AND status IN
+            <foreach collection="statuses" open="(" separator="," close=")" item="status">
+                #{status}
+            </foreach>
+        </if>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="findByMaterialCount" parameterType="map" resultType="long">
+        SELECT count(*)
+        FROM
+        <include refid="tb"/>
+        WHERE json_unquote(json_extract(extra,'$.materialCode')) = #{material}
+        <if test="statuses != null">AND status IN
+            <foreach collection="statuses" open="(" separator="," close=")" item="status">
+                #{status}
+            </foreach>
+        </if>
+    </select>
+
 
 
 </mapper>

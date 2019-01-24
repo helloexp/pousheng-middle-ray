@@ -147,22 +147,23 @@ public class SkuTemplateSearches {
 
         for (SearchSkuTemplate searchSkuTemplate : data){
             SkuTemplate skuTemplate = groupSkuTemplateById.get(searchSkuTemplate.getId());
-            if (skuTemplate.getExtraPrice() != null) {
-                searchSkuTemplate.setOriginPrice(skuTemplate.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY));
-            }
-            searchSkuTemplate.setPrice(skuTemplate.getPrice());
-            Map<String,String> extra = skuTemplate.getExtra();
-            if(!CollectionUtils.isEmpty(extra)&&extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
-                searchSkuTemplate.setDiscount(Integer.valueOf(extra.get(PsItemConstants.MPOS_DISCOUNT)));
-            }
+            if(skuTemplate != null) {
+                if (skuTemplate.getExtraPrice() != null) {
+                    searchSkuTemplate.setOriginPrice(skuTemplate.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY));
+                }
+                searchSkuTemplate.setPrice(skuTemplate.getPrice());
+                Map<String, String> extra = skuTemplate.getExtra();
+                if (!CollectionUtils.isEmpty(extra) && extra.containsKey(PsItemConstants.MPOS_DISCOUNT)) {
+                    searchSkuTemplate.setDiscount(Integer.valueOf(extra.get(PsItemConstants.MPOS_DISCOUNT)));
+                }
 
-            SpuAttribute spuAttribute = groupSpuAttributebySpuId.get(searchSkuTemplate.getSpuId());
-            if(Arguments.notNull(spuAttribute)){
-                searchSkuTemplate.setOtherAttrs(spuAttribute.getOtherAttrs());
+                SpuAttribute spuAttribute = groupSpuAttributebySpuId.get(searchSkuTemplate.getSpuId());
+                if (Arguments.notNull(spuAttribute)) {
+                    searchSkuTemplate.setOtherAttrs(spuAttribute.getOtherAttrs());
+                }
+                searchSkuTemplate.setAttrs(skuTemplate.getAttrs());
+                searchSkuTemplate.setMainImage(skuTemplate.getImage_());
             }
-            searchSkuTemplate.setAttrs(skuTemplate.getAttrs());
-            searchSkuTemplate.setMainImage(skuTemplate.getImage_());
-
 
 
 

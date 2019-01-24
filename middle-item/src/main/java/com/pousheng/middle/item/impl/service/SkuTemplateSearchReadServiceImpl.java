@@ -4,9 +4,11 @@
 
 package com.pousheng.middle.item.impl.service;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.item.PsItemQueryBuilder;
 import com.pousheng.middle.item.SearchSkuTemplateProperties;
+import com.pousheng.middle.item.impl.dao.SkuTemplateExtDao;
 import com.pousheng.middle.item.service.CriteriasWithShould;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
@@ -15,6 +17,7 @@ import io.terminus.parana.cache.CategoryBindingCacher;
 import io.terminus.parana.cache.FrontCategoryCacher;
 import io.terminus.parana.category.dto.FrontCategoryTree;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
+import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.search.api.Searcher;
 import io.terminus.search.api.model.Pagination;
 import io.terminus.search.api.model.WithAggregations;
@@ -24,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import io.terminus.common.model.Paging;
 
 import java.util.List;
 import java.util.Map;
@@ -55,6 +59,8 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
 
     private final SkuTemplateSearchResultComposer skuTemplateSearchResultComposer;
 
+    @Autowired
+    private SkuTemplateExtDao skuTemplateExtDao;
 
     @Autowired
     public SkuTemplateSearchReadServiceImpl(SearchSkuTemplateProperties searchSkuTemplateProperties,
@@ -181,6 +187,17 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
             for (FrontCategoryTree categoryTree : frontCategoryTree.getChildren()) {
                 leafOf(categoryTree, leafFcids);
             }
+        }
+    }
+
+
+    @Override
+    public Response<Paging<SkuTemplate>> findByMaterial(Integer offset, Integer limit, Map<String, Object> params) {
+        try {
+            return Response.ok(skuTemplateExtDao.findByMaterial(offset,limit,params));
+        }catch (Exception e){
+            log.error("failed to find sku_template by material,material:{}",params.get("material"), Throwables.getStackTraceAsString(e));
+            return Response.fail("failed.to.find.sku.template");
         }
     }
 

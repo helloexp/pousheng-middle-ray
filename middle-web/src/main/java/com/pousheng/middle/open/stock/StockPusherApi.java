@@ -30,7 +30,7 @@ public class StockPusherApi {
 
 
     @ApiOperation("库存推送")
-    @RequestMapping(value = "/submit", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/submit", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> submit(@RequestBody List<String> skuCodes) {
         stockPusherClient.submit(skuCodes);
         return Response.ok(true);

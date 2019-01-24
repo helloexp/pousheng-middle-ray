@@ -18,6 +18,7 @@ import io.terminus.common.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
@@ -361,6 +362,28 @@ public class HandlerFileUtil<T> {
 
     }
 
+    public void writerExcel(List<String[]> rows, String fileName) {
+        try {
+            Workbook wb = new XSSFWorkbook();
+            Sheet sheet = wb.createSheet("sheet1");
+            for (int i = 0; i < rows.size(); i++) {
+                Row row = sheet.createRow(i);
+
+                for (int j = 0; j < rows.get(i).length; j++) {
+                    Cell cell = row.createCell(j, CellType.STRING);
+                    cell.setCellValue(rows.get(i)[j]);
+                }
+            }
+
+            FileOutputStream fileOutputStream = new FileOutputStream(fileName);
+            wb.write(fileOutputStream);
+            fileOutputStream.flush();
+            fileOutputStream.close();
+        } catch (Exception e) {
+            log.error("export order template fail,cause:{}", Throwables.getStackTraceAsString(e));
+            throw new JsonResponseException(500, "export.order.template.fail");
+        }
+    }
 
     public static List handlerExcel() {
         return null;

@@ -269,7 +269,7 @@ public class InventoryClient {
      *
      * @return
      */
-    public Paging<SkuInventory> inventoryPaging (Integer pageNo, Integer pageSize, List<String> skuCodeList, String warehouseName) {
+    public Paging<SkuInventory> inventoryPaging (Integer pageNo, Integer pageSize, List<String> skuCodeList, String warehouseName, Integer realQuantity) {
         if (null == pageNo) {
             pageNo = 1;
         }
@@ -280,6 +280,9 @@ public class InventoryClient {
             Map<String, Object> params = Maps.newHashMap();
             params.put("warehouseName", warehouseName);
             params.put("skuCodeList", (null==skuCodeList?JSON.toJSONString(Lists.newArrayList()):JSON.toJSONString(skuCodeList)));
+            if (realQuantity != null) {
+                params.put("realQuantity", realQuantity);
+            }
 
             Paging<JSONObject> dataPage = (Paging<JSONObject>) inventoryBaseClient.get(
                     "api/inventory/query/paging",

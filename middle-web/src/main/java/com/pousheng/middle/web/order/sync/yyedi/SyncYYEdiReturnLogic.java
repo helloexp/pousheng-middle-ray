@@ -172,6 +172,8 @@ public class SyncYYEdiReturnLogic {
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+        //渠道
+        refundInfo.setChannel(shopOrder.getOutFrom());
         WarehouseDTO warehouse = null;
         if (refundExtra.getWarehouseId()!=null){
             Response<WarehouseDTO> response = warehouseClient.findById(refundExtra.getWarehouseId());

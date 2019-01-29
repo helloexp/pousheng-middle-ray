@@ -89,6 +89,25 @@ public enum MiddleRefundStatus {
      * 部分退货完成待确认发货
      */
     PART_RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT(19,"部分退货完成待确认发货"),
+
+    /**
+     * 换货 待买家退货
+     */
+    WAIT_BUYER_RETURN_GOODS(20,"同意换货等待买家退货"),
+    /**
+     * 换货成功
+     */
+    EXCHANGE_SUCCESS(21,"换货成功"),
+    /**
+     * 换货关闭，转退货退款
+     */
+    WAIT_SELLER_SEND_GOODS(22,"待发出换货商品"),
+
+    /**
+     * 换货关闭转退货退款
+     */
+    EXCHANGE_TO_REFUND(23,"换货关闭转退货退款"),
+
     /**
      * 同步恒康失败
      */
@@ -112,7 +131,12 @@ public enum MiddleRefundStatus {
     /**
      * 已删除
      */
-    DELETED(-6, "已删除");
+    DELETED(-6, "已删除"),
+    /**
+     * 换货关闭
+     */
+    EXCHANGE_CLOSED(-7, "换货关闭");
+
 
     private final int value;
     private final String name;

@@ -273,6 +273,12 @@ public class Shipments {
             log.debug("API-SHIPMENT-DETAIL-START param: shipmentId [{}]", shipmentId);
         }
         ShipmentDetail detail = shipmentReadLogic.orderDetail(shipmentId);
+        //判断是否有权限
+        if(Objects.nonNull(detail)){
+            if(Objects.nonNull(detail.getShipment())){
+                checkShipPer(detail.getShipment().getShopId());
+            }
+        }
         Integer status = detail.getShipment().getStatus();
         if (!status.equals(MiddleShipmentsStatus.SHIPPED.getValue()) && !status.equals(MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())
                 && !status.equals(MiddleShipmentsStatus.CONFIRMED_FAIL.getValue())) {
@@ -308,7 +314,10 @@ public class Shipments {
         if (log.isDebugEnabled()) {
             log.debug("API-ORDER-SHIPMENTS-END param: shopOrderId [{}] ,resp: [{}]", shopOrderId, JsonMapper.nonEmptyMapper().toJson(response.getResult()));
         }
-        return response.getResult();
+        //进行权限过滤
+        List<Shipment> shipmentList=response.getResult();
+        checkShipPer(shipmentList);
+        return shipmentList;
     }
 
     /**
@@ -324,9 +333,11 @@ public class Shipments {
             log.error("find shipment by shopOrderCode ({}) failed,caused by ({})", orderCode, response.getError());
             throw new JsonResponseException("find.shipment.failed");
         }
-        return response.getResult();
+        //进行权限过滤
+        List<Shipment> shipmentList=response.getResult();
+        checkShipPer(shipmentList);
+        return shipmentList;
     }
-
 
     /**
      * 换货单下的发货单
@@ -343,7 +354,7 @@ public class Shipments {
         if (log.isDebugEnabled()) {
             log.debug("API-REFUND-SHIPMENTS-END param: afterSaleOrderId [{}] ,resp: [{}]", afterSaleOrderId, JsonMapper.nonEmptyMapper().toJson(shipments));
         }
-
+        checkOrderShipPer(shipments);
         return shipments;
     }
 
@@ -377,6 +388,8 @@ public class Shipments {
         if (log.isDebugEnabled()) {
             log.debug("API-AFTER-SALE-SHIPMENTS-END param: afterSaleOrderId [{}] ,resp: [{}]", afterSaleOrderId, JsonMapper.nonEmptyMapper().toJson(shipments));
         }
+        //进行权限过滤
+        checkShipPer(shipments);
         return shipments;
     }
 
@@ -403,6 +416,8 @@ public class Shipments {
             }
             shipments.add(shipment);
         }
+        //进行权限过滤
+        checkShipPer(shipments);
         return shipments;
     }
 
@@ -412,10 +427,13 @@ public class Shipments {
     public List<ShipmentItem> shipmentItems(@PathVariable("id") String shipmentCode) {
 
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
+        //判断是否有权限
+        if(Objects.nonNull(shipment)){
+            checkShipPer(shipment.getShopId());
+        }
         return shipmentReadLogic.getShipmentItems(shipment);
 
     }
-
 
     /**
      * 判断发货单是否有效
@@ -435,6 +453,10 @@ public class Shipments {
         }
         try {
             Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
+            if(Objects.nonNull(shipment)){
+                //判断是否有权限
+                checkShipPer(shipment.getShopId());
+            }
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
             //是否属于当前订单
             if (Objects.equals(type, 1)) {
@@ -498,7 +520,9 @@ public class Shipments {
     @LogMe(description = "手工生成发货单", ignore = true)
     public List<Long> createSalesShipment(@PathVariable("id") @LogMeContext @OperationLogParam Long shopOrderId,
                                           @RequestParam(value = "dataList") @LogMeContext String dataList,
-                                          @RequestParam(value = "mustShip",required = false) @LogMeContext Integer mustShip ) {
+                                          @RequestParam(value = "mustShip",required = false) @LogMeContext Integer mustShip,
+                                          @RequestParam(value = "hasCheckWithStore") @LogMeContext Boolean hasCheckWithStore,
+                                          @RequestParam(value = "checkWithStoreDesc") @LogMeContext String checkWithStoreDesc ) {
         if (log.isDebugEnabled()) {
             log.debug("API-ORDER-SHIP-START param: shopOrderId [{}] dataList [{}]", shopOrderId, dataList);
         }
@@ -586,6 +610,8 @@ public class Shipments {
             Map<String, String> extraMap = shipment.getExtra();
             extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
             extraMap.put(TradeConstants.SHOP_ORDER_ID, String.valueOf(shopOrderId));
+            extraMap.put(TradeConstants.HAS_CHECK_WITH_STORE, String.valueOf(hasCheckWithStore));
+            extraMap.put(TradeConstants.CHECK_WITH_STORE_DESC, checkWithStoreDesc);
             shipment.setExtra(extraMap);
 
             //创建发货单
@@ -1284,6 +1310,9 @@ public class Shipments {
     @RequestMapping(value = "/api/shipment/{id}/warehouse/company/rule", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public WarehouseCompanyRule findWarehouseCompanyRule(@PathVariable("id") Long shipmentId) {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        if(Objects.nonNull(shipment)){
+            checkShipPer(shipment.getShopId());
+        }
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Long warehouseId = shipmentExtra.getWarehouseId();
         WarehouseDTO warehouse = findWarehouseById(warehouseId);
@@ -1399,6 +1428,9 @@ public class Shipments {
     public List<ShipmentItem> findShipmentItemByOrder(@PathVariable("id") String code) {
         //获取订单
         ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(code);
+        if(Objects.nonNull(shopOrder.getShopId())){
+           checkShipPer(shopOrder.getShopId());
+        }
         //获取订单下的所有发货单
         List<Shipment> originShipments = shipmentReadLogic.findByShopOrderId(shopOrder.getId());
         List<Shipment> shipments = originShipments.stream().
@@ -1430,6 +1462,9 @@ public class Shipments {
     @RequestMapping(value = "api/shipment/cancel/{id}/to/yyedi", method = RequestMethod.GET)
     public boolean cancelShipmentForEdi(@PathVariable("id") Long id) {
         Shipment shipment = shipmentReadLogic.findShipmentById(id);
+        if(Objects.nonNull(shipment)){
+            checkShipPer(shipment.getShopId());
+        }
         Response<Boolean> r = syncErpShipmentLogic.syncShipmentCancel(shipment);
         return r.getResult();
     }
@@ -1473,6 +1508,10 @@ public class Shipments {
     @RequestMapping(value = "api/shipment/{id}/sync/hk/pos", method = RequestMethod.GET)
     public void syncShipmentToHk(@PathVariable(value = "id") Long shipmentId) {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        if(Objects.nonNull(shipment)){
+            //判断是否有权限
+            checkShipPer(shipment.getShopId());
+        }
         Response<Boolean> syncRes = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
         if (!syncRes.isSuccess()) {
             log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
@@ -1504,6 +1543,10 @@ public class Shipments {
     @RequestMapping(value = "api/shipment/{code}/extra/get", method = RequestMethod.GET)
     public ShipmentExtra findShipmentExtra(@PathVariable(value = "code") @OperationLogParam String code) {
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(code);
+        //判断是否有权限
+        if(Objects.nonNull(shipment)){
+            checkShipPer(shipment.getShopId());
+        }
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         return shipmentExtra;
     }
@@ -2124,6 +2167,33 @@ public class Shipments {
         }catch (Exception e) {
             log.error("failed to batch update ship qty for shipment id:{} data list:{}, cause:{}",shipmentId,dataList, Throwables.getStackTraceAsString(e));
             return Response.fail("shipment.ship.qty.update.fail");
+        }
+    }
+
+    private void checkShipPer(List<Shipment> shipmentList){
+        if(null!=shipmentList){
+            for (Iterator<Shipment> it = shipmentList.iterator(); it.hasNext();) {
+                Shipment shipment = (Shipment) it.next();
+                if(!permissionUtil.getCurrentUserCanOperateShopIDs().contains(shipment.getShopId())){
+                    it.remove();
+                }
+            }
+        }
+    }
+
+    private void checkShipPer(Long shopId){
+        if(!permissionUtil.getCurrentUserCanOperateShopIDs().contains(shopId)){
+            log.error("find shopId no permission");
+            throw new JsonResponseException("permission.check.query.deny");
+        }
+    }
+
+    private void checkOrderShipPer(List<OrderShipment> orderShipmentList){
+        for (Iterator<OrderShipment> it = orderShipmentList.iterator(); it.hasNext();) {
+            OrderShipment shipment = (OrderShipment) it.next();
+            if(!permissionUtil.getCurrentUserCanOperateShopIDs().contains(shipment.getShopId())){
+                it.remove();
+            }
         }
     }
 }

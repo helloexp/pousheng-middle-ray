@@ -239,7 +239,10 @@ jd.yunding.gateway: http://114.67.68.158:8008/api/gateway
 #middle的订单商品库存等job开关
 trade.job.enable: ${TRADE_JOB_ENABLE}
 
+#拉取售后单job开关
 open.client.sync.after.sale.job.enable: ${TRADE_JOB_ENABLE}
+
+#拉取天猫换货单job开关
 open.client.sync.after.sale.exchange.job.enable: ${TRADE_JOB_ENABLE}
 
 #拉取商品映射job开关

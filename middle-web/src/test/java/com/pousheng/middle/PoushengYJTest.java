@@ -368,13 +368,13 @@ public class PoushengYJTest {
         params.put("appKey", "pousheng");
         params.put("pampasCall", "yyEDI.refund.confirm.received.api");
 
-        params.put("refundOrderId","ASS36606");
+        params.put("refundOrderId","ASS265408");
         params.put("yyEDIRefundOrderId","yyedi_refund_no"+System.currentTimeMillis());
         YYEdiRefundConfirmItem confirmItem = new YYEdiRefundConfirmItem();
 
-        confirmItem.setItemCode("4057289618996");
-        confirmItem.setQuantity("2");
-        confirmItem.setWarhouseCode("11039");
+        confirmItem.setItemCode("886737551462");
+        confirmItem.setQuantity("1");
+        confirmItem.setWarhouseCode("20");
 
 
         params.put("itemInfo",mapper.toJson(Lists.newArrayList(confirmItem)));
@@ -387,7 +387,7 @@ public class PoushengYJTest {
 
         log.info(JsonMapper.nonDefaultMapper().toJson(params));
 
-        post("http://127.0.0.1:8092/api/gateway", params);
+        post("http://127.0.0.1:8095/api/gateway", params);
     }
 
     @Test

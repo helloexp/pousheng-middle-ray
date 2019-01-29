@@ -393,8 +393,8 @@ public class ShipmentWiteLogic {
             log.info("try to auto cancel shipment,shipment id is {}", shipment.getId());
             Flow flow = flowPicker.pickShipments();
             //未同步恒康,现在只需要将发货单状态置为已取消即可
-            if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
-                Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
+            if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_OCCUPY_SHIP.toOrderOperation())) {
+                Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_OCCUPY_SHIP.toOrderOperation());
                 if (!cancelRes.isSuccess()) {
                     log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
                     throw new JsonResponseException(cancelRes.getError());
@@ -2165,6 +2165,7 @@ public class ShipmentWiteLogic {
             }
             int count = 0;//计数器用来记录是否有发货单取消失败的
             Response<Boolean> cancelShipmentResponse = this.cancelShipment(shipment);
+            log.info("2222222222222cancel shipment response:"+cancelShipmentResponse.toString());
             if (!cancelShipmentResponse.isSuccess()) {
                 count++;
             }
@@ -2174,6 +2175,12 @@ public class ShipmentWiteLogic {
             //换货发货单发货之前可以取消发货单，将已经处理的发货单数量恢复成初始状态,则将售后待状态变更为退货完成待创建发货单,取消发货单失败则订单状态不作变更
             if (count == 0) {
                 this.rollbackChangeRefund(shipment, orderShipment, refund);
+                Map<String, String> extraMap = refund.getExtra();
+                log.info("=============EXCHANGE_REFUND="+extraMap.get(TradeConstants.EXCHANGE_REFUND));
+                if (extraMap.containsKey(TradeConstants.EXCHANGE_REFUND)&&"Y".equals(extraMap.get(TradeConstants.EXCHANGE_REFUND))) {
+                    //换转退
+                    refundWriteLogic.exchangeToRefund(refund.getId());
+                }
             } else {
                 return cancelShipmentResponse;
             }
@@ -2478,7 +2485,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 更新发货明细
-     * @param shipmentId 发货单ID
      */
     public void updateShipmentItem(Shipment shipment, List<ShipmentItem> shipmentItems) {
         Map<String,String> shipmentExtraMap = shipment.getExtra();

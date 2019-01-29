@@ -170,6 +170,13 @@ public class yyEDIOpenApi {
                         }
                         cancelYYediShipment(shipment);
                         shipmentWiteLogic.rollbackChangeRefund(shipment, orderShipment, refund);
+
+                        Map<String, String> extraMap = refund.getExtra();
+                        log.info("=============EXCHANGE_REFUND="+extraMap.get(TradeConstants.EXCHANGE_REFUND));
+                        if (extraMap.containsKey(TradeConstants.EXCHANGE_REFUND)&&"Y".equals(extraMap.get(TradeConstants.EXCHANGE_REFUND))) {
+                            //换转退
+                            refundWriteLogic.exchangeToRefund(refund.getId());
+                        }
                     }
                     //丢件补发
                     if (Objects.equals(orderShipment.getType(), 3)) {
@@ -201,6 +208,7 @@ public class yyEDIOpenApi {
                 biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
                 compensateBizLogic.createBizAndSendMq(biz, MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
             }
+
         } catch (JsonResponseException e) {
             log.error("yyedi shipment cancel result to pousheng fail,error:{}", Throwables.getStackTraceAsString(e));
             throw new OPServerException(200, e.getMessage());

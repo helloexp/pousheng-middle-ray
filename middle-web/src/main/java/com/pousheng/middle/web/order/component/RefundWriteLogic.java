@@ -661,11 +661,12 @@ public class RefundWriteLogic {
         extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(currentRefundItems));
 
         //判断换货货商品及数量是否有变化
-        Boolean isChangeItemChanged = changeItemIsChanged(refund, submitRefundInfo);
-        if (isChangeItemChanged) {
+        //Boolean isChangeItemChanged = changeItemIsChanged(refund, submitRefundInfo);
+        //if (isChangeItemChanged) {
+
             //完善换货信息
             completeChangeItemInfo(currentRefundItems, refund.getRefundType(), submitRefundInfo, extraMap);
-        }
+
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
 
         //提交动作
@@ -684,7 +685,7 @@ public class RefundWriteLogic {
         //更新退换货信息
         //退款总金额变化
             for (RefundItem refundItem :currentRefundItems){
-                totalRefundAmount = totalRefundAmount+refundItem.getCleanFee()*refundItem.getApplyQuantity();
+                totalRefundAmount = totalRefundAmount+refundItem.getCleanPrice()*refundItem.getApplyQuantity();
             }
             updateRefund.setFee(totalRefundAmount);
         }else{
@@ -1064,7 +1065,6 @@ public class RefundWriteLogic {
             changeRefundItem.setExchangeWarehouseName(changeItem.getExchangeWarehouseName());
             changeRefundItems.add(changeRefundItem);
         });
-
         return changeRefundItems;
 
     }
@@ -1204,7 +1204,7 @@ public class RefundWriteLogic {
     }
 
     //更新发货单商品中的已退货数量
-    private void updateShipmentItemRefundQuantity(String skuCode, Integer refundQuantity, List<ShipmentItem> shipmentItems) {
+    public void updateShipmentItemRefundQuantity(String skuCode, Integer refundQuantity, List<ShipmentItem> shipmentItems) {
         for (ShipmentItem shipmentItem : shipmentItems) {
             if (Objects.equals(skuCode, shipmentItem.getSkuCode())) {
                 shipmentItem.setRefundQuantity((shipmentItem.getRefundQuantity() == null ? 0 : shipmentItem.getRefundQuantity()) + refundQuantity);
@@ -1218,7 +1218,6 @@ public class RefundWriteLogic {
      * @param refundItems
      */
     private void completeSkuAttributeInfo(List<RefundItem> refundItems) {
-
         //获取sku货品条码的集合
         List<String> skuCodes = refundItems.stream().filter(Objects::nonNull).map(RefundItem::getSkuCode).collect(Collectors.toList());
         //根据货品条码查询条码的详细信息
@@ -1936,7 +1935,7 @@ public class RefundWriteLogic {
         List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(refundId);
         //占库发货单没有拒绝状态，只有取消状态
         List<OrderShipment> orderShipmentList = orderShipments.stream().filter(Objects::nonNull)
-                .filter(orderShipment -> !Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CANCELED.getName()))
+                .filter(orderShipment -> !Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()))
                 .collect(Collectors.toList());
         for (OrderShipment orderShipment:orderShipmentList){
             //修改发货单类型，并且同步订单派发中心或者mpos
@@ -2384,5 +2383,42 @@ public class RefundWriteLogic {
             log.error("Shipments.refundShipment shipmentId:{},failed,cause:{}", shipmentId, Throwables.getStackTraceAsString(e));
         }
         return result;
+    }
+
+    /*
+     * 换货单转退货退款单
+     * @param refundId
+     */
+    public Response<Boolean> exchangeToRefund(Long refundId) {
+        if (log.isDebugEnabled()){
+            log.debug("RefundReadLogic exchangeToRefund,refundId {}",refundId);
+        }
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        if (!refundReadLogic.isExchangeTorefund(refund)){
+            return Response.fail("exchange.to.return.status.invalid");
+        }
+        RefundExtra refundExtra  = refundReadLogic.findRefundExtra(refund);
+
+        this.updateStatusLocking(refund,MiddleOrderEvent.AFTER_SALE_EXCHANGE_TO_RETURN.toOrderOperation());
+        Flow flow = flowPicker.pickAfterSales();
+        Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.AFTER_SALE_EXCHANGE_TO_RETURN.toOrderOperation());
+        refundExtra.setCancelShip("true");
+        refundExtra.setExchangeToRefund("true");
+        Map<String,String> extraMap =refund.getExtra();
+        extraMap.put(TradeConstants.REFUND_EXTRA_INFO,JsonMapper.nonEmptyMapper().toJson(refundExtra));
+        refund.setStatus(targetStatus);
+        refund.setExtra(extraMap);
+        refund.setRefundType(MiddleRefundType.AFTER_SALES_RETURN.value());
+        Response<Boolean> updateRes = this.update(refund);
+
+        if (!updateRes.isSuccess()) {
+            log.error("update refund(id:{}) fail,error:{}", refundId, updateRes.getError());
+            return Response.fail(updateRes.getError());
+        }
+        if (log.isDebugEnabled()){
+            log.debug("RefundReadLogic exchangeToRefund,refundId {},result {}",refundId,Boolean.TRUE);
+        }
+        return Response.ok(Boolean.TRUE);
+
     }
 }

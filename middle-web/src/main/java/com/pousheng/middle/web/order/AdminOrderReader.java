@@ -47,11 +47,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-
 import javax.servlet.http.HttpServletRequest;
-
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -165,6 +167,9 @@ public class AdminOrderReader {
             if (middleOrderCriteria.getShopName() != null){
                 params.put("shop_name",middleOrderCriteria.getShopName());
             }
+            if (middleOrderCriteria.getShopId() != null){
+                params.put("shop_id",middleOrderCriteria.getShopId());
+            }
             if (middleOrderCriteria.getMobile() != null){
                 params.put("mobile",middleOrderCriteria.getMobile());
             }
@@ -235,6 +240,13 @@ public class AdminOrderReader {
             log.debug("API-ORDER-DETAIL-START param: id [{}] ",id);
         }
         Response<OrderDetail> response=  orderReadLogic.orderDetail(id);
+        if(response.isSuccess()){
+            OrderDetail orderDetail=response.getResult();
+            //判断是否有权限
+            if(Objects.nonNull(orderDetail.getShopOrder())){
+                checkOrderPer(orderDetail.getShopOrder());
+            }
+        }
         sendLogForTaobao(response,request);
         if(log.isDebugEnabled()){
             log.debug("API-ORDER-DETAIL-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(response));
@@ -400,6 +412,8 @@ public class AdminOrderReader {
             log.debug("API-ORDER-FINDSHIPMENTIDSBYSHOPORDERID-START param: shopOrderId [{}] ",shopOrderId);
         }
         List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
+        //增加权限过滤
+        checkOrderShipPer(orderShipments);
         List<Long> shipmentIds = orderShipments.stream().filter(Objects::nonNull).
                 filter(it->!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).map(OrderShipment::getShipmentId).collect(Collectors.toList());;
         if(log.isDebugEnabled()){
@@ -415,6 +429,23 @@ public class AdminOrderReader {
         ShopOrder shopOrder = response.getResult().getShopOrder();
         if (OpenClientChannel.from(shopOrder.getOutFrom()) == OpenClientChannel.TAOBAO) {
             eventBus.post(new OrderOpEvent(request, UserUtil.getCurrentUser(), shopOrder, "查看订单"));
+        }
+    }
+    private void checkOrderPer(ShopOrder shopOrder){
+        //判断是否有权限
+        if(Objects.nonNull(shopOrder)){
+            if(!permissionUtil.getCurrentUserCanOperateShopIDs().contains(shopOrder.getShopId())){
+                log.error("find shopId no permission");
+                throw new JsonResponseException("permission.check.query.deny");
+            }
+        }
+    }
+    private void checkOrderShipPer(List<OrderShipment> orderShipmentList){
+        for (Iterator<OrderShipment> it = orderShipmentList.iterator(); it.hasNext();) {
+            OrderShipment shipment = (OrderShipment) it.next();
+            if(!permissionUtil.getCurrentUserCanOperateShopIDs().contains(shipment.getShopId())){
+                it.remove();
+            }
         }
     }
  }

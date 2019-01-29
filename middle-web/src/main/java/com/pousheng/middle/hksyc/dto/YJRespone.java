@@ -18,7 +18,7 @@ public class YJRespone implements Serializable {
     /**
      * 错误码,0代表成功
      */
-    private  int error;
+    private  int error = 1;
 
     /**
      * 信息描述

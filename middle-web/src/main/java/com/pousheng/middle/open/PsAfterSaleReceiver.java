@@ -5,7 +5,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
-import com.pousheng.middle.common.utils.component.SkutemplateScrollSearcher;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.RefundExtra;
@@ -27,12 +26,13 @@ import io.terminus.open.client.center.job.aftersale.dto.SkuOfRefund;
 import io.terminus.open.client.common.OpenClientException;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.dto.OpenClientAfterSale;
+import io.terminus.open.client.order.dto.OpenClientAfterSaleItem;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleStatus;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleType;
 import io.terminus.parana.attribute.dto.SkuAttribute;
-import io.terminus.parana.order.dto.RefundList;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.RefundReadService;
 import io.terminus.parana.order.service.RefundWriteService;
 import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -48,6 +48,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static com.pousheng.middle.web.order.JitShipmentController.MAPPER;
 
 /**
  * Created by cp on 7/17/17.
@@ -79,6 +81,8 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     @Autowired
     private ExpressCodeReadService expressCodeReadService;
 
+    @RpcConsumer
+    private RefundReadService refundReadService;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -223,12 +227,12 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                         updateShipmentItemRefundQuantity(skuOfRefund.getSkuCode(), shipmentItem.getQuantity(), shipmentItems);
                     }
                     //更新发货单商品中的已退货数量
-                    //                Map<String, String> shipmentExtraMap = shipment.getExtra();
-                    //                shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
+                    //Map<String, String> shipmentExtraMap = shipment.getExtra();
+                    //shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
                     //如果拉取下来的售后单是已取消，则不需要更新已退货数量
                     if (!Objects.equals(refund.getStatus(), MiddleRefundStatus.CANCELED.getValue())) {
-                        //                    shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
-                        //TODO 更新发货单明细
+                        //shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+                        //更新发货单明细
                         shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
                     }
                 }
@@ -630,5 +634,43 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         }
         return findR.getResult().get();
 
+    }
+
+    /**
+     * 商品是否存在未结束的换货单
+     *
+     * @param shopOrderId 店铺订单id
+     * @param afterSale  售后单
+     * @return
+     */
+    @Override
+    protected boolean existExchanges(long shopOrderId, OpenClientAfterSale afterSale) {
+        List<OpenClientAfterSaleItem> afterSaleItems= afterSale.getOpenClientAfterSaleItems();
+        //判断是否存在换货单（根据订单)
+        Response<List<Refund>> response = refundReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
+        if (!response.isSuccess()) {
+            log.error("find refund failed,shopOrderId is ({})", shopOrderId);
+            throw new ServiceException("order.refund.find.fail");
+        }
+        //换货单 未取消 未删除 未关闭
+        List<Refund> exchanges = response.getResult().stream().filter(Objects::nonNull).
+                filter(t -> Objects.equals(t.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())&&!Objects.equals(t.getStatus(),MiddleRefundStatus.CANCELED.getValue())&&!Objects.equals(t.getStatus(),MiddleRefundStatus.DELETED.getValue())&&!Objects.equals(t.getStatus(),MiddleRefundStatus.EXCHANGE_CLOSED.getValue())).collect(Collectors.toList());
+
+        //新拉的售后单商品
+        List<String> refundOutSkuCodes=Lists.newArrayList();
+        afterSaleItems.stream().forEach(afterSaleItem->{refundOutSkuCodes.add(afterSaleItem.getOpenSkuId());});
+        for (Refund exchange : exchanges) {
+            List<RefundItem> exchangeItems = MAPPER.fromJson(exchange.getExtra().get(TradeConstants.REFUND_ITEM_INFO),
+                    MAPPER.createCollectionType(List.class, RefundItem.class));
+            //已有的换货单商品
+            List<String> exchangeSkuCodes=Lists.newArrayList();
+            exchangeItems.stream().forEach(exchangeItem->{exchangeSkuCodes.add(exchangeItem.getOutSkuCode());});
+            //取交集 如果有交集说明退货商品有未处理的换货单 不拉取该换货单
+            exchangeSkuCodes.retainAll(refundOutSkuCodes);
+            if(exchangeSkuCodes.size()>0){
+                return true;
+            }
+        }
+        return false;
     }
 }

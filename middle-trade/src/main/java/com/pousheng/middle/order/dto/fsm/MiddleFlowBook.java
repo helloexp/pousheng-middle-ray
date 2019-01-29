@@ -380,10 +380,14 @@ public class MiddleFlowBook {
             //在付款后发货前, 买家可申请退款
             //买家已支付 -->申请退款 -> 买家申请退款
 
-            //待处理 -->取消 -> 已取消（不需同步恒康）
+            //待处理 -->取消 -> 已取消
             addTransition(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),
                     MiddleOrderEvent.CANCEL_SHIP.toOrderOperation(),
                     MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue());
+            //待处理（换货占库发货单） -->取消 -> 已取消（不需同步恒康）
+            addTransition(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),
+                    MiddleOrderEvent.CANCEL_OCCUPY_SHIP.toOrderOperation(),
+                    MiddleShipmentsStatus.CANCELED.getValue());
             //恒康同步受理失败->取消-> 已取消
             addTransition(MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),
                     MiddleOrderEvent.CANCEL_SHIP.toOrderOperation(),
@@ -643,7 +647,7 @@ public class MiddleFlowBook {
             //已退货待确认发货-->重新生成-->已退货等待重新生成发货单
             addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue(),
                     MiddleOrderEvent.AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT.toOrderOperation(),
-                    MiddleRefundStatus.PART_RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue());
+                    MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue());
 
             //部分已退货待确认发货-->重新生成-->已退货等待重新生成发货单
             addTransition(MiddleRefundStatus.PART_RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue(),
@@ -654,6 +658,27 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue(),
                     MiddleOrderEvent.AFTER_SALE_ECHANGE_PART_DONE_RETURN.toOrderOperation(),
                     MiddleRefundStatus.PART_RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue());
+
+            // ============ 天猫单子换转退 ==========
+            //已退货待创建发货->换转退->已退货待退款
+            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue(),
+                    MiddleOrderEvent.AFTER_SALE_EXCHANGE_TO_RETURN.toOrderOperation(),
+                    MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue());
+            //已退货待确认发货->换转退->已退货待退款
+            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue(),
+                    MiddleOrderEvent.AFTER_SALE_EXCHANGE_TO_RETURN.toOrderOperation(),
+                    MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue());
+
+            //部分退货完成待确认发货->换转退->已退货待退款
+            addTransition(MiddleRefundStatus.PART_RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue(),
+                    MiddleOrderEvent.AFTER_SALE_EXCHANGE_TO_RETURN.toOrderOperation(),
+                    MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue());
+
+            //同步换货成功-待退货 -->换转退 -->同步退货成功-待退货
+            addTransition(MiddleRefundStatus.CHANGE_SYNC_HK_SUCCESS.getValue(),
+                    MiddleOrderEvent.AFTER_SALE_EXCHANGE_TO_RETURN.toOrderOperation(),
+                    MiddleRefundStatus.RETURN_SYNC_HK_SUCCESS.getValue());
+
             // ============ 公共操作 ==========
 
 

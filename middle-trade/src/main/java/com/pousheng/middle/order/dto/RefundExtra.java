@@ -59,6 +59,8 @@ public class RefundExtra implements Serializable{
     private String orderType;
     //换货取消发货单的标记
     private String cancelShip;
+    //换转退标记
+    private String exchangeToRefund;
     //订单派发中心订单号
     private String yyediRefundId;
 

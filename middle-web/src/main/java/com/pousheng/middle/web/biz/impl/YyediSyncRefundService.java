@@ -4,7 +4,6 @@
 package com.pousheng.middle.web.biz.impl;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
@@ -26,13 +25,16 @@ import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
+import io.terminus.open.client.center.AfterSaleExchangeServiceRegistryCenter;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.order.service.OpenClientAfterSaleExchangeService;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -71,6 +73,12 @@ public class YyediSyncRefundService implements CompensateBizService {
     private SyncVIPLogic syncVIPLogic;
     @Autowired
     private CompensateBizLogic compensateBizLogic;
+
+    @Autowired
+    private AfterSaleExchangeServiceRegistryCenter afterSaleExchangeServiceRegistryCenter;
+
+    @Autowired
+    private OpenShopCacher openShopCacher;
 
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
@@ -167,6 +175,22 @@ public class YyediSyncRefundService implements CompensateBizService {
                 return;
             }
         }
+        //如果是天猫换货单 需要通知天猫
+        OpenShop openShop = openShopCacher.findById(refund.getShopId());//根据店铺id查询店铺
+        Map<String, String> extraMap = openShop.getExtra();
+        if (Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())&&Objects.equals(openShop.getChannel(), MiddleChannel.TAOBAO.getValue())&&extraMap.containsKey(TradeConstants.EXCHANGE_PULL) && Objects.equals(extraMap.get(TradeConstants.EXCHANGE_PULL), "Y")) {
+            //卖家确认收货，等待卖家发货调用 tmall.exchange.returngoods.agree 更改店 铺换货状态为当前状态
+            OpenClientAfterSaleExchangeService afterSaleExchangeService = afterSaleExchangeServiceRegistryCenter.getAfterSaleExchangeService(openShop.getChannel());
+            String outerAfterSaleId = refundReadLogic.getOutafterSaleIdTaobao(refund.getOutId());
+            Response<Boolean> result = afterSaleExchangeService.sellerConfirmReceipt(openShop.getId(),outerAfterSaleId);
+            if (!result.isSuccess()) {
+                log.error("fail to notice taobao refund order  (id:{})  ", refund.getId());
+                Map<String, Object> param2 = Maps.newHashMap();
+                param2.put("refundId", refund.getId());
+                autoCompensateLogic.createAutoCompensationTask(param2, TradeConstants.FAIL_REFUND_TO_TMALL, result.getError());
+                return;
+            }
+        }
     }
 
     /**
@@ -215,7 +239,7 @@ public class YyediSyncRefundService implements CompensateBizService {
 
         if (count>0){
             //refundChangeItemInfo里面参数alreadyHandleNumber=0，状态变更为部分退货完成待确认发货
-            refundWriteLogic.updateStatus(refund, MiddleOrderEvent.AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT.toOrderOperation());
+            refundWriteLogic.updateStatus(refund, MiddleOrderEvent.AFTER_SALE_ECHANGE_PART_DONE_RETURN.toOrderOperation());
         }
     }
 

@@ -764,7 +764,7 @@ public class AdminShops {
         Shop exist = rExist.getResult();
         //同步电商
         syncParanaFrozenShop(exist.getOuterId(),exist.getBusinessId());
-        RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
+        //RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
 
         String shopInfo = Joiner.on("_").join(Lists.newArrayList(exist.getOuterId(),exist.getBusinessId()));
         WarehouseDTO warehouse = warehouseCacher.findByShopInfo(shopInfo);

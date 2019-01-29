@@ -358,4 +358,6 @@ public class TradeConstants {
      * 通知天猫换货单发货信息失败（仓库发出换货商品）
      */
     public static final Integer FAIL_REFUND_SHIP_TO_TMALL= 73;
+
+    public static final String IS_CUSTOMER_PICK_UP = "is_customer_pick_up";
 }

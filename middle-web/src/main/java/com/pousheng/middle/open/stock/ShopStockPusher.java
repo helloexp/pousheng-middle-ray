@@ -25,6 +25,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -138,6 +140,7 @@ public class ShopStockPusher {
 
                     //判断当前skuCode是否在当前店铺卖，如果不卖则跳过
                     List<ItemMapping> itemMappings = itemMappingCacher.findBySkuCodeAndShopId(skuCode, shopId);
+                    Collections.sort(itemMappings, (ItemMapping itemMapping1, ItemMapping itemMapping2)->itemMapping2.getCreatedAt().compareTo(itemMapping1.getCreatedAt()));
                     if (CollectionUtils.isEmpty(itemMappings)) {
                         log.warn("item mapping not found by skuCode={},openShopId={}", skuCode, shopId);
                         return;

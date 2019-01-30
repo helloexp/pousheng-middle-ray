@@ -72,20 +72,13 @@ public class ShopSkuSupplyRules {
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
 
-    @Autowired
-    private  ShopSkuExcelComponent excelComponent;
+
 
     /**
      * 导入模板
      */
     @RequestMapping(value = "/import", method = RequestMethod.POST)
     public void importExcel(@RequestBody SkuStockRuleImportInfo info) {
-        try {
-            excelComponent.replaceMaterialIdToBarcodeInExcel(info);
-        } catch (Exception e) {
-            log.error("fail to replace material_id to barcode in excel, cause:{}", Throwables.getStackTraceAsString(e));
-        }
-
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
         biz.setBizType(PoushengCompensateBizType.IMPORT_ITEM_SUPPLY_RULE.toString());
         biz.setContext(mapper.toJson(info));

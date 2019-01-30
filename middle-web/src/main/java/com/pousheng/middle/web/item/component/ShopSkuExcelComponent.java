@@ -79,10 +79,15 @@ public class ShopSkuExcelComponent {
     }
 
     private List<BarcodeResult> getBarcode(List<String> materialIds) {
-        String url = psMiddleSystemGateway + "/middle-system-api/v1/skutemplate/barcode?material_ids=" + String.join(",", materialIds);
+        String url = psMiddleSystemGateway + "/middle-system-api/v1/material/barcode?material_ids=" + String.join(",", materialIds);
+        //String url = psMiddleSystemGateway + "/middle-system-api/v1/skutemplate/barcode?material_ids=" + String.join(",", materialIds);
+
+        log.info("material_ids: {}", String.join(",", materialIds));
 
         String resp = HttpRequest.get(url).header("access-key", psMiddleSystemAccesskey).body();
         BarcodeMapping barcodes =  JsonMapper.nonDefaultMapper().fromJson(resp, BarcodeMapping.class);
+
+        log.info("done.....");
 
         return barcodes.result;
     }

@@ -2,6 +2,7 @@ package com.pousheng.middle.web.biz.impl;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
@@ -18,6 +19,7 @@ import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.export.UploadFileComponent;
+import com.pousheng.middle.web.item.component.ShopSkuExcelComponent;
 import com.pousheng.middle.web.item.component.ShopSkuSupplyRuleComponent;
 import com.pousheng.middle.web.shop.component.OpenShopLogic;
 import com.pousheng.middle.web.utils.HandlerFileUtil;
@@ -111,8 +113,19 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
         log.info("import item supply rule end ....,poushengCompensateBiz is {}", poushengCompensateBiz);
     }
 
+    @Autowired
+    private ShopSkuExcelComponent excelComponent;
+
     protected PoushengCompensateBiz handle(PoushengCompensateBiz poushengCompensateBiz) {
         SkuStockRuleImportInfo info = JsonMapper.nonEmptyMapper().fromJson(poushengCompensateBiz.getContext(), SkuStockRuleImportInfo.class);
+
+        try {
+            excelComponent.replaceMaterialIdToBarcodeInExcel(info);
+        } catch (Exception e) {
+            log.error("fail to replace material_id to barcode in excel, cause:{}", Throwables.getStackTraceAsString(e));
+        }
+
+
         String url = info.getFilePath();
         ExcelExportHelper<ItemSupplyRuleAbnormalRecord> helper = ExcelExportHelper.newExportHelper(ItemSupplyRuleAbnormalRecord.class);
         List<String[]> list = HandlerFileUtil.getInstance().handlerExcel(url);

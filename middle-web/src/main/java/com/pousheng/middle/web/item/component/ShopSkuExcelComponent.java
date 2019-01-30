@@ -81,6 +81,8 @@ public class ShopSkuExcelComponent {
     private List<BarcodeResult> getBarcode(List<String> materialIds) {
         String url = psMiddleSystemGateway + "/middle-system-api/v1/skutemplate/barcode?material_ids=" + String.join(",", materialIds);
 
+        log.error("material_ids: {}", String.join(",", materialIds));
+
         String resp = HttpRequest.get(url).header("access-key", psMiddleSystemAccesskey).body();
         BarcodeMapping barcodes =  JsonMapper.nonDefaultMapper().fromJson(resp, BarcodeMapping.class);
 

@@ -568,6 +568,17 @@ public class AdminOrderWriter {
         //获取有效子单
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
         List<Long> skuIds = skuOrders.stream().filter(Objects::nonNull).filter(skuOrder -> !Objects.equals(skuOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue())).map(SkuOrder::getId).collect(Collectors.toList());
+
+        //如果子单已全部取消则整单状态直接更新为已取消
+        if(skuIds.isEmpty()) {
+            Response<Boolean> resp = orderWriteService.updateOrderStatus(id,OrderLevel.SHOP, MiddleOrderStatus.CANCEL.getValue());
+            if (!resp.isSuccess()) {
+                log.error("shop order cancel failed,shopOrderId is {},caused by {}", id, resp.getError());
+                throw new JsonResponseException("cancel.shop.order.failed");
+            }
+            return Response.ok(Boolean.TRUE);
+        }
+
         //更新订单状态
         Response<List<Long>> r = orderWriteService.batchSkuOrderStatusChanged(skuIds, MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.CANCEL.getValue());
         if (!r.isSuccess()) {

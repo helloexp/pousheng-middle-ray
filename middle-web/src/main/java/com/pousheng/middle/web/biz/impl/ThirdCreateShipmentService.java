@@ -121,6 +121,12 @@ public class ThirdCreateShipmentService implements CompensateBizService {
                 return;
             }
         }
+        //京东订单如果还没标记是否自提是不能生成发货单的
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())) {
+            if (!shopOrder.getExtra().containsKey("is_customer_pick_up") || Objects.equals(shopOrder.getExtra().get("is_customer_pick_up"), "true")) {
+                return;
+            }
+        }
         String key = MessageFormat.format(CacheConsts.ShipmentCacheKeys.SHIPPING_LOCK_KEY_PATTERN,
             String.valueOf(shopOrder.getOutId()));
         String ticket = UUID.randomUUID().toString();

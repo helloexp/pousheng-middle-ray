@@ -31,6 +31,10 @@ public class TradeConstants {
     public static final String SHIPMENT_ITEM_INFO = "shipmentItemInfo";
     //发货单扩展信息
     public static final String SHIPMENT_EXTRA_INFO = "shipmentExtraInfo";
+    //是否与门店沟通
+    public static final String HAS_CHECK_WITH_STORE = "hasCheckWithStore";
+    //沟通说明
+    public static final String CHECK_WITH_STORE_DESC = "checkWithStoreDesc";
 
     //发货单等待处理结果标记位
     public static final String WAIT_CANCEL_RESULT = "waitCancelResult";
@@ -118,6 +122,13 @@ public class TradeConstants {
      * see RefundSource
      */
     public static final String REFUND_SOURCE = "refundSource";
+
+    /**
+     * 发货单 换转退标记
+     * see RefundSource
+     */
+    public static final String EXCHANGE_REFUND = "exchangeToRefund";
+
     /**
      * 是否是预售订单
      */
@@ -337,4 +348,14 @@ public class TradeConstants {
      * 通知vip退货单信息失败
      */
     public static final Integer FAIL_REFUND_TO_VIP= 71;
+
+    /**
+     * 通知天猫换货单信息失败（仓库收到退货）
+     */
+    public static final Integer FAIL_REFUND_TO_TMALL= 72;
+
+    /**
+     * 通知天猫换货单发货信息失败（仓库发出换货商品）
+     */
+    public static final Integer FAIL_REFUND_SHIP_TO_TMALL= 73;
 }

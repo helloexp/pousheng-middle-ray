@@ -1,18 +1,19 @@
 package com.pousheng.middle.web.order.component;
 
-import com.google.common.base.Throwables;
+import com.alibaba.dubbo.common.utils.StringUtils;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.RefundExtra;
+import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
-import com.pousheng.middle.order.enums.MiddleRefundStatus;
-import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
-import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
-import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.enums.*;
+import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
@@ -20,6 +21,11 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.AfterSaleExchangeServiceRegistryCenter;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.order.dto.OpenClientOrderShipment;
+import io.terminus.open.client.order.service.OpenClientAfterSaleExchangeService;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -49,7 +55,13 @@ public class HKShipmentDoneLogic {
     private MiddleOrderFlowPicker flowPicker;
 
     @Autowired
+    private AfterSaleExchangeServiceRegistryCenter afterSaleExchangeServiceRegistryCenter;
+
+    @Autowired
     private EcpOrderLogic ecpOrderLogic;
+
+    @Autowired
+    private OpenShopCacher openShopCacher;
 
     @Autowired
     private OrderShipmentReadService orderShipmentReadService;
@@ -72,6 +84,8 @@ public class HKShipmentDoneLogic {
     private CompensateBizLogic compensateBizLogic;
     @RpcConsumer
     private MiddleOrderWriteService middleOrderWriteService;
+    @Autowired
+    private AutoCompensateLogic autoCompensateLogic;
 
     public void doneShipment(Shipment shipment) {
         log.info("HK SHIPMENT DONE LISTENER start, shipmentId is {},shipmentType is {}", shipment.getId(), shipment.getType());
@@ -133,6 +147,7 @@ public class HKShipmentDoneLogic {
             //如果发货单已经全部发货完成,需要更新refund表的状态为待确认收货,rufund表的状态为待收货完成,C
             Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
             OrderShipment orderShipment = orderShipmentResponse.getResult();
+            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
             long afterSaleOrderId = orderShipment.getAfterSaleOrderId();
             List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(afterSaleOrderId);
             //获取该售后单下所有的发
@@ -168,6 +183,47 @@ public class HKShipmentDoneLogic {
                         log.error("update refund(id:{}) fail,error:{}", refund, updateRefundRes.getError());
                         throw new JsonResponseException("update.refund.error");
                     }
+                    //天猫换货单 需要反馈物流发货，调用 tmall.exchange.consigngoods
+                    OpenShop openShop = openShopCacher.findById(orderShipment.getShopId());//根据店铺id查询店铺
+                    Map<String, String> extraMap = openShop.getExtra();
+                    if (Objects.equals(openShop.getChannel(), MiddleChannel.TAOBAO.getValue())&&extraMap.containsKey(TradeConstants.EXCHANGE_PULL) && Objects.equals(extraMap.get(TradeConstants.EXCHANGE_PULL), "Y")) {
+
+                        OpenClientAfterSaleExchangeService afterSaleExchangeService = afterSaleExchangeServiceRegistryCenter.getAfterSaleExchangeService(openShop.getChannel());
+                        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+                        //运单号
+                        String shipmentSerialNo = StringUtils.isEmpty(shipmentExtra.getShipmentSerialNo()) ? "" : Splitter.on(",").omitEmptyStrings().trimResults().splitToList(shipmentExtra.getShipmentSerialNo()).get(0);
+                        //获取快递信息
+                        ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
+                        String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
+                        OpenClientOrderShipment openOrderShipment = new OpenClientOrderShipment();
+                        openOrderShipment.setOuterOrderId(refund.getOutId().substring(refund.getOutId().indexOf("_")+1));
+                        openOrderShipment.setLogisticsType("200");//100表示平邮，200表示快递
+                        openOrderShipment.setLogisticsCompany(expressCompanyCode);
+                        openOrderShipment.setWaybill(shipmentSerialNo);
+                        List<String> outerItemOrderIds = Lists.newArrayList();
+                        List<String> outerSkuCodes = Lists.newArrayList();
+                        for (ShipmentItem shipmentItem : shipmentItems) {
+                            outerSkuCodes.add(shipmentItem.getOutSkuCode());
+                            if (!StringUtils.isEmpty(shipmentItem.getSkuOutId())) {
+                                outerItemOrderIds.add(shipmentItem.getSkuOutId());
+                            }
+                        }
+                        openOrderShipment.setOuterSkuCodes(outerSkuCodes);
+                        openOrderShipment.setOuterItemOrderIds(outerItemOrderIds);
+                        log.info("notice taobao refund order ship (id:{}) shopId (shopId:{}) openOrderShipment (openOrderShipment:{})",refund.getId(),openShop.getId(),mapper.toJson(openOrderShipment));
+                        Response<Boolean> result = afterSaleExchangeService.ship(openShop.getId(),openOrderShipment);
+                        log.info("notice taobao refund order ship result (result:{})",mapper.toJson(result));
+                        if (!result.isSuccess()) {
+                            log.error("fail to notice taobao refund order ship (id:{})  ", refund.getId());
+                            Map<String, Object> param2 = Maps.newHashMap();
+                            param2.put("openShopId", openShop.getId());
+                            param2.put("channel", openShop.getChannel());
+                            param2.put("openOrderShipment", openOrderShipment);
+                            autoCompensateLogic.createAutoCompensationTask(param2, TradeConstants.FAIL_REFUND_SHIP_TO_TMALL, result.getError());
+                        }
+                    }
+
                 }
             }
             //丢件补发类型

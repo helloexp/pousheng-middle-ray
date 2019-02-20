@@ -7,9 +7,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.*;
-import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
@@ -31,28 +29,23 @@ import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
+import io.terminus.open.client.center.AfterSaleExchangeServiceRegistryCenter;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.order.dto.OpenClientAfterSale;
+import io.terminus.open.client.order.enums.OpenClientAfterSaleStatus;
+import io.terminus.open.client.order.service.OpenClientAfterSaleExchangeService;
+import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.common.exception.InvalidException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderRefund;
-import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShipmentItem;
-import io.terminus.parana.order.model.ShopOrder;
-import lombok.Value;
-import io.terminus.parana.order.enums.AfterSaleOrderType;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
-import io.terminus.parana.order.enums.ShipmentType;
-import io.terminus.parana.attribute.dto.SkuAttribute;
-import io.terminus.parana.order.dto.fsm.Flow;
-import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
-import org.omg.CORBA.OBJ_ADAPTER;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -92,6 +85,8 @@ public class Refunds {
     private MiddleRefundWriteService middleRefundWriteService;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
+    private AfterSaleExchangeServiceRegistryCenter afterSaleExchangeServiceRegistryCenter;
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
     @org.springframework.beans.factory.annotation.Value("${skx.open.shop.id}")
@@ -140,6 +135,10 @@ public class Refunds {
         MiddleRefundDetail detail = makeRefundDetail(refundId);
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-DETAIL-END param: refundId [{}] ,resp: [{}]", refundId,JsonMapper.nonEmptyMapper().toJson(detail));
+        }
+        //判断是否有权限
+        if(Objects.nonNull(detail.getRefund())){
+            checkPer(detail.getRefund().getShopId());
         }
         return detail;
     }
@@ -926,6 +925,9 @@ public class Refunds {
                 log.debug("API-REFUND-FINDAFTERSALEIDS-START param: code [{}]", code);
             }
             ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(code);
+            if(Objects.nonNull(shopOrder)){
+                checkPer(shopOrder.getShopId());
+            }
             List<MiddleAfterSaleInfo> middleAfterSaleInfos = Lists.newArrayList();
             //查询售后单信息
             List<Refund> refunds = refundReadLogic.findRefundsByOrderCode(code);
@@ -1121,6 +1123,98 @@ public class Refunds {
         refundWriteLogic.expressFix();
     }
 
+    /**
+     * 换转退 换货改退货取消售后单
+     * @param id 售后单id
+     */
+    @RequestMapping(value = "/api/refund/{id}/exchange/to/refund",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("换货改退货")
+    public Response<Boolean> exchangeToRefund(@PathVariable("id")@OperationLogParam Long id){
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-CANCELREFUNDFORCHANGE-START param: id [{}]", id);
+        }
+        Refund originRefund = refundReadLogic.findRefundById(id);
+        OpenShop openShop = orderReadLogic.findOpenShopByShopId(originRefund.getShopId());
+        Map<String, String> openShopExtraMap = openShop.getExtra();
+        RefundSource refundSource = refundReadLogic.findRefundSource(originRefund);
+        if (!Objects.equals(refundSource.value(), RefundSource.THIRD.value())) {
+            log.error("refund(id:{}) is manual party refund so cant not exchange to return", originRefund.getId());
+            throw new JsonResponseException("manual.party.refund.can.not.exchange.to.return");
+        }
+        if(!Objects.equals(openShop.getChannel(), MiddleChannel.TAOBAO.getValue())){
+            log.error("openshop(channel:{}) is not taobao so cant not exchange to return", openShop.getChannel());
+            throw new JsonResponseException("not.taobao.refund.can.not.exchange.to.return");
+        }
+        if(!openShopExtraMap.containsKey(TradeConstants.EXCHANGE_PULL) || !Objects.equals(openShopExtraMap.get(TradeConstants.EXCHANGE_PULL), "Y")){
+            log.error("openshop(id:{}) is not support exchange pull so cant not exchange to return", openShop.getId());
+            throw new JsonResponseException("not.support.exchange.pull.can.not.exchange.to.return");
+        }
+        //查询天猫单个换货单详情
+        OpenClientAfterSaleExchangeService afterSaleExchangeService = afterSaleExchangeServiceRegistryCenter.getAfterSaleExchangeService(openShop.getChannel());
+        String outerId = originRefund.getOutId().substring(originRefund.getOutId().indexOf("_")+1);
+        Response<OpenClientAfterSale> openClientAfterSaleResponse = afterSaleExchangeService.findByAfterSaleId(originRefund.getShopId(),outerId);
+        if (!openClientAfterSaleResponse.isSuccess()) {
+            log.error("sync after sale by open shop id:{} outer after after id:{} fail,error:{}", originRefund.getShopId(), originRefund.getOutId(), openClientAfterSaleResponse.getError());
+            throw new JsonResponseException(openClientAfterSaleResponse.getError());
+        }
+        OpenClientAfterSale openClientAfterSale = openClientAfterSaleResponse.getResult();
+
+        if(Objects.equals(originRefund.getStatus(),MiddleRefundStatus.CHANGE_SYNC_HK_SUCCESS.getValue())&&!Objects.equals(openClientAfterSale.getStatus(), OpenClientAfterSaleStatus.EXCHANGE_CLOSED)){
+            throw new JsonResponseException("tmall.refund.not.close");
+        }
+        if (!Objects.equals(openClientAfterSale.getStatus(), OpenClientAfterSaleStatus.EXCHANGE_TO_REFUND)&&!Objects.equals(openClientAfterSale.getStatus(), OpenClientAfterSaleStatus.EXCHANGE_CLOSED)) {//天猫换货状态不是 换货关闭，转退货退款（请退款）
+            throw new JsonResponseException("tmall.refund.status.not.exchange.to.refund");
+        }
+        //售后单待发货
+        if(Objects.equals(originRefund.getStatus(),MiddleRefundStatus.WAIT_SHIP.getValue())){
+            List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(id);
+            List<OrderShipment> cancelIngList = orderShipments.stream().filter(Objects::nonNull)
+                    .filter(orderShipment -> Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue()))
+                    .collect(Collectors.toList());//取消中的
+            if(cancelIngList.size()>0){//发货单取消中
+                throw new JsonResponseException("shipment.in.deal");
+            }
+            //售后单上记录换转退标记 便于后面做换转退操作
+            Map<String, String> extraMap = originRefund.getExtra();
+            extraMap.put(TradeConstants.EXCHANGE_REFUND,"Y");
+            Refund update = new Refund();
+            update.setId(originRefund.getId());
+            update.setExtra(extraMap);
+            Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
+            if (!updateExtraRes.isSuccess()) {
+                log.error("update refund extraMap(refundId:{}) fail,error:{}", originRefund.getId(),updateExtraRes.getError());
+            }
+            List<OrderShipment> orderShipmentList = orderShipments.stream().filter(Objects::nonNull)
+                    .filter(orderShipment -> !Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()))
+                    .collect(Collectors.toList());
+            for (OrderShipment orderShipment:orderShipmentList){
+                log.info("try to cancel shipemnt, shipmentId is {}", orderShipment.getShipmentId());
+                Response<Boolean> response = shipmentWiteLogic.rollbackShipment(orderShipment.getShipmentId());
+                if (!response.isSuccess()) {
+                    log.info("try to cancel shipment, shipmentId is {}", orderShipment.getShipmentId());
+                    throw new JsonResponseException(response.getError());
+                }
+            }
+
+            return Response.ok(Boolean.TRUE);
+        }
+        if (refundReadLogic.isExchangeTorefund(originRefund)){
+            //如果允许，则将占库发货单取消即可
+            refundWriteLogic.cancelAfterSaleOccupyShipments(id);
+            //换转退
+            Response<Boolean> response = refundWriteLogic.exchangeToRefund(id);
+            if (!response.isSuccess()) {
+                log.info("try to exchange to refund fail, refundId is {}",id);
+                throw new JsonResponseException(response.getError());
+            }
+        }else{
+            throw new JsonResponseException("exchange.to.return.status.invalid");
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-CANCELREFUNDFORCHANGE-END param: id [{}]", id);
+        }
+        return Response.ok(Boolean.TRUE);
+    }
 
 
     //编辑售后单
@@ -1268,5 +1362,14 @@ public class Refunds {
         return Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value());
     }
 
-
+    /**
+     * 校验权限
+     * @param shopId
+     */
+    private void checkPer(Long shopId){
+        if(!permissionUtil.getCurrentUserCanOperateShopIDs().contains(shopId)){
+            log.error("find shopId no permission");
+            throw new JsonResponseException("permission.check.query.deny");
+        }
+    }
 }

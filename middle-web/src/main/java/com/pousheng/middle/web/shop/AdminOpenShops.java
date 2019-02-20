@@ -194,6 +194,10 @@ public class AdminOpenShops {
                 // 拉取映射关系
                 jsonMap.put(TradeConstants.IS_TAOBAO_SHOP, jsonMap.get(TradeConstants.IS_TAOBAO_SHOP));
             }
+            if (jsonMap.containsKey(TradeConstants.EXCHANGE_PULL)) {
+                // 换货拉取
+                jsonMap.put(TradeConstants.EXCHANGE_PULL, jsonMap.get(TradeConstants.EXCHANGE_PULL));
+            }
         }
         openShop.setExtra(jsonMap);
     }

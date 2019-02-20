@@ -289,6 +289,17 @@ public class RefundReadLogic {
         Integer sourceStatus = refund.getStatus();
         return afterSaleFlow.operationAllowed(sourceStatus, MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
     }
+    /**
+     * 判断售后换货单是否可以换转退
+     *
+     * @param refund 售后单
+     * @return 可以换转退(true), 不可以换转退(false)
+     */
+    public boolean isExchangeTorefund(Refund refund) {
+        Flow afterSaleFlow = flowPicker.pickAfterSales();
+        Integer sourceStatus = refund.getStatus();
+        return afterSaleFlow.operationAllowed(sourceStatus, MiddleOrderEvent.AFTER_SALE_EXCHANGE_TO_RETURN.toOrderOperation());
+    }
 
     /**
      * 返回最多可退金额

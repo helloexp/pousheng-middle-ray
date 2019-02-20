@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.job;
 
+import com.alibaba.fastjson.JSON;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
@@ -28,6 +29,11 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.AfterSaleExchangeServiceRegistryCenter;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.order.dto.OpenClientOrderShipment;
+import io.terminus.open.client.order.service.OpenClientAfterSaleExchangeService;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.shop.model.Shop;
@@ -113,6 +119,11 @@ public class MposJob {
 
     @Autowired
     private HKShipmentDoneLogic hkShipmentDoneLogic;
+
+    private OpenShopCacher openShopCacher;
+
+    @Autowired
+    private AfterSaleExchangeServiceRegistryCenter afterSaleExchangeServiceRegistryCenter;
 
 
     private final ExecutorService executorService;
@@ -393,6 +404,38 @@ public class MposJob {
                             Map<String, Long> param = mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
                             Refund refund = refundReadLogic.findRefundById(param.get("refundId"));
                             Response<Boolean> response = syncVIPLogic.confirmReturnResult(refund);
+                            if (response.isSuccess()) {
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            } else {
+                                autoCompensation.getExtra().put("error", response.getError());
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
+                            }
+                        }
+                    }
+                    if (Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_REFUND_TO_TMALL)) {//货换收到退货商品通知天猫
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Map<String, Long> param = mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
+                            Refund refund = refundReadLogic.findRefundById(param.get("refundId"));
+                            OpenShop openShop = openShopCacher.findById(refund.getShopId());//根据店铺id查询店铺
+                            String outerAfterSaleId = refundReadLogic.getOutafterSaleIdTaobao(refund.getOutId());
+                            OpenClientAfterSaleExchangeService afterSaleExchangeService = afterSaleExchangeServiceRegistryCenter.getAfterSaleExchangeService(openShop.getChannel());
+                            Response<Boolean> response = afterSaleExchangeService.sellerConfirmReceipt(openShop.getId(),outerAfterSaleId);
+                            if (response.isSuccess()) {
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            } else {
+                                autoCompensation.getExtra().put("error", response.getError());
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
+                            }
+                        }
+                    }
+                    if (Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_REFUND_SHIP_TO_TMALL)) {//换货发货通知天猫
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Map<String, Object> param = mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Object.class));
+                            OpenClientOrderShipment openClientOrderShipment = JSON.parseObject(JSON.toJSONString(param.get("openOrderShipment")),OpenClientOrderShipment.class);
+                            OpenClientAfterSaleExchangeService afterSaleExchangeService = afterSaleExchangeServiceRegistryCenter.getAfterSaleExchangeService(String.valueOf(param.get("channel")));
+                            Response<Boolean> response = afterSaleExchangeService.ship(Long.valueOf(String.valueOf(param.get("openShopId"))),openClientOrderShipment);
                             if (response.isSuccess()) {
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
                             } else {

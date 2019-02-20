@@ -126,7 +126,7 @@ public class RocketMqProducerService {
 
                 @Override
                 public void onException(Throwable e) {
-                    log.error("ending message to MQ failed,msg {}", message);
+                    log.error("ending message to MQ failed,msg {}", Throwables.getStackTraceAsString(e));
                 }
             };
             //消息发送

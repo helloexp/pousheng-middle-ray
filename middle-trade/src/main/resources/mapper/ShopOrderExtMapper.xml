@@ -104,6 +104,7 @@
 		<if test="dtStart != null">AND <![CDATA[created_at >= #{dtStart}]]> </if>
         <if test="dtEnd != null">AND <![CDATA[created_at <= #{dtEnd}]]> </if>
         <if test="shop_name != null">AND <![CDATA[shop_name = #{shop_name}]]> </if>
+        <if test="shop_id != null">AND <![CDATA[shop_id = #{shop_id}]]> </if>
         <if test="out_id != null">AND <![CDATA[out_id = #{out_id}]]> </if>
         <if test="buyer_name != null">AND <![CDATA[buyer_name = #{buyer_name}]]> </if>
         <if test="order_code != null">AND <![CDATA[order_code = #{order_code}]]> </if>
@@ -127,6 +128,7 @@
 		<if test="dtStart != null">AND <![CDATA[created_at >= #{dtStart}]]> </if>
         <if test="dtEnd != null">AND <![CDATA[created_at <= #{dtEnd}]]> </if>
         <if test="shop_name != null">AND <![CDATA[shop_name = #{shop_name}]]> </if>
+        <if test="shop_id != null">AND <![CDATA[shop_id = #{shop_id}]]> </if>
         <if test="out_id != null">AND <![CDATA[out_id = #{out_id}]]> </if>
         <if test="buyer_name != null">AND <![CDATA[buyer_name = #{buyer_name}]]> </if>
         <if test="order_code != null">AND <![CDATA[order_code = #{order_code}]]> </if>

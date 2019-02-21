@@ -136,10 +136,6 @@ public class Refunds {
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-DETAIL-END param: refundId [{}] ,resp: [{}]", refundId,JsonMapper.nonEmptyMapper().toJson(detail));
         }
-        //判断是否有权限
-        if(Objects.nonNull(detail.getRefund())){
-            checkPer(detail.getRefund().getShopId());
-        }
         return detail;
     }
 
@@ -925,9 +921,6 @@ public class Refunds {
                 log.debug("API-REFUND-FINDAFTERSALEIDS-START param: code [{}]", code);
             }
             ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(code);
-            if(Objects.nonNull(shopOrder)){
-                checkPer(shopOrder.getShopId());
-            }
             List<MiddleAfterSaleInfo> middleAfterSaleInfos = Lists.newArrayList();
             //查询售后单信息
             List<Refund> refunds = refundReadLogic.findRefundsByOrderCode(code);
@@ -1362,14 +1355,5 @@ public class Refunds {
         return Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value());
     }
 
-    /**
-     * 校验权限
-     * @param shopId
-     */
-    private void checkPer(Long shopId){
-        if(!permissionUtil.getCurrentUserCanOperateShopIDs().contains(shopId)){
-            log.error("find shopId no permission");
-            throw new JsonResponseException("permission.check.query.deny");
-        }
-    }
+
 }

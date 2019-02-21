@@ -29,7 +29,6 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
-import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.applog.annotation.LogMe;
@@ -108,8 +107,7 @@ public class AdminOrderWriter {
     @Autowired
     private ShopOrderReadService shopOrderReadService;
 
-    @Autowired
-    private PermissionUtil permissionUtil;
+
     @Value("${logging.path}")
     private String filePath;
 
@@ -695,15 +693,8 @@ public class AdminOrderWriter {
         if (r.getResult().isEmpty()) {
             return r;
         } else {
-            List<Refund> refunds = r.getResult();
-            for (Iterator<Refund> it = refunds.iterator(); it.hasNext();) {
-                Refund refund = (Refund) it.next();
-                if(!permissionUtil.getCurrentUserCanOperateShopIDs().contains(refund.getShopId())){
-                    it.remove();
-                }
-            }
-            List<Refund> refundList = refunds.stream().filter(refund -> !Objects.equals(refund.getRefundType(), MiddleRefundType.ON_SALES_REFUND.value())).collect(Collectors.toList());
-            return Response.ok(refundList);
+            List<Refund> refunds = r.getResult().stream().filter(refund -> !Objects.equals(refund.getRefundType(), MiddleRefundType.ON_SALES_REFUND.value())).collect(Collectors.toList());
+            return Response.ok(refunds);
         }
 
     }

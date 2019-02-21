@@ -242,10 +242,6 @@ public class AdminOrderReader {
         Response<OrderDetail> response=  orderReadLogic.orderDetail(id);
         if(response.isSuccess()){
             OrderDetail orderDetail=response.getResult();
-            //判断是否有权限
-            if(Objects.nonNull(orderDetail.getShopOrder())){
-                checkOrderPer(orderDetail.getShopOrder());
-            }
         }
         sendLogForTaobao(response,request);
         if(log.isDebugEnabled()){
@@ -412,8 +408,6 @@ public class AdminOrderReader {
             log.debug("API-ORDER-FINDSHIPMENTIDSBYSHOPORDERID-START param: shopOrderId [{}] ",shopOrderId);
         }
         List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
-        //增加权限过滤
-        checkOrderShipPer(orderShipments);
         List<Long> shipmentIds = orderShipments.stream().filter(Objects::nonNull).
                 filter(it->!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).map(OrderShipment::getShipmentId).collect(Collectors.toList());;
         if(log.isDebugEnabled()){

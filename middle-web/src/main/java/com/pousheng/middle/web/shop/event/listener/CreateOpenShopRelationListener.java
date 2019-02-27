@@ -10,7 +10,6 @@ import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.shop.model.OpenShop;
-import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.Map;
-import java.util.Objects;
 
 import static com.pousheng.middle.constants.Constants.ZONE_ID;
 import static com.pousheng.middle.constants.Constants.ZONE_NAME;
@@ -45,9 +43,6 @@ public class CreateOpenShopRelationListener {
     private ShopWriteService shopWriteService;
     @Value("${open.api.gateway}")
     private String gateway;
-
-    @RpcConsumer
-    private OpenShopReadService openShopReadService;
 
 
     @PostConstruct
@@ -83,27 +78,15 @@ public class CreateOpenShopRelationListener {
         openExtra.put(TradeConstants.ERP_SYNC_TYPE,"yyEdi");
         openShop.setExtra(openExtra);
 
-        //验证 open shop 是否存在
-        Response<OpenShop> response = openShopReadService.findByChannelAndName(openShop.getChannel(),
-            openShop.getShopName());
-        if (!response.isSuccess()) {
-            log.error("failed to query open shop :{} fail,error:{}", openShop, response.getError());
+
+        Response<Long> openShopRes = openShopWriteService.create(openShop);
+        if(!openShopRes.isSuccess()){
+            log.error("create open shop :{} fail,error:{}",openShop,openShopRes.getError());
             return;
-        }
-        Long openShopId;
-        if (Objects.isNull(response.getResult())) {
-            Response<Long> openShopRes = openShopWriteService.create(openShop);
-            if (!openShopRes.isSuccess()) {
-                log.error("create open shop :{} fail,error:{}", openShop, openShopRes.getError());
-                return;
-            }
-            openShopId = openShopRes.getResult();
-        } else {
-            openShopId = response.getResult().getId();
         }
 
         ShopExtraInfo shopExtraInfo =  ShopExtraInfo.fromJson(exist.getExtra());
-        shopExtraInfo.setOpenShopId(openShopId);
+        shopExtraInfo.setOpenShopId(openShopRes.getResult());
 
         Shop updateShop = new Shop();
         updateShop.setId(event.getShopId());

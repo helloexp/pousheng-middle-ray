@@ -383,7 +383,7 @@ public class MiddleFlowBook {
             //待处理 -->取消 -> 已取消
             addTransition(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),
                     MiddleOrderEvent.CANCEL_SHIP.toOrderOperation(),
-                    MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue());
+                    MiddleShipmentsStatus.CANCELED.getValue());
             //待处理（换货占库发货单） -->取消 -> 已取消（不需同步恒康）
             addTransition(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),
                     MiddleOrderEvent.CANCEL_OCCUPY_SHIP.toOrderOperation(),

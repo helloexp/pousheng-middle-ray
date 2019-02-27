@@ -317,14 +317,16 @@ public class ShipmentWiteLogic {
             if(Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SHIPPED.getValue())){
                 throw new JsonResponseException("shipment.status.not.allow.current.operation");
             }
-            //没有同步到任何第三方渠道进行履约的发货单直接取消，不需要和第三方进行交互
-//            if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
-//                Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
-//                if (!cancelRes.isSuccess()) {
-//                    log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
-//                    throw new JsonResponseException(cancelRes.getError());
-//                }
-//            }
+            //店发且没有同步到任何第三方渠道进行履约的发货单直接取消，不需要和第三方进行交互
+            if (Objects.equals(shipment.getShipWay(), TradeConstants.MPOS_SHOP_DELIVER)
+                    && flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
+                Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
+                if (!cancelRes.isSuccess()) {
+                    log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
+                    throw new JsonResponseException(cancelRes.getError());
+                }
+            }
+
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             //已经同步过恒康,现在需要取消同步恒康,根据恒康返回的结果判断是否取消成功(如果是mpos订单发货，则不用同步恒康)
             if (!Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER) && flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())) {

@@ -5,7 +5,6 @@ import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.jd.open.api.sdk.domain.jzt_zw.DspAdUnitService.ArrayList;
 import com.pousheng.middle.hksyc.pos.api.SycHkShipmentPosApi;
 import com.pousheng.middle.hksyc.pos.dto.*;
 import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
@@ -44,6 +43,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -324,8 +324,8 @@ public class SyncShipmentPosLogic {
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
         List<Invoice> invoices = shipmentDetail.getInvoices();
 
-        List<Long> skuOrdersIds = new java.util.ArrayList<Long>();
-
+        // List<Long> skuOrdersIds = new java.util.ArrayList<Long>();
+        Map<Long, List<ShipmentItem>> skuOrderIdsAndShipmentItemInfosMapping = new HashMap<>();
         HkShipmentPosInfo posInfo = new HkShipmentPosInfo();
         posInfo.setManualbillno(shopOrder.getOutId()); //第三方平台单号
         posInfo.setBuyeralipayno(""); //支付宝账号
@@ -358,7 +358,12 @@ public class SyncShipmentPosLogic {
         List<ShipmentItem> shipmentItems = shipmentDetail.getShipmentItems();
         BigDecimal totalPrice = BigDecimal.ZERO;
         for (ShipmentItem shipmentItem : shipmentItems) {
-            skuOrdersIds.add(shipmentItem.getSkuOrderId());
+            if (!skuOrderIdsAndShipmentItemInfosMapping.containsKey(shipmentItem.getSkuOrderId())) {
+                skuOrderIdsAndShipmentItemInfosMapping.put(shipmentItem.getSkuOrderId(),
+                        Lists.newArrayList(shipmentItem));
+            } else {
+                skuOrderIdsAndShipmentItemInfosMapping.get(shipmentItem.getSkuOrderId()).add(shipmentItem);
+            }
 
             if (shipmentItem.getShipQuantity() != null && !shipmentItem.getQuantity().equals(shipmentItem.getShipQuantity())) {
                 totalPrice = totalPrice.add(new BigDecimal(shipmentItem.getCleanFee())
@@ -426,9 +431,14 @@ public class SyncShipmentPosLogic {
             posInfo.setParcelweight(String.valueOf(shipmentExtra.getWeight()));
         }
 
-        DecimalFormat df = new DecimalFormat("#,###.00");
-        posInfo.setDischargeintegral(String.valueOf(shipmentReadLogic.getUsedIntegral(skuOrdersIds)));
-        posInfo.setDischargeamount(df.format(BigDecimal.valueOf(shipmentReadLogic.getPaymentIntegral(skuOrdersIds)).divide(new BigDecimal(100))));
+        DecimalFormat df = new DecimalFormat("0.##");
+        posInfo.setDischargeintegral(String
+                .valueOf(shipmentReadLogic.getUsedIntegralPlusSkuIntegral(skuOrderIdsAndShipmentItemInfosMapping)));
+        posInfo.setDischargeamount(
+                df.format(BigDecimal
+                        .valueOf(shipmentReadLogic.getAmountOfMoneyPaidByBothSkuIntegralAndUsedIntegral(
+                                skuOrderIdsAndShipmentItemInfosMapping))
+                        .divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN)));
 
         return posInfo;
     }

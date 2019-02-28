@@ -318,7 +318,7 @@ public class ShipmentWiteLogic {
                 throw new JsonResponseException("shipment.status.not.allow.current.operation");
             }
             //店发且没有同步到任何第三方渠道进行履约的发货单直接取消，不需要和第三方进行交互
-            if (Objects.equals(shipment.getShipWay(), TradeConstants.MPOS_SHOP_DELIVER)
+            if (Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_SHOP_DELIVER)
                     && flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
                 Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
                 if (!cancelRes.isSuccess()) {

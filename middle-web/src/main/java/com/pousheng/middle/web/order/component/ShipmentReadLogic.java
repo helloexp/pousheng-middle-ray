@@ -46,6 +46,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -626,11 +628,106 @@ public class ShipmentReadLogic {
     private Long getUsedIntegral(SkuOrder skuOrder){
         String usedIntegral="";
         try{
-            usedIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_USED_INTEGRAL,skuOrder);
+            usedIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_USED_INTEGRAL, skuOrder);
         }catch (JsonResponseException e){
             log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_USED_INTEGRAL);
         }
         return StringUtils.isEmpty(usedIntegral) ? 0L : Long.valueOf(usedIntegral);
+    }
+
+    // 获取发货单涉及到的子单中已经发货的普通商品和积分商品所使用积分总数
+    public Long getUsedIntegralPlusSkuIntegral(Map<Long, List<ShipmentItem>> skuOrderIdsAndShipmentItemInfosMapping) {
+        List<Long> skuOrderIds = new ArrayList<>(skuOrderIdsAndShipmentItemInfosMapping.keySet());
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+        Long sumOfSkuIntegralAndUsedIntegral = 0L;
+        for (SkuOrder skuOrder : skuOrders) {
+            sumOfSkuIntegralAndUsedIntegral += getUsedIntegralOrSkuIntegral(skuOrder,
+                    skuOrderIdsAndShipmentItemInfosMapping.get(skuOrder.getId()));
+        }
+        return sumOfSkuIntegralAndUsedIntegral;
+    }
+
+    private Long getUsedIntegralOrSkuIntegral(SkuOrder skuOrder, List<ShipmentItem> shipmentItems) {
+        String integral = "";
+        Integer shipedItemQuantity = 0;
+        for (ShipmentItem shipmentItem : shipmentItems) {
+            shipedItemQuantity += shipmentItem.getShipQuantity();
+        }
+        try {
+            integral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_USED_INTEGRAL, skuOrder);
+            if (StringUtils.isNotEmpty(integral) && !"0".equals(integral)
+                    && shipedItemQuantity != skuOrder.getQuantity()) {
+                BigDecimal integralCalculator = new BigDecimal(Long.valueOf(integral));
+                integral = integralCalculator.divide(new BigDecimal(skuOrder.getQuantity()), 3, RoundingMode.HALF_DOWN)
+                        .multiply(new BigDecimal(shipedItemQuantity)).setScale(0, RoundingMode.HALF_DOWN).toString();
+            }
+        } catch (JsonResponseException e) {
+            log.info("sku order(id:{}) extra map not contains key:{}", skuOrder.getId(),
+                    TradeConstants.SKU_USED_INTEGRAL);
+        }
+        try {
+            if ("0".equals(integral) || StringUtils.isEmpty(integral)) {
+                integral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL, skuOrder);
+                if (StringUtils.isNotEmpty(integral) && !"0".equals(integral)) {
+                    BigDecimal integralCalculator = new BigDecimal(Long.valueOf(integral));
+                    integral = integralCalculator.multiply(BigDecimal.valueOf(shipedItemQuantity))
+                            .setScale(0, RoundingMode.HALF_DOWN)
+                            .toString();
+                }
+               
+            }
+        } catch (JsonResponseException e2) {
+            log.info("sku order(id:{}) extra map not contains key:{}", skuOrder.getId(), TradeConstants.SKU_INTEGRAL);
+        }
+        return StringUtils.isEmpty(integral) ? 0L : Long.valueOf(integral);
+    }
+
+    // 获取发货单涉及到的子单中已经发货的普通商品和积分商品所使用积分抵扣金额总和
+    public Long getAmountOfMoneyPaidByBothSkuIntegralAndUsedIntegral(
+            Map<Long, List<ShipmentItem>> skuOrderIdsAndShipmentItemInfosMapping) {
+        List<Long> skuOrderIds = new ArrayList<>(skuOrderIdsAndShipmentItemInfosMapping.keySet());
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+        Long paymentIntegral = 0L;
+        for (SkuOrder skuOrder : skuOrders) {
+            paymentIntegral += getAmountOfMoneyPaidByBothSkuIntegralAndUsedIntegral(skuOrder,
+                    skuOrderIdsAndShipmentItemInfosMapping.get(skuOrder.getId()));
+        }
+        return paymentIntegral;
+    }
+
+    private Long getAmountOfMoneyPaidByBothSkuIntegralAndUsedIntegral(SkuOrder skuOrder,
+            List<ShipmentItem> shipmentItems) {
+        String paymentIntegral = "";
+        Integer shipedItemQuantity = 0;
+        try {
+            for (ShipmentItem shipmentItem : shipmentItems) {
+                shipedItemQuantity += shipmentItem.getShipQuantity();
+            }
+            paymentIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_PAYMENT_INTEGRAL, skuOrder);
+            if (StringUtils.isNotEmpty(paymentIntegral) && !"0".equals(paymentIntegral)
+                    && shipedItemQuantity != skuOrder.getQuantity()) {
+                BigDecimal paymentIntegralCalculator = new BigDecimal(Long.valueOf(paymentIntegral));
+                paymentIntegral = paymentIntegralCalculator
+                        .divide(new BigDecimal(skuOrder.getQuantity()), 3, RoundingMode.HALF_DOWN)
+                        .multiply(new BigDecimal(shipedItemQuantity)).setScale(0, RoundingMode.HALF_DOWN).toString();
+            }
+        } catch (JsonResponseException e) {
+            log.info("sku order(id:{}) extra map not contains key:{}", skuOrder.getId(),
+                    TradeConstants.SKU_PAYMENT_INTEGRAL);
+        }
+        try {
+            if ("0".equals(paymentIntegral) || StringUtils.isEmpty(paymentIntegral)) {
+                String skuIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL, skuOrder);
+                if (!StringUtils.isEmpty(skuIntegral) && !"0".equals(skuIntegral)) {
+                  //默认积分，金额兑换比率为0.02，因此处返回金额需要乘以100，所以此处只做乘以2
+                    paymentIntegral = String.valueOf(Math.multiplyExact(Math.multiplyExact(Long.valueOf(skuIntegral),2L)
+                                    , shipedItemQuantity));
+                }
+            }
+        } catch (JsonResponseException e2) {
+            log.info("sku order(id:{}) extra map not contains key:{}", skuOrder.getId(), TradeConstants.SKU_INTEGRAL);
+        }
+        return StringUtils.isEmpty(paymentIntegral) ? 0L : Long.valueOf(paymentIntegral);
     }
 
     /**

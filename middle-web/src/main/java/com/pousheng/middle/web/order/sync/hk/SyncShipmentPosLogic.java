@@ -8,9 +8,11 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.pos.api.SycHkShipmentPosApi;
 import com.pousheng.middle.hksyc.pos.dto.*;
 import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
+import com.pousheng.middle.open.component.InvoiceLogic;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
@@ -24,10 +26,14 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.order.dto.OpenClientOrderInvoice;
 import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
+import io.terminus.open.client.vip.constant.VipConstant;
+import io.terminus.open.client.vip.extra.service.VipInvoiceServerice;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.constants.JacksonType;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +44,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -73,6 +78,18 @@ public class SyncShipmentPosLogic {
     @Autowired
     private UcUserOperationLogic ucUserOperationLogic;
 
+    @Autowired
+    private VipInvoiceServerice vipInvoiceServerice;
+
+    @Autowired
+    private InvoiceLogic invoiceLogic;
+
+    @Autowired
+    private MiddleOrderWriteService middleOrderWriteService;
+
+    @RpcConsumer
+    private OrderWriteService orderWriteService;
+
     @Value("${pos.stock.code}")
     private String posStockCode;
 
@@ -89,6 +106,8 @@ public class SyncShipmentPosLogic {
     public Response<Boolean> syncShipmentPosToHk(Shipment shipment) {
         ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
         ShopOrder shopOrder = shipmentDetail.getShopOrder();
+        // 如果 vip-oxo 发票拉取失败，这里再补偿拉取一次
+        rePullIfVipInvoiceLost(shipmentDetail);
         // 云聚的单据根据order上的信息判读是否需要推hk
         try {
             if (shopOrder.getShopName().startsWith("yj")) {
@@ -319,9 +338,12 @@ public class SyncShipmentPosLogic {
     private HkShipmentPosInfo makeHkShipmentPosInfo(ShipmentDetail shipmentDetail, String shipmentWay) {
 
         ShopOrder shopOrder = shipmentDetail.getShopOrder();
+
         OpenClientPaymentInfo openClientPaymentInfo = orderReadLogic.getOpenClientPaymentInfo(shopOrder);
         ReceiverInfo receiverInfo = shipmentDetail.getReceiverInfo();
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
+
+        // todo 如果 invoices 为空，调用 openclient 再拉一次
         List<Invoice> invoices = shipmentDetail.getInvoices();
 
         // List<Long> skuOrdersIds = new java.util.ArrayList<Long>();
@@ -493,5 +515,49 @@ public class SyncShipmentPosLogic {
         return new BigDecimal(org.apache.commons.lang3.StringUtils.isBlank(val) ? "0" : val);
     }
 
+    /**
+     * 根据 shopOrder 的打标字段，判断是否要重新拉取唯品会发票
+     * 如果要拉，拉取并更新 shopOrder extra
+     * @param shipmentDetail
+     */
+    private void rePullIfVipInvoiceLost(ShipmentDetail shipmentDetail) {
+        ShopOrder shopOrder = shipmentDetail.getShopOrder();
+        if (shopOrder.getExtra().containsKey(VipConstant.VIP_OXO_INVOICE_LOST)
+                && Boolean.TRUE.toString().equals(shopOrder.getExtra().get(VipConstant.VIP_OXO_INVOICE_LOST))) {
+            // 补偿再拉取一次唯品会发票信息
+            Map<String, OpenClientOrderInvoice> openClientOrderInvoiceMap = vipInvoiceServerice.getOrderInvoice(
+                    shopOrder.getShopId(), Lists.newArrayList(shopOrder.getOutId()));
+            if (openClientOrderInvoiceMap.isEmpty()) {
+                // 还是拉不到就算了
+                log.warn("fail again for pull vip-oxo invoice");
+                return;
+            }
+            OpenClientOrderInvoice openClientOrderInvoice = openClientOrderInvoiceMap.get(0);
+            String openClientOrderInvoiceJson = JsonMapper.JSON_NON_DEFAULT_MAPPER.toJson(openClientOrderInvoice);
+            // 填充已查 shopOrder 的 extra 信息（与 DefaultOrderReceiver 258 行保持一致）
+            shopOrder.getExtra().put("invoice", openClientOrderInvoiceJson);
+            // 补偿插入 invoice
+            Long invoiceId = invoiceLogic.addInvoice(openClientOrderInvoice);
+            // 补偿插入 orderInvoice
+            middleOrderWriteService.createOrderInvoice(makeOrderInvoice(invoiceId, shopOrder.getId()));
+            // 补偿更新 shopOrder 的 extra
+            Response<Boolean> extraUpdateResp =
+                    orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, shopOrder.getExtra());
+            // 填充已查 shipmentDetail 的 invoices 信息
+            shipmentDetail.setInvoices(orderReadLogic.findInvoiceInfo(shopOrder.getId()));
+            if (!extraUpdateResp.isSuccess()) {
+                log.error("fail to update order invoice, id={}, invoice={}, cause: {}",
+                        shopOrder.getId(), openClientOrderInvoiceJson, extraUpdateResp.getError());
+            }
+        }
+    }
 
+    private OrderInvoice makeOrderInvoice(Long invoiceId, Long shopOrderId) {
+        OrderInvoice orderInvoice = new OrderInvoice();
+        orderInvoice.setOrderType(OrderLevel.SHOP.getValue());
+        orderInvoice.setInvoiceId(invoiceId);
+        orderInvoice.setOrderId(shopOrderId);
+        orderInvoice.setStatus(1);
+        return orderInvoice;
+    }
 }

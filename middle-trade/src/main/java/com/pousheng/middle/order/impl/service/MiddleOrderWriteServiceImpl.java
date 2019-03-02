@@ -179,6 +179,11 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService {
     }
 
     @Override
+    public Response<Boolean> createOrderInvoice(OrderInvoice orderInvoice) {
+        return Response.ok(orderInvoiceDao.create(orderInvoice));
+    }
+
+    @Override
     public Response<Boolean> updateReceiveInfo(Long shopOrderId, ReceiverInfo receiverInfo) {
         try {
             List<OrderReceiverInfo> receiverInfos = orderReceiverInfoDao.findByOrderIdAndOrderLevel(shopOrderId, OrderLevel.SHOP);

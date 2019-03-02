@@ -2,9 +2,7 @@ package com.pousheng.middle.order.service;
 
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.ReceiverInfo;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.spu.model.SkuTemplate;
 
 import java.util.List;
@@ -74,6 +72,12 @@ public interface MiddleOrderWriteService {
      */
     public Response<Boolean> updateInvoices(long shopOrderId, Map<String, String> invoicesMap, String title);
 
+    /**
+     * 插入 orderInvoice
+     * @param orderInvoice
+     * @return
+     */
+    Response<Boolean> createOrderInvoice(OrderInvoice orderInvoice);
     /**
      * 更新订单的售后地址信息
      *

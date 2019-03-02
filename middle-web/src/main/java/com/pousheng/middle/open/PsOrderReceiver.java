@@ -8,6 +8,7 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
+import com.pousheng.middle.open.component.InvoiceLogic;
 import com.pousheng.middle.open.component.NotifyHkOrderDoneLogic;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
 import com.pousheng.middle.open.erp.TerminusErpOpenApiClient;
@@ -41,7 +42,6 @@ import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.common.utils.ItemUtils;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.dto.OpenClientOrderConsignee;
-import io.terminus.open.client.order.dto.OpenClientOrderInvoice;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.common.model.ParanaUser;
@@ -68,7 +68,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -90,9 +89,6 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @RpcConsumer
     private OrderWriteService orderWriteService;
-
-    @RpcConsumer
-    private InvoiceWriteService invoiceWriteService;
 
     @Autowired
     private ShopOrderExtDao shopOrderExtDao;
@@ -140,6 +136,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private CompensateBizLogic compensateBizLogic;
+
+    @Autowired
+    private InvoiceLogic invoiceLogic;
 
 
     @Value("${redirect.fenxiao.erp.gateway:https://yymiddle.pousheng.com/api/qm/pousheng/wms-fenxiao}")
@@ -522,7 +521,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         Long invoiceId = null;
         if (Arguments.notNull(openClientFullOrder.getInvoice()) && Arguments.notNull(openClientFullOrder.getInvoice().getType())) {
             //生成发票信息(可能生成失败)
-            invoiceId = this.addInvoice(openClientFullOrder.getInvoice());
+            invoiceId = invoiceLogic.addInvoice(openClientFullOrder.getInvoice());
         }
 
         richSkusByShop.setInvoiceId(invoiceId);
@@ -532,64 +531,6 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         return richOrder;
 
 
-    }
-
-    private Long addInvoice(OpenClientOrderInvoice openClientOrderInvoice) {
-        try {
-            //获取发票类型
-            Integer invoiceType = Integer.valueOf(openClientOrderInvoice.getType());
-            if (Arguments.isNull(invoiceType)) {
-                return null;
-            }
-            //获取detail
-            Map<String, String> detail = openClientOrderInvoice.getDetail();
-            if (detail == null) {
-                detail = Maps.newHashMap();
-            } else {
-                detail.put("type", String.valueOf(invoiceType));
-            }
-
-            Invoice newInvoice = new Invoice();
-            if (Objects.equals(invoiceType, 2)) {
-                //2，增值税发票
-                //公司
-                detail.put("titleType", "2");
-                //获取抬头(公司名称吧)
-                String title = openClientOrderInvoice.getDetail().get("companyName");
-                if (Arguments.isNull(title)){
-                    title="";
-                }
-                newInvoice.setTitle(title);
-            }else if(Objects.equals(invoiceType, 3)||Objects.equals(invoiceType, 1)){
-                //3，电子发票
-                String titleType= detail.get("titleType");
-                if (Objects.equals(titleType,"1")){
-                    //个人电子发票
-                    newInvoice.setTitle("个人");
-                }else if (Objects.equals(titleType,"2")){
-                    //公司 电子发票
-                    String title = openClientOrderInvoice.getDetail().get("companyName");
-                    if (Arguments.isNull(title)){
-                        title="";
-                    }
-                    newInvoice.setTitle(title);
-                }
-            }else {
-                newInvoice.setTitle("其他");
-            }
-            newInvoice.setStatus(1);
-            newInvoice.setIsDefault(false);
-            newInvoice.setDetail(detail);
-            Response<Long> response = invoiceWriteService.createInvoice(newInvoice);
-            if (!response.isSuccess()) {
-                log.error("create invoice failed,caused by {}", response.getError());
-                throw new ServiceException("create.invoice.failed");
-            }
-            return response.getResult();
-        } catch (Exception e) {
-            log.error("create invoice failed,caused by {}", Throwables.getStackTraceAsString(e));
-        }
-        return null;
     }
 
     @Override

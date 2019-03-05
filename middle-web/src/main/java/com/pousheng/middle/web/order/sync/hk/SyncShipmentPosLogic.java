@@ -534,6 +534,8 @@ public class SyncShipmentPosLogic {
             }
             OpenClientOrderInvoice openClientOrderInvoice = openClientOrderInvoiceMap.get(0);
             String openClientOrderInvoiceJson = JsonMapper.JSON_NON_DEFAULT_MAPPER.toJson(openClientOrderInvoice);
+            // 去掉打标信息，防止后面操作一直拉
+            shopOrder.getExtra().remove(VipConstant.VIP_OXO_INVOICE_LOST);
             // 填充已查 shopOrder 的 extra 信息（与 DefaultOrderReceiver 258 行保持一致）
             shopOrder.getExtra().put("invoice", openClientOrderInvoiceJson);
             // 补偿插入 invoice

@@ -4,7 +4,7 @@
 package com.pousheng.middle.web.biz.impl;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Maps;
+import com.google.common.collect.*;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
@@ -38,10 +38,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -255,25 +252,45 @@ public class YyediSyncRefundService implements CompensateBizService {
             List<YYEdiRefundConfirmItem> yyEdiRefundConfirmItems = JsonMapper.nonEmptyMapper().fromJson(itemInfo,
                     JsonMapper.nonEmptyMapper().createCollectionType(List.class, YYEdiRefundConfirmItem.class));
 
-            Map<String,String> refundConfirmItemAndQuantity = yyEdiRefundConfirmItems.stream().
-                    filter(Objects::nonNull).collect(Collectors.toMap(YYEdiRefundConfirmItem::getItemCode,YYEdiRefundConfirmItem::getQuantity));
             List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
-            for (RefundItem refundItem:refundItems){
-                if (refundConfirmItemAndQuantity.containsKey(refundItem.getSkuCode())){
-                    String finalRefundQuantity = refundConfirmItemAndQuantity.get(refundItem.getSkuCode());
-                    refundItem.setFinalRefundQuantity(Integer.valueOf(finalRefundQuantity));
-                }else{
-                    //如果没有返回记录，则说明实际退货数量为0
-                    refundItem.setFinalRefundQuantity(0);
-                }
-            }
+            setFinalRefundQuantity(refundItems, yyEdiRefundConfirmItems);
             extra.put(TradeConstants.REFUND_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(refundItems));
             refund.setExtra(extra);
         }
         return refund;
     }
 
-
+    private void setFinalRefundQuantity(List<RefundItem> refundItems,
+                                        List<YYEdiRefundConfirmItem> yyEdiRefundConfirmItems) {
+        Map<String, Integer> skuCode2Quantities = Maps.newHashMap();
+        for (YYEdiRefundConfirmItem yyEdiRefundConfirmItem : yyEdiRefundConfirmItems) {
+            if (Objects.nonNull(yyEdiRefundConfirmItem)) {
+                String itemCode = yyEdiRefundConfirmItem.getItemCode();
+                Integer quantity = Integer.valueOf(yyEdiRefundConfirmItem.getQuantity());
+                if (skuCode2Quantities.containsKey(itemCode)) {
+                    quantity += skuCode2Quantities.get(itemCode);
+                    skuCode2Quantities.put(itemCode, quantity);
+                } else {
+                    skuCode2Quantities.put(itemCode, quantity);
+                }
+            }
+        }
+        refundItems.sort((o1, o2) -> o2.getApplyQuantity() - o1.getApplyQuantity());
+        for (RefundItem refundItem : refundItems) {
+            String key = refundItem.getSkuCode();
+            if (skuCode2Quantities.containsKey(key)) {
+                Integer remainQuantity = skuCode2Quantities.get(key);
+                Integer applyQuantity = refundItem.getApplyQuantity();
+                Integer finalQuantity = remainQuantity >= applyQuantity ? applyQuantity : remainQuantity;
+                refundItem.setFinalRefundQuantity(finalQuantity);
+                skuCode2Quantities.put(key, remainQuantity - finalQuantity);
+                refundItem.setFinalRefundQuantity(finalQuantity);
+            } else {
+                //如果没有返回记录，则说明实际退货数量为0
+                refundItem.setFinalRefundQuantity(0);
+            }
+        }
+    }
 
     private boolean validateYYConfirmedItems(List<YYEdiRefundConfirmItem> items) {
         if (items == null || items.isEmpty()) {

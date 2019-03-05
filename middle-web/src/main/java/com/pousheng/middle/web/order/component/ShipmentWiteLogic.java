@@ -1045,7 +1045,7 @@ public class ShipmentWiteLogic {
         Map<String, String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
-        Long shipmentId = null;
+        Long shipmentId;
         //创建发货单
         try {
             shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder, Boolean.FALSE);

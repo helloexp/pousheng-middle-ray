@@ -148,7 +148,7 @@ public class OrderWriteLogic {
      *
      * @param skuOrderIdAndQuantity 子单id及数量
      */
-    public void updateSkuHandleNumber(Map<Long, Integer> skuOrderIdAndQuantity) {
+    public void  updateSkuHandleNumber(Map<Long, Integer> skuOrderIdAndQuantity) {
 
         //log.info("update sku handle number start ....map is {}",skuOrderIdAndQuantity);
 
@@ -1000,7 +1000,7 @@ public class OrderWriteLogic {
                                             newSkuOrder.setFee(newSkuOrder.getOriginFee() - newSkuOrder.getDiscount());
                                             Response<Boolean> skuOrderR = middleOrderWriteService.updateSkuOrder(newSkuOrder);
                                             if (!skuOrderR.isSuccess()) {
-                                                log.error("skuOrder failed,id is", newSkuOrder.getId());
+                                                log.error("skuOrder failed,id is: {}", newSkuOrder.getId());
                                             }
                                         } else {
                                             log.info("do not update skuOrder");
@@ -1101,7 +1101,7 @@ public class OrderWriteLogic {
                         newSkuOrder.setExtra(skuOrderExtra);
                         Response<Boolean> skuOrderR = middleOrderWriteService.updateSkuOrder(newSkuOrder);
                         if (!skuOrderR.isSuccess()) {
-                            log.error("skuOrder failed,id is", newSkuOrder.getId());
+                            log.error("skuOrder failed,id is: {}", newSkuOrder.getId());
                         }
                     } else {
                         log.info("do not update skuOrder");

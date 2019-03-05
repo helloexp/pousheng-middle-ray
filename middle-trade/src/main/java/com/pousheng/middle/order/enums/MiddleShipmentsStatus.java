@@ -8,7 +8,7 @@ import com.google.common.base.Objects;
 
 /**
  * 中台发货单状态
- *
+ * <p>
  * Author:  songrenfei
  * Date: 2017-05-23
  */
@@ -21,8 +21,8 @@ public enum MiddleShipmentsStatus {
     SHIPPED(5, "已发货"),      //已发货
     CONFIRMD_SUCCESS(6, "订单派发中心确认收货"),     //确认收货成功
     WAIT_MPOS_RECEIVE(7, "待接单"),   //待接单
-    SKX_FREEZE(8,"已挂起"),//已挂起
-    SYNC_HK_ACCEPT_FAILED(-1,"订单派发中心/MPOS受理失败"),//发货单恒康（mpos）受理失败
+    SKX_FREEZE(8, "已挂起"),//已挂起
+    SYNC_HK_ACCEPT_FAILED(-1, "订单派发中心/MPOS受理失败"),//发货单恒康（mpos）受理失败
     SYNC_HK_FAIL(-2, "同步订单派发中心/MPOS失败"),   //同步恒康失败
     SYNC_HK_CANCEL_ING(-3, "同步订单派发中心取消中"),       //同步恒康（mpos）取消中（此状态前端可不用关心，只是为了后端flow通顺）
     SYNC_HK_CANCEL_FAIL(-4, "取消同步订单派发中心失败"),   //同步恒康（mpos）失败
@@ -32,12 +32,10 @@ public enum MiddleShipmentsStatus {
     PART_SHIPPED(10, "部分发货"); //部分发货，不会存储在数据库中，仅作为前端搜索用
 
 
-
-
     private final int value;
     private final String name;
 
-    MiddleShipmentsStatus(int value ,String name) {
+    MiddleShipmentsStatus(int value, String name) {
         this.value = value;
         this.name = name;
     }
@@ -50,12 +48,12 @@ public enum MiddleShipmentsStatus {
         return name;
     }
 
-    public static MiddleShipmentsStatus fromInt(int value){
+    public static MiddleShipmentsStatus fromInt(int value) {
         for (MiddleShipmentsStatus orderStatus : MiddleShipmentsStatus.values()) {
-            if(Objects.equal(orderStatus.value, value)){
+            if (Objects.equal(orderStatus.value, value)) {
                 return orderStatus;
             }
         }
-        throw new IllegalArgumentException("unknown shipments status: "+value);
+        throw new IllegalArgumentException("unknown shipments status: " + value);
     }
 }

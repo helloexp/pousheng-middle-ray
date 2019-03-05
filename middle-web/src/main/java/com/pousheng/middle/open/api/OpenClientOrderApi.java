@@ -22,7 +22,6 @@ import io.terminus.open.client.order.dto.*;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
-import io.terminus.parana.common.exception.InvalidException;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -66,25 +65,25 @@ public class OpenClientOrderApi {
 
 
     //根据渠道判断订单是否插入中台
-    private static final String IS_ORDER_INSERT_MIDDLE="isOrderInsertMiddle";
+    private static final String IS_ORDER_INSERT_MIDDLE = "isOrderInsertMiddle";
 
     @OpenMethod(key = "push.out.open.order.api", paramNames = {"orderInfo"}, httpMethods = RequestMethod.POST)
-    public void receiveOrders(@NotEmpty String orderInfo){
+    public void receiveOrders(@NotEmpty String orderInfo) {
         log.info("receive open orders start...");
-        log.info("received open client order info param is {}",orderInfo);
+        log.info("received open client order info param is {}", orderInfo);
         List<OpenFullOrderInfo> orders = JsonMapper.nonEmptyMapper()
-                .fromJson(orderInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class,OpenFullOrderInfo.class));
-        if (CollectionUtils.isEmpty(orders)){
-            log.error("request parameter string={} are illegal",orderInfo);
-            throw new OPServerException(200,"parameters are illegal ");
+                .fromJson(orderInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, OpenFullOrderInfo.class));
+        if (CollectionUtils.isEmpty(orders)) {
+            log.error("request parameter string={} are illegal", orderInfo);
+            throw new OPServerException(200, "parameters are illegal ");
         }
-        for (OpenFullOrderInfo openFullOrderInfo:orders){
-            try{
+        for (OpenFullOrderInfo openFullOrderInfo : orders) {
+            try {
                 //参数校验
                 this.validateParam(openFullOrderInfo);
                 //查询该渠道的店铺信息
-                String shopCode = openFullOrderInfo.getOrder().getCompanyCode()+"-"+openFullOrderInfo.getOrder().getShopCode();
-                Long openShopId =  this.validateOpenShop(shopCode);
+                String shopCode = openFullOrderInfo.getOrder().getCompanyCode() + "-" + openFullOrderInfo.getOrder().getShopCode();
+                Long openShopId = this.validateOpenShop(shopCode);
                 OpenShop openShop = openShopCacher.findById(openShopId);
                 Map<String, String> openShopExtra = openShop.getExtra();
                 String isOrderInsertMiddle = openShopExtra.get(IS_ORDER_INSERT_MIDDLE);
@@ -109,9 +108,9 @@ public class OpenClientOrderApi {
                 if (!"shop.order.is.exist".equals(se.getMessage())) {
                     throw new OPServerException(200, se.getMessage());
                 }
-            }catch (Exception e) {
-                log.error("create open  order:{} failed,caused by {}",orderInfo, Throwables.getStackTraceAsString(e));
-                throw new OPServerException(200,"create.middle.order.fail");
+            } catch (Exception e) {
+                log.error("create open  order:{} failed,caused by {}", orderInfo, Throwables.getStackTraceAsString(e));
+                throw new OPServerException(200, "create.middle.order.fail");
             }
         }
 
@@ -121,22 +120,23 @@ public class OpenClientOrderApi {
 
     /**
      * 参数校验
+     *
      * @param openFullOrderInfo
      */
-    private void validateParam(OpenFullOrderInfo openFullOrderInfo){
-        if (Objects.isNull(openFullOrderInfo)){
+    private void validateParam(OpenFullOrderInfo openFullOrderInfo) {
+        if (Objects.isNull(openFullOrderInfo)) {
             throw new ServiceException("openFullOrderInfo.is.null");
         }
         OpenFullOrder openFullOrder = openFullOrderInfo.getOrder();
-        if (Objects.isNull(openFullOrder)){
-            throw  new ServiceException("openFullOrder.is.null");
+        if (Objects.isNull(openFullOrder)) {
+            throw new ServiceException("openFullOrder.is.null");
         }
         List<OpenFullOrderItem> items = openFullOrderInfo.getItem();
-        if (Objects.isNull(items)||items.isEmpty()){
+        if (Objects.isNull(items) || items.isEmpty()) {
             throw new ServiceException("openFullOrderItems.is.null");
         }
         OpenFullOrderAddress address = openFullOrderInfo.getAddress();
-        if (Objects.isNull(address)){
+        if (Objects.isNull(address)) {
             throw new ServiceException("openFullOrderAddress.is.null");
         }
     }
@@ -144,55 +144,57 @@ public class OpenClientOrderApi {
 
     /**
      * 业务参数校验
+     *
      * @param openFullOrderInfo
      */
-    private void  validateBusiParam(OpenFullOrderInfo openFullOrderInfo){
+    private void validateBusiParam(OpenFullOrderInfo openFullOrderInfo) {
         OpenFullOrder openFullOrder = openFullOrderInfo.getOrder();
-        if (Objects.isNull(openFullOrder.getOutOrderId())){
+        if (Objects.isNull(openFullOrder.getOutOrderId())) {
             throw new ServiceException("outOrderId.is.null");
         }
-        if (Objects.isNull(openFullOrder.getChannel())){
+        if (Objects.isNull(openFullOrder.getChannel())) {
             throw new ServiceException("channel.is.null");
         }
         String outId = openFullOrder.getOutOrderId();
         String channel = openFullOrder.getChannel();
-        Response<Optional<ShopOrder>>  rP = shopOrderReadService.findByOutIdAndOutFrom(outId,channel);
-        if (!rP.isSuccess()){
-            log.error("find shopOrder failed,outId is {},outFrom is {},caused by {}",outId,channel,rP.getError());
+        Response<Optional<ShopOrder>> rP = shopOrderReadService.findByOutIdAndOutFrom(outId, channel);
+        if (!rP.isSuccess()) {
+            log.error("find shopOrder failed,outId is {},outFrom is {},caused by {}", outId, channel, rP.getError());
         }
         Optional<ShopOrder> shopOrderOptional = rP.getResult();
-        if (shopOrderOptional.isPresent()){
+        if (shopOrderOptional.isPresent()) {
             throw new ServiceException("shop.order.is.exist");
         }
     }
 
     /**
      * 查询外部渠道
+     *
      * @param shopCode
      * @return
      */
-    public Long validateOpenShop(String shopCode){
+    public Long validateOpenShop(String shopCode) {
 
         //查询店铺的信息，如果没有就新建一个
-        Response<List<OpenClientShop>> rP = openShopReadService.search(null,null,shopCode);
-        if (!rP.isSuccess()){
-            log.error("find open shop failed,shopCode is {},caused by {}",shopCode,rP.getError());
+        Response<List<OpenClientShop>> rP = openShopReadService.search(null, null, shopCode);
+        if (!rP.isSuccess()) {
+            log.error("find open shop failed,shopCode is {},caused by {}", shopCode, rP.getError());
             throw new ServiceException("find.open.shop.failed");
         }
         List<OpenClientShop> openClientShops = rP.getResult();
-        if(CollectionUtils.isEmpty(openClientShops)) {
-            throw new OPServerException(200,"find.open.shop.fail");
+        if (CollectionUtils.isEmpty(openClientShops)) {
+            throw new OPServerException(200, "find.open.shop.fail");
         }
-        java.util.Optional<OpenClientShop> openClientShopOptional =  openClientShops.stream().findAny();
-        OpenClientShop openClientShop =   openClientShopOptional.get();
+        java.util.Optional<OpenClientShop> openClientShopOptional = openClientShops.stream().findAny();
+        OpenClientShop openClientShop = openClientShopOptional.get();
         return openClientShop.getOpenShopId();
 
     }
 
-    private OpenShop findById(Long openShopId){
-        Response<OpenShop> r =  openShopReadService.findById(openShopId);
-        if (!r.isSuccess()){
-            log.error("find open shop by id failed,openShopId is {},caused by {}",openShopId,r.getError());
+    private OpenShop findById(Long openShopId) {
+        Response<OpenShop> r = openShopReadService.findById(openShopId);
+        if (!r.isSuccess()) {
+            log.error("find open shop by id failed,openShopId is {},caused by {}", openShopId, r.getError());
             throw new ServiceException("find.open.shop.failed");
         }
         return r.getResult();
@@ -200,14 +202,15 @@ public class OpenClientOrderApi {
 
     /**
      * 订单信息创建task任务
+     *
      * @param openFullOrderInfo
      */
-    private void createOpenOrderTask(OpenFullOrderInfo openFullOrderInfo){
+    private void createOpenOrderTask(OpenFullOrderInfo openFullOrderInfo) {
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
         biz.setBizType(PoushengCompensateBizType.OUT_OPEN_ORDER.toString());
         biz.setContext(mapper.toJson(openFullOrderInfo));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
+        compensateBizLogic.createBizAndSendMq(biz, MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
     }
 
 }

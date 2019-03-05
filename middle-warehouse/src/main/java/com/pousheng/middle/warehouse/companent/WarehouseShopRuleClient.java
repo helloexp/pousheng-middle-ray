@@ -2,7 +2,6 @@ package com.pousheng.middle.warehouse.companent;
 
 import com.alibaba.fastjson.JSON;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.dto.ShopStockRule;
 import com.pousheng.middle.warehouse.dto.ShopStockRuleDto;
@@ -149,7 +148,7 @@ public class WarehouseShopRuleClient {
             log.error("shop rule pagination fail, cause:{}", Throwables.getStackTraceAsString(e));
         }
 
-        return new Paging<ShopStockRule>(0L, Lists.newArrayList());
+        return Paging.empty();
     }
 
     /**

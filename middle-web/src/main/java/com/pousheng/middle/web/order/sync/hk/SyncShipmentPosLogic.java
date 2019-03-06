@@ -533,6 +533,11 @@ public class SyncShipmentPosLogic {
                 return;
             }
             OpenClientOrderInvoice openClientOrderInvoice = openClientOrderInvoiceMap.get(0);
+            if (Arguments.isNull(openClientOrderInvoice.getType())) {
+                //生成发票信息(可能生成失败)
+                log.warn("re-pull vip invoice fail as invoice type null");
+                return;
+            }
             String openClientOrderInvoiceJson = JsonMapper.JSON_NON_DEFAULT_MAPPER.toJson(openClientOrderInvoice);
             // 去掉打标信息，防止后面操作一直拉
             shopOrder.getExtra().remove(VipConstant.VIP_OXO_INVOICE_LOST);

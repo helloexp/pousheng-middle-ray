@@ -69,6 +69,16 @@ public class ItemGroupSkuManager {
         }
     }
 
+    public Response<Integer> batchDeleteByIds(List<Long> ids) {
+        try {
+            Integer resp = itemGroupSkuDao.batchDeleteByIds(ids);
+            return Response.ok(resp);
+        } catch (Exception e) {
+            log.error("delete itemGroupSku failed, ids:{} , cause:{}", ids, Throwables.getStackTraceAsString(e));
+            return Response.fail("item.group.sku.delete.fail");
+        }
+    }
+
     @Transactional
     public Response<Boolean> deleteByGroupIdAndSkuId(Long groupId, String skuCode) {
         try {

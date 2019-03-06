@@ -67,4 +67,13 @@ public interface ItemGroupSkuWriteService {
      * @returna
      */
     Response<Boolean> deleteByGroupIdAndSkuCode(Long groupId, String skuCode);
+
+    /**
+     * 根据id批量删除ItemGroupSku
+     * @param ids
+     * @return
+     */
+    Response<Integer> batchDeleteByids(List<Long> ids);
+    
+    
 }

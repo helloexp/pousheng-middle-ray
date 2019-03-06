@@ -11,8 +11,12 @@ import com.pousheng.erp.component.MaterialPusher;
 import com.pousheng.erp.model.SpuMaterial;
 import com.pousheng.erp.service.SpuMaterialReadService;
 import com.pousheng.erp.service.SpuMaterialWriteService;
+import com.pousheng.middle.group.dto.ItemGroupSkuCriteria;
 import com.pousheng.middle.group.model.ItemGroupSku;
+import com.pousheng.middle.group.model.ItemRuleGroup;
+import com.pousheng.middle.group.service.ItemGroupSkuReadService;
 import com.pousheng.middle.group.service.ItemGroupSkuWriteService;
+import com.pousheng.middle.group.service.ItemRuleGroupReadService;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.enums.PsItemGroupSkuMark;
@@ -94,6 +98,10 @@ public class SkuTemplates {
     private SpuMaterialReadService spuMaterialReadService;
     @Autowired
     private SpuMaterialWriteService spuMaterialWriteService;
+    @RpcConsumer
+    private ItemRuleGroupReadService itemRuleGroupReadService;
+    @RpcConsumer
+    private ItemGroupSkuReadService itemGroupSkuReadService;
     @RpcConsumer
     private ItemGroupSkuWriteService itemGroupSkuWriteService;
     @RpcConsumer
@@ -810,7 +818,97 @@ public class SkuTemplates {
             cancelGroup(id, groupId);
         }
     }
+    
+    @ApiOperation("将分组id中的组内商品或者排除商品全部删除")
+    @PutMapping(value = "/api/sku-template/removeAll/itemGroupSku")
+    public void removeAllitemGroupsku(@RequestParam Long groupId,@RequestParam Integer type){
+        log.info("request cleanAll cancel item group groupId:{}, type:{}", groupId,type);
+        if (Objects.isNull(groupId) || Objects.isNull(type)){
+            throw new JsonResponseException("请求参数错误不能为空！"); 
+        }
+        if(!PsItemGroupSkuType.EXCLUDE.value().equals(type) && !PsItemGroupSkuType.GROUP.value().equals(type)){
+            throw new JsonResponseException("请求参数type值错误！");
+        }
+        //1为组内商品，0为排除商品
+        // 校验该分组是否关联店或者仓的规则，如果关联规则不允许删除
+        this.checkCanDelGroup(groupId);        
+        boolean hasNext = true;
+        while(hasNext){
+            hasNext = doForRemoveGroup(1,1000,groupId,type);
+        }
+    }
 
+    /**
+     * 检查是否能清空该分组中的商品
+     * @param groupId
+     */
+    private void checkCanDelGroup(Long groupId){
+        Response<List<ItemRuleGroup>> itemRuleRes = itemRuleGroupReadService.findByGroupId(groupId);
+        if (!itemRuleRes.isSuccess()){
+            log.error("find ItemRuleGroup by groupId:{} fail,error:{}", groupId, itemRuleRes.getError());
+            throw new JsonResponseException(itemRuleRes.getError());
+        }
+        if (!CollectionUtils.isEmpty(itemRuleRes.getResult())){
+            List<Long> ruleIds = Lists.transform(itemRuleRes.getResult(), new Function<ItemRuleGroup, Long>() {
+                @Nullable
+                @Override
+                public Long apply(@Nullable ItemRuleGroup input) {
+                    return input.getRuleId();
+                }
+            });
+            log.info("该分组已关联规则,不允许清除商品：groupId:{} , itemRules:{}", groupId, itemRuleRes.getResult());
+            throw new JsonResponseException("该分组已关联规则,不允许清空商品,规则id:" + ruleIds);
+        }
+    }
+
+    /**
+     * 分页获取删除分组商品
+     * @param groupId
+     * @param type
+     */    
+    private Boolean doForRemoveGroup(int pageNo, int pageSize, Long groupId, Integer type){
+        ItemGroupSkuCriteria criteria = new ItemGroupSkuCriteria();
+        criteria.setPageNo(pageNo);
+        criteria.setPageSize(pageSize);
+        criteria.setGroupId(groupId);
+        criteria.setType(type);
+        Response<Paging<ItemGroupSku>> findResp = itemGroupSkuReadService.findByCriteria(criteria);
+
+        if (!findResp.isSuccess()) {
+            log.error("find itemGroupSkus by groupId:{}, type:{} fail,error:{}", groupId,type, findResp.getError());
+            throw new JsonResponseException(findResp.getError());
+        }
+        if(!CollectionUtils.isEmpty(findResp.getResult().getData())){
+            List<String> skuCodes = Lists.transform(findResp.getResult().getData(), new Function<ItemGroupSku, String>() {
+                @Nullable
+                @Override
+                public String apply(@Nullable ItemGroupSku input) {
+                    return input.getSkuCode();
+                }
+            });
+            List<Long> itemgroupskuids = Lists.transform(findResp.getResult().getData(), new Function<ItemGroupSku, Long>() {
+                @Nullable
+                @Override
+                public Long apply(@Nullable ItemGroupSku input) {
+                    return input.getId();
+                }
+            });
+            val rskuExist = skuTemplateReadService.findBySkuCodes(skuCodes);
+            if (!rskuExist.isSuccess()) {
+                log.error("find sku template by skuCodes:{} fail,error:{}", skuCodes, rskuExist.getError());
+                throw new JsonResponseException(rskuExist.getError());
+            }
+            //先批量删除该分页的分组商品，再异步更新搜索
+            itemGroupSkuWriteService.batchDeleteByids(itemgroupskuids);
+            for (SkuTemplate skuTemplate : rskuExist.getResult()){               
+                //异步更新es搜索
+                postUpdateSearchEvent(skuTemplate.getId());                
+            }
+            int currentCount = findResp.getResult().getData().size();
+            return currentCount == pageSize;
+        }
+        return Boolean.FALSE;
+    }    
 
     @ApiOperation("将货品移出分组")
     @PutMapping(value = "/api/sku-template/{id}/cancel/group")

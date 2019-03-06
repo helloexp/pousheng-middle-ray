@@ -47,10 +47,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 同步恒康发货单逻辑 for 开pos单
@@ -526,7 +523,7 @@ public class SyncShipmentPosLogic {
                 && Boolean.TRUE.toString().equals(shopOrder.getExtra().get(VipConstant.VIP_OXO_INVOICE_LOST))) {
             // 补偿再拉取一次唯品会发票信息
             Map<String, OpenClientOrderInvoice> openClientOrderInvoiceMap = vipInvoiceServerice.getOrderInvoice(
-                    shopOrder.getShopId(), Lists.newArrayList(shopOrder.getOutId()));
+                    shopOrder.getShopId(), Collections.singletonList(shopOrder.getOutId()));
             if (openClientOrderInvoiceMap.isEmpty()) {
                 // 还是拉不到就算了
                 log.warn("fail again for pull vip-oxo invoice");

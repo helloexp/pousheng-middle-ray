@@ -530,7 +530,7 @@ public class SyncShipmentPosLogic {
                 log.warn("fail again for pull vip-oxo invoice");
                 return;
             }
-            OpenClientOrderInvoice openClientOrderInvoice = openClientOrderInvoiceMap.get(0);
+            OpenClientOrderInvoice openClientOrderInvoice = openClientOrderInvoiceMap.get(shopOrder.getOutId());
             log.info("openClientOrderInvoice: {}", openClientOrderInvoice);
             if (Arguments.isNull(openClientOrderInvoice.getType())) {
                 //生成发票信息(可能生成失败)

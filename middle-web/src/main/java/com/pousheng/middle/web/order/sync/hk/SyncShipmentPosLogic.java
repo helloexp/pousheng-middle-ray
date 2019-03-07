@@ -524,14 +524,12 @@ public class SyncShipmentPosLogic {
             // 补偿再拉取一次唯品会发票信息
             Map<String, OpenClientOrderInvoice> openClientOrderInvoiceMap = vipInvoiceServerice.getOrderInvoice(
                     shopOrder.getShopId(), Collections.singletonList(shopOrder.getOutId()));
-            log.info("openClientOrderInvoiceMap: {}", openClientOrderInvoiceMap);
             if (openClientOrderInvoiceMap.isEmpty()) {
                 // 还是拉不到就算了
                 log.warn("fail again for pull vip-oxo invoice");
                 return;
             }
             OpenClientOrderInvoice openClientOrderInvoice = openClientOrderInvoiceMap.get(shopOrder.getOutId());
-            log.info("openClientOrderInvoice: {}", openClientOrderInvoice);
             if (Arguments.isNull(openClientOrderInvoice.getType())) {
                 //生成发票信息(可能生成失败)
                 log.warn("re-pull vip invoice fail as invoice type null");

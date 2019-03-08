@@ -83,6 +83,16 @@
 
     </delete>
 
+    <delete id="batchDeleteByIds" parameterType="map">
+        DELETE FROM
+        <include refid="tb"/>
+        WHERE id  IN
+        <foreach collection="ids" open="(" separator="," close=")" item="item">
+            #{item}
+        </foreach>
+
+    </delete>
+
 
     <select id="findById" parameterType="long" resultMap="ItemGroupSkuMap">
         SELECT
@@ -158,6 +168,22 @@
         WHERE sku_code = #{skuCode}
     </select>
 
+    <select id="findByGroupId"  resultMap="ItemGroupSkuMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        WHERE group_id = #{groupId}
+    </select>
+
+    <select id="findByGroupIdAndType"  resultMap="ItemGroupSkuMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/> as s
+        WHERE s.group_id = #{groupId} 
+        AND s.type = #{type}
+    </select>
 
     <select id="findByGroupIdAndSkuCode"   resultMap="ItemGroupSkuMap">
         SELECT

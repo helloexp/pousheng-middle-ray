@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
+import com.pousheng.middle.warehouse.dto.ShopStockRule;
 import com.pousheng.middle.warehouse.dto.ShopStockRuleDto;
 import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
 import io.terminus.common.model.Response;
@@ -142,6 +143,12 @@ public class YjJitInventoryPusher {
         //店铺商品分组
         List<String> filteredSkuCodes = stockPushLogic.filterShopSkuGroup(shopId, skuCodes);
         log.debug("yunju jit inventory push filteredSkuCodes:{}", filteredSkuCodes == null ? null : filteredSkuCodes.toString());
+        //店铺库存推送规则是否启用
+        ShopStockRule shopStockRule = warehouseShopRuleClient.findByShopId(shopId);
+        if(shopStockRule.getStatus().intValue()<0){
+            log.warn("there is no valid stock push rule for shop(id={}), so skip to continue", shopId);
+            return;
+        }
         //库存推送规则
         Map<String, ShopStockRuleDto> warehouseShopStockRules = stockPushLogic.getWarehouseShopStockRules(shopId,
             filteredSkuCodes);

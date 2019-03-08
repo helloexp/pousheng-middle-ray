@@ -4,6 +4,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import com.pousheng.middle.open.stock.yunju.dto.YjStockInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
+import com.pousheng.middle.warehouse.dto.ShopStockRule;
 import com.pousheng.middle.warehouse.dto.ShopStockRuleDto;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,8 @@ public class YjJitStockPusher {
     private StockPushCacher stockPushCacher;
     @Autowired
     private StockPusherLogic stockPushLogic;
+    @Autowired
+    private WarehouseShopRuleClient warehouseShopRuleClient;
 
     public void push(List<String> skuCodes) {
         stockPushLogic.getYjShop().forEach(openShop -> {
@@ -45,11 +49,19 @@ public class YjJitStockPusher {
             if (log.isDebugEnabled()) {
                 log.debug("yunju jit stock push filteredSkuCodes:{}", filteredSkuCodes == null ? null : filteredSkuCodes.toString());
             }
+            //店铺库存推送规则是否启用
+            ShopStockRule shopStockRule = warehouseShopRuleClient.findByShopId(shopId);
+            if(shopStockRule.getStatus().intValue()<0){
+                log.warn("there is no valid stock push rule for shop(id={}), so skip to continue", shopId);
+                return;
+            }
+
             //库存推送规则
             Map<String, ShopStockRuleDto> warehouseShopStockRules = stockPushLogic.getWarehouseShopStockRules(shopId, filteredSkuCodes);
             if (log.isDebugEnabled()) {
                 log.debug("yunju jit stock push warehouseShopStockRules:{}", warehouseShopStockRules == null ? null : warehouseShopStockRules.toString());
             }
+
             //过滤仓库商品分组
             Map<String, List<Long>> skuWareshouseIds = stockPushLogic.filterWarehouseSkuGroup(shopId, filteredSkuCodes, warehouseIds);
             if (log.isDebugEnabled()) {

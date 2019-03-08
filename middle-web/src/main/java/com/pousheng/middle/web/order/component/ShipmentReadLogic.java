@@ -479,9 +479,7 @@ public class ShipmentReadLogic {
 
         if (StringUtils.isEmpty(extraMap.get(TradeConstants.SHIPMENT_ITEM_INFO))) {
             List<ShipmentItem> list = findByShipmentId(shipment.getId());
-            list.stream().forEach(it -> {
-                it.setItemWarehouseName(shipmentExtra.getWarehouseName());
-            });
+            list.forEach(it ->  it.setItemWarehouseName(shipmentExtra.getWarehouseName()));
             return list;
         }
 

@@ -680,7 +680,8 @@ public class AdminOrderWriter {
             }
         }
 
-        Response<Boolean> r = doCancel(skuOrder, skuOrderCancelReason, targetStatus);
+        // 取消理由格式化为取消理由+数量，例如：协商后取消订单(1)
+        Response<Boolean> r = doCancel(skuOrder, String.format("%s(%d)", skuOrderCancelReason, skuOrder.getWithHold()), targetStatus);
         if (log.isDebugEnabled()) {
             log.debug("API-CUSTOMERSERVICEPARTIALCANCELSKUORDER-END param: id [{}] skuOrderCancelReason [{}]", id, skuOrderCancelReason);
         }

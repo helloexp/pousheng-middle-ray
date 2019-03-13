@@ -136,7 +136,7 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
                     skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefundExchange.getSkuCode());
                 }
                 //查询需要售后的发货单
-                Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefundExchange.getChannelSkuId(), skuOrder.getQuantity());
+                Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefundExchange.getChannelSkuId(), skuOfRefundExchange.getRefundNum());
 
                 if (!Objects.isNull(shipment)) {
                     refundExtra.setShipmentId(shipment.getShipmentCode());
@@ -151,7 +151,7 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
                         log.error("find warehouse info failed,caused by {}", Throwables.getStackTraceAsString(e));
                     }
                 }else{
-                    log.error("find shipment info failed,shopOrderId is {},skuCode is {},quantity is", shopOrder.getId(),skuOfRefundExchange.getSkuCode(),skuOrder.getQuantity());
+                    log.error("find shipment info failed,shopOrderId is {},skuCode is {},quantity is {}", shopOrder.getId(),skuOfRefundExchange.getSkuCode(),skuOfRefundExchange.getRefundNum());
                 }
 
                 RefundItem refundItem = new RefundItem();

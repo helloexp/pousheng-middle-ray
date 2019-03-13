@@ -451,7 +451,7 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
      * 判断订单中skuCode的商品是否经过数量级拆单
      *
      * @param shopOrderId 店铺订单id
-     * @param skuCode     商品条码
+     * @param outSkuCode  第三方skuId/Code
      * @return
      */
     @Override
@@ -462,6 +462,7 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
                     shopOrderId, skuOrdersR.getError());
             return true;
         }
+
         List<SkuOrder> skuOrders = skuOrdersR.getResult().stream().filter(skuOrder -> Objects.equals(skuOrder.getOutSkuId(),outSkuCode)).collect(Collectors.toList());
         for(SkuOrder skuOrder:skuOrders){
             //判断是否经过数量级拆单

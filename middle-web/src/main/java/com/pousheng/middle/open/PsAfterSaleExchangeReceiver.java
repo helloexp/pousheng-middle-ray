@@ -136,7 +136,7 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
                     skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefundExchange.getSkuCode());
                 }
                 //查询需要售后的发货单
-                Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefundExchange.getSkuCode(), skuOrder.getQuantity());
+                Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefundExchange.getChannelSkuId(), skuOrder.getQuantity());
 
                 if (!Objects.isNull(shipment)) {
                     refundExtra.setShipmentId(shipment.getShipmentCode());
@@ -159,7 +159,7 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
                     List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
                     ShipmentItem shipmentItem = shipmentItems
                             .stream().filter(shipmentItem1 ->
-                                    Objects.equals(shipmentItem1.getSkuCode(), skuOfRefundExchange.getSkuCode())).collect(Collectors.toList()).get(0);
+                                    Objects.equals(shipmentItem1.getOutSkuCode(), skuOfRefundExchange.getChannelSkuId())).collect(Collectors.toList()).get(0);
                     if ((shipmentItem.getRefundQuantity() == null ? 0 : shipmentItem.getRefundQuantity()) > 0) {
                         log.warn("this refund item has been applied,refundSkuCode is {}", skuOfRefundExchange.getSkuCode());
                         refund.setStatus(MiddleRefundStatus.DELETED.getValue());
@@ -212,6 +212,7 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
             changeRefundItem.setApplyQuantity(skuOfRefundExchange.getExchangeNum());
             changeRefundItem.setAlreadyHandleNumber(0);
             changeRefundItem.setSkuCode(skuOfRefundExchange.getExchangeSkuCode());
+            changeRefundItem.setOutSkuCode(skuOfRefundExchange.getChannelSkuId());
             //查询换货商品信息
 
             Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(skuOfRefundExchange.getExchangeSkuCode()));
@@ -372,7 +373,7 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
      * @param quantity    申请售后的数量
      * @return
      */
-    private Shipment findShipmentByOrderInfo(long shopOrderId, String skuCode, Integer quantity) {
+    private Shipment findShipmentByOrderInfo(long shopOrderId, String outSkuCode, Integer quantity) {
         Response<List<Shipment>> response = shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId, OrderLevel.SHOP);
         if (!response.isSuccess()) {
             log.error("find shipment failed,shopOrderId is ({})", shopOrderId);
@@ -383,7 +384,7 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
         for (Shipment shipment : shipments) {
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
             List<ShipmentItem> shipmentItemFilters = shipmentItems.stream().
-                    filter(Objects::nonNull).filter(shipmentItem -> Objects.equals(shipmentItem.getSkuCode(), skuCode))
+                    filter(Objects::nonNull).filter(shipmentItem -> Objects.equals(shipmentItem.getOutSkuCode(), outSkuCode))
                     .filter(shipmentItem -> (shipmentItem.getQuantity() >= quantity)).collect(Collectors.toList());
             if (shipmentItemFilters.size() > 0) {
                 return shipment;

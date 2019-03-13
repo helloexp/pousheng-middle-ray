@@ -32,8 +32,24 @@ public class ItemGroupSkuDao extends MyBatisDao<ItemGroupSku> {
         return getSqlSession().delete(sqlId("batchDelete"), ImmutableMap.of("groupId", groupId, "skuCodes", skuCodes, "type", type, "mark", mark));
     }
 
+    public Integer batchDeleteByIds(List<Long> ids) {
+        return getSqlSession().delete(sqlId("batchDeleteByIds"), ImmutableMap.of("ids", ids));
+    }
+
     public Long countGroupSku(Long groupId) {
         return getSqlSession().selectOne(sqlId("countGroupSku"), ImmutableMap.of("groupId", groupId, "type", PsItemGroupSkuType.GROUP.value()));
+    }
+
+    public Long countGroupSkuAndType(Long groupId,Integer type) {
+        return getSqlSession().selectOne(sqlId("countGroupSku"), ImmutableMap.of("groupId", groupId, "type", type));
+    }
+
+    public List<ItemGroupSku> findByGroupId(Long groupId) {
+        return getSqlSession().selectList(sqlId("findByGroupId"), groupId);
+    }
+
+    public List<ItemGroupSku> findByGroupIdAndType(Long groupId, Integer type) {
+        return getSqlSession().selectList(sqlId("findByGroupIdAndType"), ImmutableMap.of("groupId",groupId,"type",type));
     }
 
 }

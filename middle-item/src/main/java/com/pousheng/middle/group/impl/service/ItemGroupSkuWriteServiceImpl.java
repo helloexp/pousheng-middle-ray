@@ -80,5 +80,10 @@ public class ItemGroupSkuWriteServiceImpl implements ItemGroupSkuWriteService {
         return itemGroupSkuManager.deleteByGroupIdAndSkuId(groupId, skuCode);
     }
 
+    @Override
+    public Response<Integer> batchDeleteByids(List<Long> ids) {
+        return itemGroupSkuManager.batchDeleteByIds(ids);
+    }
+
 
 }

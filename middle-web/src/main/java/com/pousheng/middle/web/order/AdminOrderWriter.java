@@ -668,10 +668,13 @@ public class AdminOrderWriter {
                         .findFirst()
                         .orElse(null);
 
+                // 发货单状态参考 MiddleShipmentsStatus
                 if (minStatus == null) {
                     targetStatus = MiddleOrderStatus.WAIT_HANDLE;
                 } else if (minStatus == 6 || minStatus == -6) {
                     targetStatus = MiddleOrderStatus.CONFIRMED;
+                } else if ( minStatus == 7) {
+                    targetStatus = MiddleOrderStatus.WAIT_SHIP;
                 } else if (minStatus >= -4 && minStatus <= 4) {
                     targetStatus = MiddleOrderStatus.WAIT_SHIP;
                 } else if (minStatus == 5) {

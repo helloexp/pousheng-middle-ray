@@ -16,11 +16,11 @@ public enum MiddleChannel {
     OFFICIAL("official", "官网"),
     SUNINGSALE("suning-sale", "苏宁特卖"),
     YUNJUBBC("yunjubbc", "云聚BBC"),
-    CODOON("codoon","咕咚"),
+    CODOON("codoon", "咕咚"),
     YUNJUJIT("yunjujit", "云聚JIT"),
     YUNJURT("yunjurt", "云聚rt"),
-    VIPOXO("vipoxo","唯品会"),
-    KAOLA("kaola","网易考拉");
+    VIPOXO("vipoxo", "唯品会"),
+    KAOLA("kaola", "网易考拉");
 
     private final String value;
 
@@ -30,16 +30,21 @@ public enum MiddleChannel {
         this.value = value;
         this.desc = desc;
     }
-    public String getValue(){return value;}
 
-    public String getDesc(){return desc;}
+    public String getValue() {
+        return value;
+    }
 
-    public static MiddleChannel from(String value){
+    public String getDesc() {
+        return desc;
+    }
+
+    public static MiddleChannel from(String value) {
         for (MiddleChannel middleChannel : MiddleChannel.values()) {
-            if(Objects.equal(middleChannel.value, value)){
+            if (Objects.equal(middleChannel.value, value)) {
                 return middleChannel;
             }
         }
-        throw new IllegalArgumentException("unknown middle channel type: "+value);
+        throw new IllegalArgumentException("unknown middle channel type: " + value);
     }
 }

@@ -49,7 +49,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -268,7 +267,7 @@ public class yyEDIOpenApi {
      * @param shipInfo yyEdi or yjErp 回调中台传回发货信息
      */
     public void dealErpShipmentInfo(String shipInfo) {
-        List<YyEdiShipInfo> results = null;
+        List<YyEdiShipInfo> results;
         List<YyEdiResponseDetail> fields = Lists.newArrayList();
         List<YyEdiShipInfo> okShipInfos = Lists.newArrayList();
         YyEdiResponse error = new YyEdiResponse();

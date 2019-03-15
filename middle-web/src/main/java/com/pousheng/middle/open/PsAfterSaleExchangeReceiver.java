@@ -179,7 +179,7 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
 
                         refund.setFee(shipmentItem.getCleanPrice()*skuOfRefundExchange.getRefundNum().longValue());
 
-                        updateShipmentItemRefundQuantity(skuOfRefundExchange.getSkuCode(), skuOfRefundExchange.getRefundNum(), shipmentItems);
+                        updateShipmentItemRefundQuantity(skuOfRefundExchange.getChannelSkuId(), skuOfRefundExchange.getRefundNum(), shipmentItems);
 
                         if (!Objects.equals(refund.getStatus(), MiddleRefundStatus.CANCELED.getValue())) {
                             shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
@@ -212,7 +212,7 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
             changeRefundItem.setApplyQuantity(skuOfRefundExchange.getExchangeNum());
             changeRefundItem.setAlreadyHandleNumber(0);
             changeRefundItem.setSkuCode(skuOfRefundExchange.getExchangeSkuCode());
-            changeRefundItem.setOutSkuCode(skuOfRefundExchange.getChannelSkuId());
+            changeRefundItem.setOutSkuCode(skuOfRefundExchange.getChannelExchangeSkuId());
             //查询换货商品信息
 
             Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(skuOfRefundExchange.getExchangeSkuCode()));
@@ -474,12 +474,11 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
     }
 
     //更新发货单商品中的已退货数量
-    private void updateShipmentItemRefundQuantity(String skuCode, Integer refundQuantity, List<ShipmentItem> shipmentItems) {
+    private void updateShipmentItemRefundQuantity(String outSkuCode, Integer refundQuantity, List<ShipmentItem> shipmentItems) {
         for (ShipmentItem shipmentItem : shipmentItems) {
-            if (Objects.equals(skuCode, shipmentItem.getSkuCode())) {
+            if (Objects.equals(outSkuCode, shipmentItem.getOutSkuCode())) {
                 shipmentItem.setRefundQuantity((shipmentItem.getRefundQuantity() == null ? 0 : shipmentItem.getRefundQuantity()) + refundQuantity);
             }
         }
     }
-
 }

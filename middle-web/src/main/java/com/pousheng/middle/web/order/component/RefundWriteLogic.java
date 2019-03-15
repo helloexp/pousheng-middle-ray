@@ -64,7 +64,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -441,7 +440,7 @@ public class RefundWriteLogic {
         if (!Objects.equals(submitRefundInfo.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())) {
             for (EditSubmitRefundItem editSubmitRefundItem : submitRefundInfo.getEditSubmitRefundItems()) {
                 //更新发货单中已经售后的商品的数量
-                updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundSkuCode(),
+                updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundOutSkuCode(),
                         editSubmitRefundItem.getRefundQuantity(), shipmentItems);
             }
         }
@@ -1102,9 +1101,10 @@ public class RefundWriteLogic {
         //获取发货单skuCode-发货单商品的map集合
         Map<String, ShipmentItem> skuCodesAndShipmentItems = Maps.newHashMap();
         shipmentItems.forEach(shipmentItem -> {
-            skuCodesAndQuantity.put(shipmentItem.getOutSkuCode(), shipmentItem.getQuantity());
-            skuCodesAndShipmentItems.put(shipmentItem.getOutSkuCode(), shipmentItem);
-            skuCodes.add(shipmentItem.getOutSkuCode());
+            String outSkuCode = getShipmentItemOutSkuCode(shipmentItem);
+            skuCodesAndQuantity.put(outSkuCode, shipmentItem.getQuantity());
+            skuCodesAndShipmentItems.put(outSkuCode, shipmentItem);
+            skuCodes.add(outSkuCode);
         });
         List<RefundItem> refundItems = Lists.newArrayList();
         int count = 0;
@@ -1162,16 +1162,17 @@ public class RefundWriteLogic {
         //获取发货单skuCode-发货单商品的map集合
         Map<String, ShipmentItem> skuCodesAndShipmentItems = Maps.newHashMap();
         shipmentItems.forEach(shipmentItem -> {
-            skuCodesAndQuantity.put(shipmentItem.getSkuCode(), shipmentItem.getQuantity());
-            skuCodesAndShipmentItems.put(shipmentItem.getSkuCode(), shipmentItem);
-            skuCodes.add(shipmentItem.getSkuCode());
+            String outSkuCode = getShipmentItemOutSkuCode(shipmentItem);
+            skuCodesAndQuantity.put(outSkuCode, shipmentItem.getQuantity());
+            skuCodesAndShipmentItems.put(outSkuCode, shipmentItem);
+            skuCodes.add(outSkuCode);
         });
         List<RefundItem> refundItems = Lists.newArrayList();
         int count = 0;
         //判断请求的skuCode在不在申请的发货单中，count>0代表存在skuCode不在发货单中
         List<String> invalidSkuCodes = Lists.newArrayList();
         for (EditSubmitRefundItem editSubmitRefundItem : editSubmitRefundItems) {
-            if (skuCodes.contains(editSubmitRefundItem.getRefundSkuCode())) {
+            if (skuCodes.contains(editSubmitRefundItem.getRefundOutSkuCode())) {
                 if (!Objects.isNull(editSubmitRefundItem.getRefundQuantity())) {
                     //判断金额是否小于0
                     if (editSubmitRefundItem.getRefundQuantity() < 0) {
@@ -1179,16 +1180,16 @@ public class RefundWriteLogic {
                         throw new JsonResponseException("refund.apply.quantity.invalid");
                     }
                     //判断申请售后的商品数量是否大于发货单中商品的数量
-                    if (editSubmitRefundItem.getRefundQuantity() > skuCodesAndQuantity.get(editSubmitRefundItem.getRefundSkuCode())) {
-                        log.error("refund applyQuantity:{} gt available applyQuantity:{}", editSubmitRefundItem.getRefundQuantity(), skuCodesAndQuantity.get(editSubmitRefundItem.getRefundSkuCode()));
+                    if (editSubmitRefundItem.getRefundQuantity() > skuCodesAndQuantity.get(editSubmitRefundItem.getRefundOutSkuCode())) {
+                        log.error("refund applyQuantity:{} gt available applyQuantity:{}", editSubmitRefundItem.getRefundQuantity(), skuCodesAndQuantity.get(editSubmitRefundItem.getRefundOutSkuCode()));
                         throw new JsonResponseException("refund.apply.quantity.invalid");
                     }
                 } else { //云聚没传的话
-                    editSubmitRefundItem.setRefundQuantity(skuCodesAndQuantity.get(editSubmitRefundItem.getRefundSkuCode()));
+                    editSubmitRefundItem.setRefundQuantity(skuCodesAndQuantity.get(editSubmitRefundItem.getRefundOutSkuCode()));
                 }
 
                 RefundItem refundItem = new RefundItem();
-                ShipmentItem shipmentItem = skuCodesAndShipmentItems.get(editSubmitRefundItem.getRefundSkuCode());
+                ShipmentItem shipmentItem = skuCodesAndShipmentItems.get(editSubmitRefundItem.getRefundOutSkuCode());
                 BeanMapper.copy(shipmentItem, refundItem);
                 //填入实际申请售后的数量
                 refundItem.setApplyQuantity(editSubmitRefundItem.getRefundQuantity());
@@ -1211,7 +1212,7 @@ public class RefundWriteLogic {
     //更新发货单商品中的已退货数量
     public void updateShipmentItemRefundQuantity(String skuCode, Integer refundQuantity, List<ShipmentItem> shipmentItems) {
         for (ShipmentItem shipmentItem : shipmentItems) {
-            if (Objects.equals(skuCode, shipmentItem.getSkuCode())) {
+            if (Objects.equals(skuCode, getShipmentItemOutSkuCode(shipmentItem))) {
                 shipmentItem.setRefundQuantity((shipmentItem.getRefundQuantity() == null ? 0 : shipmentItem.getRefundQuantity()) + refundQuantity);
             }
         }
@@ -2435,5 +2436,12 @@ public class RefundWriteLogic {
         }
         return Response.ok(Boolean.TRUE);
 
+    }
+
+    private String getShipmentItemOutSkuCode(ShipmentItem shipmentItem) {
+        if (StringUtils.isEmpty(shipmentItem.getOutSkuCode())) {
+            return shipmentItem.getSkuCode();
+        }
+        return shipmentItem.getOutSkuCode();
     }
 }

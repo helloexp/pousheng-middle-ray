@@ -27,7 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -313,7 +312,7 @@ public class RefundReadLogic {
      */
     public int getAlreadyRefundFee(String orderCode, Long refundId, String shipmentCode, List<RefundFeeData> refundFeeDatas) {
         //传输进来的售后单sku集合
-        List<String> editSkuCodes = refundFeeDatas.stream().map(RefundFeeData::getSkuCode).collect(Collectors.toList());
+        List<String> editSkuCodes = refundFeeDatas.stream().map(RefundFeeData::getOutSkuCode).collect(Collectors.toList());
         //传输进来的售后单sku以及数量的map
         Map<String, Integer> editSkuCodeAndQuantityMap = Maps.newHashMap();
         refundFeeDatas.forEach(refundFeeData -> editSkuCodeAndQuantityMap.put(refundFeeData.getOutSkuCode(), refundFeeData.getApplyQuantity()));
@@ -340,7 +339,7 @@ public class RefundReadLogic {
                 continue;
             }
             List<RefundItem> refundItems = this.findRefundItems(refund);
-            List<String> skuCodes = refundItems.stream().map(RefundItem::getSkuCode).collect(Collectors.toList());
+            List<String> skuCodes = refundItems.stream().map(this::getRefundOutSkuCode).collect(Collectors.toList());
             for (String skuCode : editSkuCodes) {
                 if (skuCodes.contains(skuCode)) {
                     alreadyRefundFee += refund.getFee();
@@ -352,10 +351,10 @@ public class RefundReadLogic {
         Integer totalCleanFee = 0; //商品总净价
         Integer totalEditCleanFee = 0; //申请的商品总净价
         for (ShipmentItem shipmentItem : shipmentItems) {
-            if (editSkuCodeAndQuantityMap.containsKey(shipmentItem.getSkuCode())) {
+            if (editSkuCodeAndQuantityMap.containsKey(getShipmentItemOutSkuCode(shipmentItem))) {
                 //获取商品净价
                 totalCleanFee += shipmentItem.getCleanFee();
-                totalEditCleanFee += (shipmentItem.getCleanPrice() == null ? 0 : shipmentItem.getCleanPrice()) * editSkuCodeAndQuantityMap.get(shipmentItem.getOutSkuCode());
+                totalEditCleanFee += (shipmentItem.getCleanPrice() == null ? 0 : shipmentItem.getCleanPrice()) * editSkuCodeAndQuantityMap.get(getShipmentItemOutSkuCode(shipmentItem));
             }
         }
         //未退款金额
@@ -499,4 +498,17 @@ public class RefundReadLogic {
         return response.getResult();
     }
 
+    private String getShipmentItemOutSkuCode(ShipmentItem shipmentItem) {
+        if (StringUtils.isEmpty(shipmentItem.getOutSkuCode())) {
+            return shipmentItem.getSkuCode();
+        }
+        return shipmentItem.getOutSkuCode();
+    }
+
+    private String getRefundOutSkuCode(RefundItem refundItem) {
+        if (StringUtils.isEmpty(refundItem.getOutSkuCode())) {
+            return refundItem.getSkuCode();
+        }
+        return refundItem.getOutSkuCode();
+    }
 }

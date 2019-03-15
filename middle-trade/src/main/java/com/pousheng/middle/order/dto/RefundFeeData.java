@@ -1,6 +1,7 @@
 package com.pousheng.middle.order.dto;
 
 import lombok.Data;
+import org.springframework.util.StringUtils;
 
 /**
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
@@ -14,4 +15,11 @@ public class RefundFeeData implements java.io.Serializable{
     private String outSkuCode;
     private Integer applyQuantity;
     private Integer cleanPrice;
+
+    public String getOutSkuCode() {
+        if (StringUtils.isEmpty(outSkuCode)) {
+            return skuCode;
+        }
+        return outSkuCode;
+    }
 }

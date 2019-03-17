@@ -250,8 +250,8 @@ public class SyncShipmentPosLogic {
             Map<String, String> shopOrderExtra = shopOrder.getExtra();
             String isStoreScanCode = shopOrderExtra.get("is_store_scan_code");
             if (!StringUtils.isEmpty(isStoreScanCode) && Objects.equal(isStoreScanCode, "true")) {  //门店扫码订单
-                posContent.setCompanyid("244");//绩效店铺所属公司id
-                posContent.setShopcode("SP004481");//绩效店铺code
+                posContent.setNetcompanyid("244");//绩效店铺所属公司id
+                posContent.setNetshopcode("SP004481");//绩效店铺code
             }
         }
         posContent.setVoidstockcode(posStockCode);//todo 实际发货账套的虚拟仓代码

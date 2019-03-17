@@ -290,9 +290,9 @@ public class SyncRefundPosLogic {
         Map<String,Integer> refundItemAndPriceMap = Maps.newHashMap();
         Map<String,Integer> skuCodeAndShareDiscountMap = Maps.newHashMap();
         for (RefundItem refundItem:refundItems){
-            String outSkuCode = OutSkuCodeUtil.getRefundItemOutSkuCode(refundItem);
-            refundItemAndPriceMap.put(outSkuCode,refundItem.getCleanPrice());
-            skuCodeAndShareDiscountMap.put(outSkuCode,refundItem.getSharePlatformDiscount());
+            String complexSkuCode = OutSkuCodeUtil.getRefundItemComplexSkuCode(refundItem);
+            refundItemAndPriceMap.put(complexSkuCode,refundItem.getCleanPrice());
+            skuCodeAndShareDiscountMap.put(complexSkuCode,refundItem.getSharePlatformDiscount());
         }
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundYYEdiConfirmItems.size());
         for (YYEdiRefundConfirmItem refundConfirmItem : refundYYEdiConfirmItems){
@@ -305,9 +305,9 @@ public class SyncRefundPosLogic {
             hkShipmentPosItem.setSourcenetbillno(shipmentCode);
             hkShipmentPosItem.setMatbarcode(refundConfirmItem.getItemCode());
             hkShipmentPosItem.setQty(Integer.valueOf(refundConfirmItem.getQuantity()));
-            String outSkuCodeKey = OutSkuCodeUtil.getYYEdiRefundConfirmItemOutSkuCode(refundConfirmItem);
-            Integer cleanPrice = refundItemAndPriceMap.get(outSkuCodeKey);
-            Integer sharePlatformDiscount = skuCodeAndShareDiscountMap.get(outSkuCodeKey);
+            String complexSkuCodeKey = OutSkuCodeUtil.getYYEdiRefundConfirmItemComplexSkuCode(refundConfirmItem);
+            Integer cleanPrice = refundItemAndPriceMap.get(complexSkuCodeKey);
+            Integer sharePlatformDiscount = skuCodeAndShareDiscountMap.get(complexSkuCodeKey);
             hkShipmentPosItem.setBalaprice(new BigDecimal(cleanPrice == null ? 0 : cleanPrice)
                     .divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             hkShipmentPosItem.setCouponprice(new BigDecimal(sharePlatformDiscount == null ? 0 : sharePlatformDiscount)

@@ -88,7 +88,7 @@ public class HKShipmentDoneLogic {
     private AutoCompensateLogic autoCompensateLogic;
 
     public void doneShipment(Shipment shipment) {
-        log.info("HK SHIPMENT DONE LISTENER start, shipmentId is {},shipmentType is {}", shipment.getId(), shipment.getType());
+        log.info("HK SHIPMENT DONE LISTENER start, shipmentId is {}, shipmentType is {}", shipment.getId(), shipment.getType());
         //判断发货单是否发货完
         if (shipment.getType() == ShipmentType.SALES_SHIP.value()) {
             //判断发货单是否已经全部发货完成,如果全部发货完成之后需要更新order的状态为待收货

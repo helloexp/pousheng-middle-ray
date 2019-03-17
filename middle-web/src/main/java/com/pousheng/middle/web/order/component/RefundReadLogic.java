@@ -12,6 +12,7 @@ import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.service.MiddleRefundReadService;
+import com.pousheng.middle.web.utils.OutSkuCodeUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -339,7 +340,7 @@ public class RefundReadLogic {
                 continue;
             }
             List<RefundItem> refundItems = this.findRefundItems(refund);
-            List<String> skuCodes = refundItems.stream().map(this::getRefundOutSkuCode).collect(Collectors.toList());
+            List<String> skuCodes = refundItems.stream().map(OutSkuCodeUtil::getRefundItemOutSkuCode).collect(Collectors.toList());
             for (String skuCode : editSkuCodes) {
                 if (skuCodes.contains(skuCode)) {
                     alreadyRefundFee += refund.getFee();
@@ -351,10 +352,11 @@ public class RefundReadLogic {
         Integer totalCleanFee = 0; //商品总净价
         Integer totalEditCleanFee = 0; //申请的商品总净价
         for (ShipmentItem shipmentItem : shipmentItems) {
-            if (editSkuCodeAndQuantityMap.containsKey(getShipmentItemOutSkuCode(shipmentItem))) {
+            if (editSkuCodeAndQuantityMap.containsKey(OutSkuCodeUtil.getShipmentItemOutSkuCode(shipmentItem))) {
                 //获取商品净价
                 totalCleanFee += shipmentItem.getCleanFee();
-                totalEditCleanFee += (shipmentItem.getCleanPrice() == null ? 0 : shipmentItem.getCleanPrice()) * editSkuCodeAndQuantityMap.get(getShipmentItemOutSkuCode(shipmentItem));
+                totalEditCleanFee += (shipmentItem.getCleanPrice() == null ? 0
+                        : shipmentItem.getCleanPrice()) * editSkuCodeAndQuantityMap.get(OutSkuCodeUtil.getShipmentItemOutSkuCode(shipmentItem));
             }
         }
         //未退款金额
@@ -496,19 +498,5 @@ public class RefundReadLogic {
             throw new JsonResponseException("fix.refund.express.failed");
         }
         return response.getResult();
-    }
-
-    private String getShipmentItemOutSkuCode(ShipmentItem shipmentItem) {
-        if (StringUtils.isEmpty(shipmentItem.getOutSkuCode())) {
-            return shipmentItem.getSkuCode();
-        }
-        return shipmentItem.getOutSkuCode();
-    }
-
-    private String getRefundOutSkuCode(RefundItem refundItem) {
-        if (StringUtils.isEmpty(refundItem.getOutSkuCode())) {
-            return refundItem.getSkuCode();
-        }
-        return refundItem.getOutSkuCode();
     }
 }

@@ -1,14 +1,13 @@
 package com.pousheng.middle.order.dto;
 
 import lombok.Data;
-
 import java.io.Serializable;
 
 /**
  * Created by songrenfei on 2017/6/26
  */
 @Data
-public class RefundItem extends BasicItemInfo implements Serializable{
+public class RefundItem extends BasicItemInfo implements Serializable, Comparable<RefundItem> {
 
     private static final long serialVersionUID = 4505554839511740470L;
 
@@ -50,4 +49,23 @@ public class RefundItem extends BasicItemInfo implements Serializable{
      */
     private Integer finalRefundQuantity;
 
+    /**
+     * 按照 quantity 降序
+     * 考虑到 quantity 可能为 null, 这里特殊处理 null 排在最后
+     * @param o
+     * @return
+     */
+    @Override
+    public int compareTo(RefundItem o) {
+        if (o.getApplyQuantity() == null && this.getApplyQuantity() == null) {
+            return 0;
+        }
+        if (this.getApplyQuantity() == null) {
+            return 1;
+        }
+        if (o.getApplyQuantity() == null) {
+            return -1;
+        }
+        return o.getApplyQuantity().compareTo(this.getApplyQuantity());
+    }
 }

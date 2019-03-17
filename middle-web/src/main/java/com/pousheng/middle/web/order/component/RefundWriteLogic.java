@@ -34,6 +34,7 @@ import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.utils.OutSkuCodeUtil;
 import com.pousheng.middle.web.warehouses.component.WarehouseSkuStockLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -1101,7 +1102,7 @@ public class RefundWriteLogic {
         //获取发货单skuCode-发货单商品的map集合
         Map<String, ShipmentItem> skuCodesAndShipmentItems = Maps.newHashMap();
         shipmentItems.forEach(shipmentItem -> {
-            String outSkuCode = getShipmentItemOutSkuCode(shipmentItem);
+            String outSkuCode = OutSkuCodeUtil.getShipmentItemOutSkuCode(shipmentItem);
             skuCodesAndQuantity.put(outSkuCode, shipmentItem.getQuantity());
             skuCodesAndShipmentItems.put(outSkuCode, shipmentItem);
             skuCodes.add(outSkuCode);
@@ -1162,7 +1163,7 @@ public class RefundWriteLogic {
         //获取发货单skuCode-发货单商品的map集合
         Map<String, ShipmentItem> skuCodesAndShipmentItems = Maps.newHashMap();
         shipmentItems.forEach(shipmentItem -> {
-            String outSkuCode = getShipmentItemOutSkuCode(shipmentItem);
+            String outSkuCode = OutSkuCodeUtil.getShipmentItemOutSkuCode(shipmentItem);
             skuCodesAndQuantity.put(outSkuCode, shipmentItem.getQuantity());
             skuCodesAndShipmentItems.put(outSkuCode, shipmentItem);
             skuCodes.add(outSkuCode);
@@ -1212,7 +1213,7 @@ public class RefundWriteLogic {
     //更新发货单商品中的已退货数量
     public void updateShipmentItemRefundQuantity(String skuCode, Integer refundQuantity, List<ShipmentItem> shipmentItems) {
         for (ShipmentItem shipmentItem : shipmentItems) {
-            if (Objects.equals(skuCode, getShipmentItemOutSkuCode(shipmentItem))) {
+            if (Objects.equals(skuCode, OutSkuCodeUtil.getShipmentItemOutSkuCode(shipmentItem))) {
                 shipmentItem.setRefundQuantity((shipmentItem.getRefundQuantity() == null ? 0 : shipmentItem.getRefundQuantity()) + refundQuantity);
             }
         }
@@ -2436,12 +2437,5 @@ public class RefundWriteLogic {
         }
         return Response.ok(Boolean.TRUE);
 
-    }
-
-    private String getShipmentItemOutSkuCode(ShipmentItem shipmentItem) {
-        if (StringUtils.isEmpty(shipmentItem.getOutSkuCode())) {
-            return shipmentItem.getSkuCode();
-        }
-        return shipmentItem.getOutSkuCode();
     }
 }

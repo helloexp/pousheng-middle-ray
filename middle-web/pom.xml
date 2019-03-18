@@ -5,7 +5,7 @@
     <parent>
         <artifactId>pousheng-middle</artifactId>
         <groupId>com.pousheng</groupId>
-        <version>4.3.2.RELEASE</version>
+        <version>4.3.3.RELEASE</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -282,6 +282,7 @@
     </dependencies>
 
     <build>
+        <finalName>application</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

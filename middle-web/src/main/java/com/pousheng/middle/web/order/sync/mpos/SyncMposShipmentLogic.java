@@ -188,7 +188,13 @@ public class SyncMposShipmentLogic{
         shipmentWiteLogic.update(update);
 
         //验证店铺最大接单量是否超过阀值
-        shopMaxOrderLogic.checkMaxOrderAcceptQty(shipment);
+        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+        String isCustomerPickUp = shopOrder.getExtra().get(TradeConstants.IS_CUSTOMER_PICK_UP);
+
+        if(!"true".equalsIgnoreCase(isCustomerPickUp)) {
+            shopMaxOrderLogic.checkMaxOrderAcceptQty(shipment);
+        }
         return Response.ok(true);
     }
 

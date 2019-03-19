@@ -202,19 +202,19 @@ public class YyediSyncRefundService implements CompensateBizService {
         //实际退货sku-quantity集合
         Map<String,String> refundConfirmItemAndQuantity =
                 items.stream().filter(Objects::nonNull).collect(Collectors.toMap(
-                        OutSkuCodeUtil::getYYEdiRefundConfirmItemOutSkuCode, YYEdiRefundConfirmItem::getQuantity));
+                        OutSkuCodeUtil::getYYEdiRefundConfirmItemComplexSkuCode, YYEdiRefundConfirmItem::getQuantity));
         //售后申请sku-quantity的集合
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         Map<String,Integer> refundApplyItemAndQuantity = refundItems.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(OutSkuCodeUtil::getRefundItemOutSkuCode,RefundItem::getApplyQuantity));
+                .collect(Collectors.toMap(OutSkuCodeUtil::getRefundItemComplexSkuCode,RefundItem::getApplyQuantity));
         //校准后发货单售后实际申请数量=当前发货单售后申请数量-(退货单申请数量-售后实际入库数量)
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         for (ShipmentItem shipmentItem:shipmentItems){
-            String shipmentOutSkuCode = OutSkuCodeUtil.getShipmentItemOutSkuCode(shipmentItem);
-            if (refundConfirmItemAndQuantity.containsKey(shipmentOutSkuCode)){
+            String shipmentComplexSkuCode = OutSkuCodeUtil.getShipmentItemComplexSkuCode(shipmentItem);
+            if (refundConfirmItemAndQuantity.containsKey(shipmentComplexSkuCode)){
                 shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity()-
-                        (refundApplyItemAndQuantity.get(shipmentOutSkuCode))-
-                                Integer.valueOf(refundConfirmItemAndQuantity.get(shipmentOutSkuCode)));
+                        (refundApplyItemAndQuantity.get(shipmentComplexSkuCode))-
+                                Integer.valueOf(refundConfirmItemAndQuantity.get(shipmentComplexSkuCode)));
                 shipmentItem.setShipmentId(shipment.getId());
             }
         }
@@ -224,13 +224,13 @@ public class YyediSyncRefundService implements CompensateBizService {
         //判断申请数量与实际入库数量是否一致
         int count = 0;
         for (RefundItem refundItem:refundItems){
-            String refundItemOutSkuCode = OutSkuCodeUtil.getRefundItemOutSkuCode(refundItem);
-            String confirmQuantity = refundConfirmItemAndQuantity.get(refundItemOutSkuCode);
+            String refundItemComplexSkuCode = OutSkuCodeUtil.getRefundItemComplexSkuCode(refundItem);
+            String confirmQuantity = refundConfirmItemAndQuantity.get(refundItemComplexSkuCode);
             if (confirmQuantity != null){
                 //判断申请数量是否一致
                 if (!Objects.equals(Integer.valueOf(confirmQuantity),refundItem.getApplyQuantity())){
                     log.warn("refund item apply quantity not equals confirmed quantity,refundId {},outSkuCode {},applyQuantity{},confirmedQuantity {}",
-                            refund.getId(), refundItemOutSkuCode,refundItem.getApplyQuantity(), confirmQuantity);
+                            refund.getId(), refundItemComplexSkuCode,refundItem.getApplyQuantity(), confirmQuantity);
                     count++;
                 }
             }else{

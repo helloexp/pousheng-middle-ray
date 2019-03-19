@@ -313,10 +313,10 @@ public class RefundReadLogic {
      */
     public int getAlreadyRefundFee(String orderCode, Long refundId, String shipmentCode, List<RefundFeeData> refundFeeDatas) {
         //传输进来的售后单sku集合
-        List<String> editSkuCodes = refundFeeDatas.stream().map(RefundFeeData::getOutSkuCode).collect(Collectors.toList());
+        List<String> editSkuCodes = refundFeeDatas.stream().map(RefundFeeData::getComplexSkuCode).collect(Collectors.toList());
         //传输进来的售后单sku以及数量的map
         Map<String, Integer> editSkuCodeAndQuantityMap = Maps.newHashMap();
-        refundFeeDatas.forEach(refundFeeData -> editSkuCodeAndQuantityMap.put(refundFeeData.getOutSkuCode(), refundFeeData.getApplyQuantity()));
+        refundFeeDatas.forEach(refundFeeData -> editSkuCodeAndQuantityMap.put(refundFeeData.getComplexSkuCode(), refundFeeData.getApplyQuantity()));
         //获取订单信息
         Response<List<Refund>> rltRes = refundReadService.findByOrderCodeAndOrderLevel(orderCode, OrderLevel.SHOP);
         if (!rltRes.isSuccess()) {
@@ -340,7 +340,7 @@ public class RefundReadLogic {
                 continue;
             }
             List<RefundItem> refundItems = this.findRefundItems(refund);
-            List<String> skuCodes = refundItems.stream().map(OutSkuCodeUtil::getRefundItemOutSkuCode).collect(Collectors.toList());
+            List<String> skuCodes = refundItems.stream().map(OutSkuCodeUtil::getRefundItemComplexSkuCode).collect(Collectors.toList());
             for (String skuCode : editSkuCodes) {
                 if (skuCodes.contains(skuCode)) {
                     alreadyRefundFee += refund.getFee();
@@ -352,11 +352,11 @@ public class RefundReadLogic {
         Integer totalCleanFee = 0; //商品总净价
         Integer totalEditCleanFee = 0; //申请的商品总净价
         for (ShipmentItem shipmentItem : shipmentItems) {
-            if (editSkuCodeAndQuantityMap.containsKey(OutSkuCodeUtil.getShipmentItemOutSkuCode(shipmentItem))) {
+            if (editSkuCodeAndQuantityMap.containsKey(OutSkuCodeUtil.getShipmentItemComplexSkuCode(shipmentItem))) {
                 //获取商品净价
                 totalCleanFee += shipmentItem.getCleanFee();
                 totalEditCleanFee += (shipmentItem.getCleanPrice() == null ? 0
-                        : shipmentItem.getCleanPrice()) * editSkuCodeAndQuantityMap.get(OutSkuCodeUtil.getShipmentItemOutSkuCode(shipmentItem));
+                        : shipmentItem.getCleanPrice()) * editSkuCodeAndQuantityMap.get(OutSkuCodeUtil.getShipmentItemComplexSkuCode(shipmentItem));
             }
         }
         //未退款金额

@@ -16,10 +16,10 @@ public class RefundFeeData implements java.io.Serializable{
     private Integer applyQuantity;
     private Integer cleanPrice;
 
-    public String getOutSkuCode() {
+    public String getComplexSkuCode() {
         if (StringUtils.isEmpty(outSkuCode)) {
             return skuCode;
         }
-        return outSkuCode;
+        return skuCode + outSkuCode;
     }
 }

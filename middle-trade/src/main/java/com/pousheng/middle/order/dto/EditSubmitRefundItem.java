@@ -41,11 +41,4 @@ public class EditSubmitRefundItem implements java.io.Serializable {
      * 商品名称
      */
     private String itemName;
-
-    public String getRefundOutSkuCode() {
-        if (StringUtils.isEmpty(this.refundOutSkuCode)) {
-            return this.refundSkuCode;
-        }
-        return this.refundOutSkuCode;
-    }
 }

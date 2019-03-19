@@ -760,7 +760,7 @@ public class Refunds {
         List<RefundFeeData> refundFeeDatas = JsonMapper.nonEmptyMapper().fromJson(list, JsonMapper.nonEmptyMapper().createCollectionType(List.class, RefundFeeData.class));
         int num = refundReadLogic.getAlreadyRefundFee(orderCode, refundId, shipmentCode, refundFeeDatas);
         if (log.isDebugEnabled()) {
-            log.debug("API-REFUND-GETALREADYREFUNDFEE-END param: orderCode [{}] shipmentCode [{}] refundId [{}] list [{}] ,resp: [{}]", orderCode, shipmentCode, refundId, list, num);
+            log.debug("API-REFUND-GETALREADYREFUNDFEEx-END param: orderCode [{}] shipmentCode [{}] refundId [{}] list [{}] ,resp: [{}]", orderCode, shipmentCode, refundId, list, num);
         }
         return num;
     }

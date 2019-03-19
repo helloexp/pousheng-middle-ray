@@ -117,7 +117,7 @@ public class yyEDIOpenApi {
                 Refund refund = refundReadLogic.findRefundByRefundCode(shipmentCode);
                 //如果不是取消中 忽略请求
                 if (!Objects.equals(refund.getStatus(), MiddleRefundStatus.SYNC_HK_CANCEL_ING.getValue())) {
-                    log.info("refund {} current status is {}, errorCode {} ", shipmentCode, refund.getStatus());
+                    log.info("refund {} current status is {}", shipmentCode, refund.getStatus());
                     return;
                 }
                 OrderOperation syncSuccessOrderOperation;

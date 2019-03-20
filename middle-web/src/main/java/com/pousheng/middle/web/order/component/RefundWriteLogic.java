@@ -1078,7 +1078,7 @@ public class RefundWriteLogic {
         //判断请求的skuCode在不在申请的发货单中，count>0代表存在skuCode不在发货单中
         List<String> invalidSkuCodes = Lists.newArrayList();
         for (EditSubmitRefundItem editSubmitRefundItem : editSubmitRefundItems) {
-            String key = editSubmitRefundItem.getRefundOutSkuCode();
+            String key = OutSkuCodeUtil.getEditSubmitRefundItemComplexSkuCode(editSubmitRefundItem);
             if (skuCodes.contains(key)) {
                 //判断金额是否小于0
                 if (editSubmitRefundItem.getRefundQuantity() < 0) {

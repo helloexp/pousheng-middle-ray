@@ -22,13 +22,12 @@ spring:
     password: ${POUSHENG_MIDDLE_EXPORT_MYSQL_PASSWORD}
     initialize: false
     continue-on-error: false
+    type: com.zaxxer.hikari.HikariDataSource
     hikari:
       maximum-pool-size: 100
       minimum-idle: 25
-      idle-timeout: 30000
-      max-lifetime: 30000
-      connection-timeout: 30000
-      validation-timeout: 15000
+      idle-timeout: 600
+      max-lifetime: 600
   #用户登陆和分布式缓存使用的redis
   redis:
     host: ${POUSHENG_REDIS_SESSION_HOST}

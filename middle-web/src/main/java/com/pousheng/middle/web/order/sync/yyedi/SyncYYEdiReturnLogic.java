@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.sync.yyedi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -36,6 +37,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -325,8 +327,10 @@ public class SyncYYEdiReturnLogic {
             //结算金额
             item.setPayamount(new BigDecimal(refundItem.getFee()==null?0:refundItem.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //零售价-吊牌价
-            Map<String,Integer> extraPrice = skuTemplate.getExtraPrice();
-            int originPrice = extraPrice.get("originPrice")==null?0:extraPrice.get("originPrice");
+            int originPrice = 0;
+            if (!CollectionUtils.isEmpty(skuTemplate.getExtraPrice())) {
+                originPrice = MoreObjects.firstNonNull(skuTemplate.getExtraPrice().get("originPrice"), 0);
+            }
             item.setRetailprice(new BigDecimal(originPrice).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //edi订单号
             item.setEdibillno(shipmentExtra.getOutShipmentId());

@@ -163,6 +163,22 @@
         status = #{newStatus}
         WHERE id=#{id} AND status = #{currentStatus}
     </update>
+    
+    <update id="updateStatusByContextInTwoHours" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET updated_at=now(),
+        status = #{newStatus}
+        WHERE context=#{context} AND status = #{currentStatus} AND biz_type = #{bizType} AND created_at > now() - INTERVAL 2 HOUR
+    </update>
+    
+    <update id="updateTypeByContextOnlyIfOfWaitHandleStatus" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET updated_at=now(),
+        biz_type = #{newType}
+        WHERE context=#{context} AND biz_type = #{currentType} AND status = 'WAIT_HANDLE'
+    </update>
 
     <update id="batchUpdateStatus" parameterType="map">
         UPDATE

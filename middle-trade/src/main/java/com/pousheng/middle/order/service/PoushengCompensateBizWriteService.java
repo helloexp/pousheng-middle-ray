@@ -55,6 +55,28 @@ public interface PoushengCompensateBizWriteService {
      */
     Response<Boolean> updateStatus(Long id, String currentStatus, String newStatus);
 
+    /**
+     * 
+     * @param context       context
+     * @param currentStatus 当前状态
+     * @param newStatus     新的状态
+     * @return
+     */
+    Response<Boolean> updateStatusByContextInTwoHours(String context, String currentStatus, String newStatus,
+            String bizType);
+
+
+    /**
+     * 
+     * 更新Biz type
+     * 
+     * @param id
+     * @param currentBizType
+     * @param newBizType
+     * @param currentStatus
+     * @return
+     */
+    Response<String> updateBizTypeByContextOnlyIfOfWaitHandleStatus(Long id, String currentBizType, String newBizType);
 
     /**
      * 更新上次失败原因

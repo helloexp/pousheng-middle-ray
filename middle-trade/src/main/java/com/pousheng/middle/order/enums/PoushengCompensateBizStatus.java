@@ -8,6 +8,10 @@ package com.pousheng.middle.order.enums;
  */
 public enum  PoushengCompensateBizStatus {
     /**
+     * 需要预处理
+     */
+    WAIT_PRE_HANDLE,
+    /**
      * 待处理
      */
     WAIT_HANDLE,

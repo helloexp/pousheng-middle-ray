@@ -81,6 +81,23 @@ public class PoushengCompensateBizWriteServiceImpl implements PoushengCompensate
     }
 
     @Override
+    public Response<Boolean> updateStatusByContextInTwoHours(String context, String currentStatus, String newStatus,
+            String bizType) {
+        try {
+            boolean result = poushengCompensateBizDao.updateStatusByContext(context, currentStatus, newStatus, bizType);
+            if (result) {
+                return Response.ok(Boolean.TRUE);
+            } else {
+                return Response.fail("update.biz.status.failed");
+            }
+        } catch (Exception e) {
+            log.error("update poushengCompensateBiz status to {} failed, id:{},currentStatus is {}, cause:{}",
+                    newStatus, context, currentStatus, Throwables.getStackTraceAsString(e));
+            return Response.fail("poushengCompensateBiz.update.status.fail");
+        }
+    }
+
+    @Override
     public Response<Boolean> updateLastFailedReason(Long id, String lastFailedReason,Integer cnt) {
         try {
             PoushengCompensateBiz biz = new PoushengCompensateBiz();
@@ -135,6 +152,25 @@ public class PoushengCompensateBizWriteServiceImpl implements PoushengCompensate
         } catch (Exception e) {
             log.error("failed to create poushengCompensateBiz. bizType:{},context:{}", bizType, context, e);
             return Response.fail("poushengCompensateBiz.create.fail");
+        }
+    }
+
+    @Override
+    public Response<String> updateBizTypeByContextOnlyIfOfWaitHandleStatus(Long id, String currentBizType,
+            String newBizType) {
+        try {
+            boolean result = poushengCompensateBizDao.updateTypeByContextOnlyIfOfWaitHandleStatus(String.valueOf(id),
+                    currentBizType,
+                    newBizType);
+            if (result) {
+                return Response.ok("ok");
+            } else {
+                return Response.fail("update.biz.type.failed");
+            }
+        } catch (Exception e) {
+            log.error("update poushengCompensateBiz type to {} failed, id:{},currentBizType is {}, cause:{}",
+                    newBizType, id, currentBizType, Throwables.getStackTraceAsString(e));
+            return Response.fail("poushengCompensateBiz.update.type.fail");
         }
     }
 }

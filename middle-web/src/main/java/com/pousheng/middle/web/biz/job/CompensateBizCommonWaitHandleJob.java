@@ -8,6 +8,7 @@ import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.biz.CompensateBizProcessor;
+import com.pousheng.middle.web.biz.CompensateBizRegistryCenter;
 import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.biz.Exception.ConcurrentSkipBizException;
 import com.pousheng.middle.web.redis.ServerSwitchOnOperationLogic;

@@ -633,7 +633,12 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                     if (!Objects.equals(shopOrder.getOutFrom(),"taobao")&&!Objects.equals(shopOrder.getOutFrom(),"tfenxiao")){
                         //eventBus.post(new OpenClientOrderSyncEvent(shopOrderId));
                         //eventBus存在队列阻塞和数据丢失风险，改通过定时任务执行的方式
-                        this.createShipmentResultTask(shopOrder.getId());
+                        if(Objects.equals(MiddleChannel.JD.getValue(),shopOrder.getOutFrom())){
+                            // jingdong渠道的订单初始biztype给wait_handle
+                            createWaitHandleShipmentResultTask(shopOrder.getId());
+                        } else {
+                            this.createShipmentResultTask(shopOrder.getId());
+                        }
                     }
                 }
             }
@@ -664,6 +669,14 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         biz.setBizType(PoushengCompensateBizType.THIRD_ORDER_CREATE_SHIP.toString());
         biz.setContext(mapper.toJson(shopOrderId));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
+    }
+
+    private void createWaitHandleShipmentResultTask(Long shopOrderId){
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.THIRD_ORDER_CREATE_SHIP.toString());
+        biz.setContext(mapper.toJson(shopOrderId));
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_PRE_HANDLE.toString());
         compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
     }
 

@@ -268,31 +268,43 @@ public class YyediSyncRefundService implements CompensateBizService {
     }
 
     /**
-     * refundItem 和 yyEdiRefundConfirmItems 同时按照从大到小匹配
-     * 最终恒康开 POS 计算金额也按照这个顺序
+     * 先把 yyEdiRefundConfirmItems 按照 skuCode 汇总
+     * 然后依次根据申请数量从大到小回写
      *
      * @param refundItems
      * @param yyEdiRefundConfirmItems
      */
     private void setFinalRefundQuantity(List<RefundItem> refundItems,
                                         List<YYEdiRefundConfirmItem> yyEdiRefundConfirmItems) {
-        // refundItems 按照倒序 applyQuantity 倒序
-        // yyEdiRefundConfirmItems 按照 quantity 倒序
-        refundItems.sort(RefundItem::compareTo);
-        yyEdiRefundConfirmItems.sort(YYEdiRefundConfirmItem::compareTo);
-
-        for (RefundItem refundItem : refundItems) {
-            String refundSkuCode = refundItem.getSkuCode();
-            String refundOutSkuCode = refundItem.getOutSkuCode();
-            for (YYEdiRefundConfirmItem yyEdiRefundConfirmItem: yyEdiRefundConfirmItems) {
-                String confirmSkuCode = yyEdiRefundConfirmItem.getItemCode();
-                String confirmOutSkuCode = yyEdiRefundConfirmItem.getOutSkuCode();
-                // 没匹配到的行，confirmOutSkuCode 都为 null
-                if (confirmOutSkuCode == null && Objects.equals(refundSkuCode, confirmSkuCode)) {
-                    refundItem.setFinalRefundQuantity(Integer.valueOf(yyEdiRefundConfirmItem.getQuantity()));
-                    yyEdiRefundConfirmItem.setOutSkuCode(refundOutSkuCode);
-                    break;
+        Map<String, Integer> skuCode2Quantities = Maps.newHashMap();
+        // 汇总
+        for (YYEdiRefundConfirmItem yyEdiRefundConfirmItem : yyEdiRefundConfirmItems) {
+            if (Objects.nonNull(yyEdiRefundConfirmItem)) {
+                String itemCode = yyEdiRefundConfirmItem.getItemCode();
+                Integer quantity = Integer.valueOf(yyEdiRefundConfirmItem.getQuantity());
+                if (skuCode2Quantities.containsKey(itemCode)) {
+                    quantity += skuCode2Quantities.get(itemCode);
+                    skuCode2Quantities.put(itemCode, quantity);
+                } else {
+                    skuCode2Quantities.put(itemCode, quantity);
                 }
+            }
+        }
+        // 按照申请数量降序
+        refundItems.sort((o1, o2) -> o2.getApplyQuantity() - o1.getApplyQuantity());
+        // 按照降序回写
+        for (RefundItem refundItem : refundItems) {
+            String key = refundItem.getSkuCode();
+            if (skuCode2Quantities.containsKey(key)) {
+                Integer remainQuantity = skuCode2Quantities.get(key);
+                Integer applyQuantity = refundItem.getApplyQuantity();
+                Integer finalQuantity = remainQuantity >= applyQuantity ? applyQuantity : remainQuantity;
+                refundItem.setFinalRefundQuantity(finalQuantity);
+                skuCode2Quantities.put(key, remainQuantity - finalQuantity);
+                refundItem.setFinalRefundQuantity(finalQuantity);
+            } else {
+                //如果没有返回记录，则说明实际退货数量为0
+                refundItem.setFinalRefundQuantity(0);
             }
         }
     }

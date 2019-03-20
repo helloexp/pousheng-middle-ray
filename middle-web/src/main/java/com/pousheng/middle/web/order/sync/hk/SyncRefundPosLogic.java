@@ -284,30 +284,27 @@ public class SyncRefundPosLogic {
      * @return
      */
     private List<HkShipmentPosItem> makeHkShipmentPosItemWarehouse(Refund refund,String shipmentCode) {
-
         List<YYEdiRefundConfirmItem> refundYYEdiConfirmItems = refundReadLogic.findRefundYYEdiConfirmItems(refund);
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
-        Map<String,Integer> refundItemAndPriceMap = Maps.newHashMap();
-        Map<String,Integer> skuCodeAndShareDiscountMap = Maps.newHashMap();
-        for (RefundItem refundItem:refundItems){
-            String complexSkuCode = OutSkuCodeUtil.getRefundItemComplexSkuCode(refundItem);
-            refundItemAndPriceMap.put(complexSkuCode,refundItem.getCleanPrice());
-            skuCodeAndShareDiscountMap.put(complexSkuCode,refundItem.getSharePlatformDiscount());
-        }
+        Map<String, String> skuCode2WarehouseCode = Maps.newHashMap();
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundYYEdiConfirmItems.size());
-        for (YYEdiRefundConfirmItem refundConfirmItem : refundYYEdiConfirmItems){
+        for (YYEdiRefundConfirmItem yyEdiRefundConfirmItem : refundYYEdiConfirmItems) {
+            // 即使有覆盖也不管了
+            skuCode2WarehouseCode.put(yyEdiRefundConfirmItem.getItemCode(), yyEdiRefundConfirmItem.getWarhouseCode());
+        }
+        for (RefundItem refundItem:refundItems){
+            Integer finalRefundQuantity = refundItem.getFinalRefundQuantity();
             //如果退货数量是0则过滤掉
-            if (Objects.equal(refundConfirmItem.getQuantity(),"0")){
+            if (finalRefundQuantity == null || finalRefundQuantity == 0){
                 continue;
             }
             HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
-            hkShipmentPosItem.setStockcode(refundConfirmItem.getWarhouseCode());
+            hkShipmentPosItem.setStockcode(skuCode2WarehouseCode.get(refundItem.getSkuCode()));
             hkShipmentPosItem.setSourcenetbillno(shipmentCode);
-            hkShipmentPosItem.setMatbarcode(refundConfirmItem.getItemCode());
-            hkShipmentPosItem.setQty(Integer.valueOf(refundConfirmItem.getQuantity()));
-            String complexSkuCodeKey = OutSkuCodeUtil.getYYEdiRefundConfirmItemComplexSkuCode(refundConfirmItem);
-            Integer cleanPrice = refundItemAndPriceMap.get(complexSkuCodeKey);
-            Integer sharePlatformDiscount = skuCodeAndShareDiscountMap.get(complexSkuCodeKey);
+            hkShipmentPosItem.setMatbarcode(refundItem.getSkuCode());
+            hkShipmentPosItem.setQty(finalRefundQuantity);
+            Integer cleanPrice = refundItem.getCleanPrice();
+            Integer sharePlatformDiscount = refundItem.getSharePlatformDiscount();
             hkShipmentPosItem.setBalaprice(new BigDecimal(cleanPrice == null ? 0 : cleanPrice)
                     .divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             hkShipmentPosItem.setCouponprice(new BigDecimal(sharePlatformDiscount == null ? 0 : sharePlatformDiscount)

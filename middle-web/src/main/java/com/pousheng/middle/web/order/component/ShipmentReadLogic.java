@@ -866,11 +866,6 @@ public class ShipmentReadLogic {
         dispatchOrderItemInfo.setOrderId(shipmentDetail.getShopOrder().getId());
         List<SkuCodeAndQuantity> skuCodeAndQuantities = this.findShipmentSkuDetail(shipment);
         if (Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)) {
-            // ShopShipment shopShipment = new ShopShipment();
-            // shopShipment.setShopId(shipmentExtra.getWarehouseId());
-            // shopShipment.setShopName(shipmentExtra.getWarehouseName());
-            // shopShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-            // dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
             //店发改成仓发
             Long shopId = shipmentExtra.getWarehouseId();
             Shop shop = shopCacher.findShopById(shopId);
@@ -892,18 +887,6 @@ public class ShipmentReadLogic {
             dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
         }
         dispatchOrderItemInfo.setOpenShopId(shipment.getShopId());
-
-        // TODO 获取订单信息
-        /*if (null != shipment.getId()) {
-            dispatchOrderItemInfo.setOrderId(findOrderShipmentByShipmentId(shipment.getId()).getOrderId());
-        } else {
-            if (null != shipment.getExtra() && shipment.getExtra().containsKey(TradeConstants.SHOP_ORDER_ID)) {
-                dispatchOrderItemInfo.setOrderId(Long.parseLong(shipment.getExtra().get(TradeConstants.SHOP_ORDER_ID)));
-            } else {
-                log.error("shipment fail because no order id found :{}", shipment);
-                throw new JsonResponseException("order.id.not.found");
-            }
-        }*/
         dispatchOrderItemInfo.setShipmentId(shipment.getId());
         dispatchOrderItemInfo.setSubOrderIds(Lists.transform(skuCodeAndQuantities, input -> input.getSkuOrderId()));
         return dispatchOrderItemInfo;

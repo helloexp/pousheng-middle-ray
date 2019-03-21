@@ -13,6 +13,7 @@ import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
+import com.pousheng.middle.utils.WarehouseChooseUtil;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.*;
 import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
@@ -22,18 +23,15 @@ import io.terminus.common.utils.Splitters;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * 门店或仓 发货规则（最后一条规则，最复杂场景）
@@ -262,83 +260,6 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
         }
     }
 
-
-    private void handleWithPriority(Warehouses4Address warehouses4Address, DispatchOrderItemInfo dispatchOrderItemInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Table<Long, String, Integer> warehouseSkuCodeQuantityTable,
-                                    Multiset<String> current, Map<String, Serializable> context) {
-
-
-        //全部的仓和门店的距离或优先级信息
-        List<DispatchWithPriority> allDispatchWithPriorities = Lists.newArrayList();
-
-        //全部的仓和门店
-        Table<String, String, Integer> allSkuCodeQuantityTable = HashBasedTable.create();
-
-        List<WarehouseWithPriority> totalWarehouseWithPriorities = warehouses4Address.getTotalWarehouses();
-
-        Map<Long, WarehouseWithPriority> warehouseIdMap = totalWarehouseWithPriorities.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(WarehouseWithPriority::getWarehouseId, it -> it));
-
-
-        List<WarehouseWithPriority> shopWarehouseWithPriorities = warehouses4Address.getShopWarehouses();
-
-        //封装店铺id
-        shopWarehouseWithPriorities.forEach(shopWarehouseWithPrioritie -> {
-            WarehouseDTO warehouse = warehouseCacher.findById(shopWarehouseWithPrioritie.getWarehouseId());
-            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.valueOf(warehouse.getCompanyId()));
-            shopWarehouseWithPrioritie.setShopId(shop.getId());
-
-        });
-        Map<Long, WarehouseWithPriority> shopIdMap = shopWarehouseWithPriorities.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(WarehouseWithPriority::getShopId, it -> it));
-
-        //最少拆单中发货件数最多的仓
-        for (Long warehouseId : warehouseSkuCodeQuantityTable.rowKeySet()) {
-            DispatchWithPriority dispatchWithPriority = new DispatchWithPriority();
-            String warehouseOrShopId = "warehouse:" + warehouseId;
-            dispatchWithPriority.setWarehouseOrShopId(warehouseOrShopId);
-            WarehouseWithPriority withPriority = warehouseIdMap.get(warehouseId);
-            dispatchWithPriority.setPriority(withPriority.getPriority());
-            allDispatchWithPriorities.add(dispatchWithPriority);
-            fillAllSkuCodeQuantityTable(current, warehouseSkuCodeQuantityTable, warehouseId, warehouseOrShopId, allSkuCodeQuantityTable);
-
-
-        }
-
-        List<DispatchWithPriority> warehouseDispatchWithPriority = dispatchComponent.sortDispatchWithPriority(allDispatchWithPriorities);
-
-        //最小优先级
-        Integer leastWarehousePriority = 0;
-        if (!CollectionUtils.isEmpty(warehouseDispatchWithPriority)) {
-            DispatchWithPriority farthestWarehouse = warehouseDispatchWithPriority.get(warehouseDispatchWithPriority.size() - 1);
-            leastWarehousePriority = farthestWarehouse.getPriority();
-        }
-        //全部门店及商品信息
-        Table<Long, String, Integer> shopSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE);
-        if (Arguments.isNull(shopSkuCodeQuantityTable)) {
-            shopSkuCodeQuantityTable = HashBasedTable.create();
-            context.put(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE, (Serializable) shopSkuCodeQuantityTable);
-        }
-        //最少拆单中发货件数最多的店仓
-        for (Long shopId : shopSkuCodeQuantityTable.rowKeySet()) {
-            DispatchWithPriority dispatchWithPriority = new DispatchWithPriority();
-            String warehouseOrShopId = "shop:" + shopId;
-            dispatchWithPriority.setWarehouseOrShopId(warehouseOrShopId);
-            WarehouseWithPriority withPriority = shopIdMap.get(shopId);
-            //店仓的优先级永远小于仓的
-            dispatchWithPriority.setPriority(leastWarehousePriority + withPriority.getPriority());
-            allDispatchWithPriorities.add(dispatchWithPriority);
-            //添加到 allSkuCodeQuantityTable
-            fillAllSkuCodeQuantityTable(current, shopSkuCodeQuantityTable, shopId, warehouseOrShopId, allSkuCodeQuantityTable);
-
-        }
-
-        List<DispatchWithPriority> allDispatchWithPriority = dispatchComponent.sortDispatchWithPriority(allDispatchWithPriorities);
-
-        packageShipmentInfo(dispatchOrderItemInfo, allSkuCodeQuantityTable, skuCodeAndQuantities, allDispatchWithPriority);
-
-    }
-
-
     private Boolean isDistanceType(Warehouses4Address warehouses4Address) {
         //优先级类型
         WarehouseRuleItemPriorityType priorityType = WarehouseRuleItemPriorityType.from(warehouses4Address.getWarehouseRule().getItemPriorityType());
@@ -356,97 +277,37 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
     private void packageShipmentInfo(DispatchOrderItemInfo dispatchOrderItemInfo, Table<String, String, Integer> allSkuCodeQuantityTable, List<SkuCodeAndQuantity> skuCodeAndQuantities, List<DispatchWithPriority> dispatchWithPriorities) {
 
 
-        Map<String, Long> skuOrderCodeMap = Maps.newHashMap();
-
-        //skuCode及数量
-        Multiset<String> current = ConcurrentHashMultiset.create();
-        for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
-            current.add(skuCodeAndQuantity.getSkuCode(), skuCodeAndQuantity.getQuantity());
-            if (Arguments.notNull(skuCodeAndQuantity.getSkuOrderId())) {
-                skuOrderCodeMap.put(skuCodeAndQuantity.getSkuCode(), skuCodeAndQuantity.getSkuOrderId());
-            }
-        }
-
         //仓库发货单
         List<WarehouseShipment> warehouseShipmentResult = Lists.newArrayList();
         //店铺发货单
         List<ShopShipment> shopShipmentResult = Lists.newArrayList();
 
+        ArrayListMultimap<String, SkuCodeAndQuantity> skuCodeAndQuantityMultimap
+                = WarehouseChooseUtil.collectSkuCodeAndQuantityMultimap(skuCodeAndQuantities);
+
         //把商品派到对应的发货单上
-        while (current.size() > 0) {
-            //发货仓sku最大数量
-            int affordCount = 0;
-            String candidateWarehouseOrShopId = null;
-            for (DispatchWithPriority dispatchWithPriority : dispatchWithPriorities) {
-                String warehouseOrShopId = dispatchWithPriority.getWarehouseOrShopId();
-                //发货单下sku数量
-                int count = 0;
-                for (String skuCode : current.elementSet()) {
-                    int required = current.count(skuCode);
-                    int stock = allSkuCodeQuantityTable.get(warehouseOrShopId, skuCode);
-                    int actual = stock >= required ? 1 : 0;
-                    count += actual;
-                }
-                //sku数量多说明拆单最小
-                if (count > affordCount) {
-                    affordCount = count; //更新当前仓库的可发货sku数量
-                    //距离最近拆单最少的
-                    candidateWarehouseOrShopId = warehouseOrShopId;
-                }
-            }
+        while (skuCodeAndQuantityMultimap.size() > 0) {
+            String candidateWarehouseOrShopId = WarehouseChooseUtil.getWarehouseIdForPackage(
+                    dispatchWithPriorities, allSkuCodeQuantityTable, skuCodeAndQuantityMultimap);
             if (Strings.isNullOrEmpty(candidateWarehouseOrShopId)) {
-                List<SkuCodeAndQuantity> skuAndQuantity = Lists.newArrayList();
                 //下边这些商品是没有库存
-                for (String skuCode : current.elementSet()) {
-                    log.warn("insufficient sku(skuCode={}) stock: ", skuCode);
-                    SkuCodeAndQuantity adq = new SkuCodeAndQuantity();
-                    adq.setSkuOrderId(skuOrderCodeMap.get(skuCode));
-                    adq.setSkuCode(skuCode);
-                    adq.setQuantity(current.count(skuCode));
-                    skuAndQuantity.add(adq);
-                }
-                dispatchOrderItemInfo.setSkuCodeAndQuantities(skuAndQuantity);
+                log.warn("stock insufficient of skuCodeAndQuantities: {}", skuCodeAndQuantities);
+                dispatchOrderItemInfo.setSkuCodeAndQuantities(skuCodeAndQuantities);
                 break;
             } else {//分配发货仓库
                 List<String> typeAndId = Splitters.COLON.splitToList(candidateWarehouseOrShopId);
                 String type = typeAndId.get(0);
                 Long id = Long.valueOf(typeAndId.get(1));
-
-                List<SkuCodeAndQuantity> scaqs = Lists.newArrayList();
-                for (String skuCode : current.elementSet()) {
-                    int required = current.count(skuCode);
-                    int stock = allSkuCodeQuantityTable.get(candidateWarehouseOrShopId, skuCode);
-                    int actual = stock >= required ? required : 0;
-
-                    SkuCodeAndQuantity scaq = new SkuCodeAndQuantity();
-                    scaq.setSkuOrderId(skuOrderCodeMap.get(skuCode));
-                    scaq.setSkuCode(skuCode);
-                    scaq.setQuantity(actual);
-                    if (actual != 0) {
-                        scaqs.add(scaq);
-                    }
-
-                    //减少库存需求
-                    current.remove(skuCode, actual);
-                }
+                String shopName = null;
+                String warehouseName = null;
                 if (Objects.equals(type, "warehouse")) {
-                    WarehouseShipment warehouseShipment = new WarehouseShipment();
-                    warehouseShipment.setWarehouseId(id);
-                    warehouseShipment.setWarehouseName(warehouseCacher.findById(id).getWarehouseName());
-                    warehouseShipment.setSkuCodeAndQuantities(scaqs);
-                    warehouseShipmentResult.add(warehouseShipment);
-
+                    warehouseName = warehouseCacher.findById(id).getWarehouseName();
                 } else {
-                    ShopShipment shopShipment = new ShopShipment();
-                    shopShipment.setShopId(id);
-                    Shop shop = shopCacher.findShopById(id);
-                    shopShipment.setShopName(shop.getName());
-                    shopShipment.setSkuCodeAndQuantities(scaqs);
-                    shopShipmentResult.add(shopShipment);
-
+                    shopName = shopCacher.findShopById(id).getName();
                 }
+                WarehouseChooseUtil.assignWarehouseShipment(skuCodeAndQuantityMultimap, warehouseShipmentResult,
+                        shopShipmentResult, allSkuCodeQuantityTable, candidateWarehouseOrShopId, warehouseName, shopName);
             }
-
             dispatchOrderItemInfo.setWarehouseShipments(warehouseShipmentResult);
             dispatchOrderItemInfo.setShopShipments(shopShipmentResult);
         }

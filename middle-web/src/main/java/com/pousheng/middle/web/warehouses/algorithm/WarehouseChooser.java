@@ -11,6 +11,7 @@ import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dispatch.dto.DistanceDto;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
+import com.pousheng.middle.utils.WarehouseChooseUtil;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
@@ -28,7 +29,6 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.Arguments;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
@@ -126,14 +126,6 @@ public class WarehouseChooser {
             List<WarehouseShipment> warehouseShipments = chooseWarehouse(shopOrder, byPriority.sortedCopy(warehouseWithPriorities),
                     skuCodeAndQuantities, needSingle);
             if (!CollectionUtils.isEmpty(warehouseShipments)) {
-                // 先锁定库存, 锁定成功后再返回结果
-               /* Response<Boolean> rDecrease = mposSkuStockLogic.lockStock(genDispatchOrderInfo(shopOrder, skuCodeAndQuantities, warehouseShipments));
-                if(!rDecrease.isSuccess()){
-                    log.error("failed to decreaseStocks for addressId:{}, error code:{}," +
-                            "auto dispatch stock failed", addressId, rDecrease.getError());
-                    return Collections.emptyList();
-                }*/
-
                 return warehouseShipments;
             }
         }
@@ -278,86 +270,24 @@ public class WarehouseChooser {
         if (needSingle) {
             return Collections.emptyList();
         }
-
-        Map<String, Long> skuOrderCodeMap = Maps.newHashMap();
-
-
-        //走到这里, 已经没有可以整仓发货的仓库了, 此时尽量按照返回仓库最少数量返回结果
-        Multiset<String> current = ConcurrentHashMultiset.create();
-        for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
-            current.add(skuCodeAndQuantity.getSkuCode(), skuCodeAndQuantity.getQuantity());
-            if (Arguments.notNull(skuCodeAndQuantity.getSkuOrderId())){
-                skuOrderCodeMap.put(skuCodeAndQuantity.getSkuCode(),skuCodeAndQuantity.getSkuOrderId());
-            }
-        }
-
+        ArrayListMultimap<String, SkuCodeAndQuantity> skuCodeAndQuantityMultimap
+                = WarehouseChooseUtil.collectSkuCodeAndQuantityMultimap(skuCodeAndQuantities);
         List<WarehouseShipment> result = Lists.newArrayList();
-
-        //总是选择可能发货数量最大的仓库
-        while (current.size() > 0) {
-            //当前可发货数量
-            int affordCount = 0;
-            Long candidateWarehouseId = -1L;
-
-            for (WarehouseWithPriority warehouseWithPriority : warehouseWithPriorities) {
-                Long warehouseId = warehouseWithPriority.getWarehouseId();
-                if (!widskucode2stock.containsRow(warehouseId)){
-                    continue;
-                }
-
-                //本仓库当前可以发货的数量
-                int count = 0;
-                for (String skuCode : current.elementSet()) {
-                    int required = current.count(skuCode);
-                    int stock = widskucode2stock.get(warehouseId, skuCode);
-                    int actual = stock >= required ? required : 0;
-                    count += actual;
-                }
-                if (count > affordCount) {
-                    affordCount = count; //更新当前仓库的可发货数量
-                    candidateWarehouseId = warehouseId;
-                }
-
-
-            }
-
-            if (candidateWarehouseId < 0) {
-                for (String skuCode : current.elementSet()) {
+        while (skuCodeAndQuantityMultimap.size() > 0) {
+            // 选择可能发货数量最大的仓库
+            Long candidateWarehouseId = WarehouseChooseUtil.getWarehouseIdForRegion(warehouseWithPriorities, widskucode2stock, skuCodeAndQuantityMultimap);
+            if (candidateWarehouseId == null) {
+                for (String skuCode : skuCodeAndQuantityMultimap.keySet()) {
                     log.warn("insufficient sku(skuCode={}) stock: ", skuCode);
                 }
                 return Collections.emptyList();
-            } else {//分配发货仓库
-                WarehouseShipment warehouseShipment = new WarehouseShipment();
-                warehouseShipment.setWarehouseId(candidateWarehouseId);
-                warehouseShipment.setWarehouseName(warehouseCacher.findById(candidateWarehouseId).getWarehouseName());
-                List<SkuCodeAndQuantity> scaqs = Lists.newArrayList();
-                for (String skuCode : current.elementSet()) {
-                    int required = current.count(skuCode);
-                    int stock = widskucode2stock.get(candidateWarehouseId, skuCode);
-                    int actual = stock >= required ? required : 0;
-
-                    SkuCodeAndQuantity scaq = new SkuCodeAndQuantity();
-                    scaq.setSkuOrderId(skuOrderCodeMap.get(skuCode));
-                    scaq.setSkuCode(skuCode);
-                    scaq.setQuantity(actual);
-                    if (actual!=0){
-                        scaqs.add(scaq);
-                    }
-
-                    //减少库存需求
-                    current.remove(skuCode, actual);
-                    //减少当前可用库存
-                    widskucode2stock.put(candidateWarehouseId, skuCode, stock - actual);
-
-                }
-                warehouseShipment.setSkuCodeAndQuantities(scaqs);
-                result.add(warehouseShipment);
             }
+            WarehouseDTO candidateWarehouseDTO = warehouseCacher.findById(candidateWarehouseId);
+            WarehouseChooseUtil.assignWarehouseShipment(
+                    skuCodeAndQuantityMultimap, result, widskucode2stock, candidateWarehouseDTO);
         }
-
         return result;
     }
-
 
     private List<WarehouseShipment> chooseWarehouseForRegion(ShopOrder shopOrder, List<WarehouseWithPriority> warehouseWithPriorities,
                                                              List<SkuCodeAndQuantity> skuCodeAndQuantities,
@@ -405,82 +335,28 @@ public class WarehouseChooser {
             return Collections.emptyList();
         }
         log.info("after filter  sort result is {}", warehouseWithPriorities.toString());
-        Map<String, Long> skuOrderCodeMap = Maps.newHashMap();
         //走到这里, 已经没有可以整仓发货的仓库了, 此时尽量按照返回仓库最少数量返回结果
-        Multiset<String> current = ConcurrentHashMultiset.create();
-        for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
-            current.add(skuCodeAndQuantity.getSkuCode(), skuCodeAndQuantity.getQuantity());
-            if (Arguments.notNull(skuCodeAndQuantity.getSkuOrderId())) {
-                skuOrderCodeMap.put(skuCodeAndQuantity.getSkuCode(), skuCodeAndQuantity.getSkuOrderId());
-            }
-        }
+
+        ArrayListMultimap<String, SkuCodeAndQuantity> skuCodeAndQuantityMultimap
+                = WarehouseChooseUtil.collectSkuCodeAndQuantityMultimap(skuCodeAndQuantities);
 
         List<WarehouseShipment> result = Lists.newArrayList();
-
-        //总是选择可能发货数量最大的仓库
-        while (current.size() > 0) {
-            //当前可发货数量
-            int affordCount = 0;
-            Long candidateWarehouseId = -1L;
-
-            for (WarehouseWithPriority warehouseWithPriority : warehouseWithPriorities) {
-                Long warehouseId = warehouseWithPriority.getWarehouseId();
-                if (!skuCodeQuantityTable.containsRow(warehouseId)) {
-                    continue;
-                }
-                //本仓库当前可以发货的数量
-                int count = 0;
-                for (String skuCode : current.elementSet()) {
-                    int required = current.count(skuCode);
-                    log.info("warehouseId is {} .skuCode is {}", warehouseId, skuCode);
-                    int stock = skuCodeQuantityTable.get(warehouseId, skuCode) == null ? 0 : skuCodeQuantityTable.get(warehouseId, skuCode);
-                    int actual = stock >= required ? required : 0;
-                    count += actual;
-                }
-                if (count > affordCount) {
-                    affordCount = count; //更新当前仓库的可发货数量
-                    candidateWarehouseId = warehouseId;
-                }
-            }
-
-            if (candidateWarehouseId > 0) {
-                WarehouseShipment warehouseShipment = new WarehouseShipment();
-                warehouseShipment.setWarehouseId(candidateWarehouseId);
-                warehouseShipment.setWarehouseName(warehouseCacher.findById(candidateWarehouseId).getWarehouseName());
-                List<SkuCodeAndQuantity> scaqs = Lists.newArrayList();
-                for (String skuCode : current.elementSet()) {
-                    int required = current.count(skuCode);
-                    int stock = skuCodeQuantityTable.get(candidateWarehouseId, skuCode) == null ? 0 : skuCodeQuantityTable.get(candidateWarehouseId, skuCode);
-                    int actual = stock >= required ? required : 0;
-
-                    SkuCodeAndQuantity scaq = new SkuCodeAndQuantity();
-                    scaq.setSkuOrderId(skuOrderCodeMap.get(skuCode));
-                    scaq.setSkuCode(skuCode);
-                    scaq.setQuantity(actual);
-                    if (actual != 0) {
-                        scaqs.add(scaq);
-                    }
-
-                    //减少库存需求
-                    current.remove(skuCode, actual);
-                    //减少当前可用库存
-                    skuCodeQuantityTable.put(candidateWarehouseId, skuCode, stock - actual);
-
-                }
-                warehouseShipment.setSkuCodeAndQuantities(scaqs);
-                result.add(warehouseShipment);
-            } else {
-                for (String skuCode : current.elementSet()) {
+        while (skuCodeAndQuantityMultimap.size() > 0) {
+            //总是选择可能发货数量最大的仓库
+            Long candidateWarehouseId = WarehouseChooseUtil.getWarehouseIdForRegion(
+                    warehouseWithPriorities, skuCodeQuantityTable, skuCodeAndQuantityMultimap);
+            if (candidateWarehouseId == null) {
+                for (String skuCode : skuCodeAndQuantityMultimap.keySet()) {
                     log.warn("insufficient sku(skuCode={}) stock: ", skuCode);
                 }
+                // 这里有问题啊，如果中途不匹配，result 是可能有值的（重构老功能，这里逻辑先不改了）
                 return result;
             }
+            WarehouseDTO candidateWarehouseDTO = warehouseCacher.findById(candidateWarehouseId);
+            WarehouseChooseUtil.assignWarehouseShipment(skuCodeAndQuantityMultimap, result, skuCodeQuantityTable, candidateWarehouseDTO);
         }
-
         return result;
     }
-
-
 
     private List<WarehouseShipment> trySingleWarehouseByPriority(ShopOrder shopOrder, List<SkuCodeAndQuantity> skuCodeAndQuantities,
                                                                  Table<Long, String, Integer> widskucode2stock,
@@ -553,6 +429,4 @@ public class WarehouseChooser {
         }
         return warehouseWithPriorities;
     }
-
-
 }

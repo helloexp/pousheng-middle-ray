@@ -339,29 +339,24 @@ public class RefundReadLogic {
             if (!Objects.equals(refundExtra.getShipmentId(), shipmentCode)) {
                 continue;
             }
-            List<RefundItem> refundItems = this.findRefundItems(refund);
-            List<String> skuCodes = refundItems.stream().map(OutSkuCodeUtil::getRefundItemComplexSkuCode).collect(Collectors.toList());
-            for (String skuCode : editSkuCodes) {
-                if (skuCodes.contains(skuCode)) {
-                    alreadyRefundFee += refund.getFee();
-                }
-            }
+            alreadyRefundFee += refund.getFee();
         }
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        Integer totalCleanFee = 0; //商品总净价
-        Integer totalEditCleanFee = 0; //申请的商品总净价
+        //商品总净价
+        Integer totalCleanFee = 0;
+        //申请的商品总净价
+        Integer totalEditCleanFee = 0;
         for (ShipmentItem shipmentItem : shipmentItems) {
+            totalCleanFee += shipmentItem.getCleanFee();
             if (editSkuCodeAndQuantityMap.containsKey(OutSkuCodeUtil.getShipmentItemComplexSkuCode(shipmentItem))) {
-                //获取商品净价
-                totalCleanFee += shipmentItem.getCleanFee();
                 totalEditCleanFee += (shipmentItem.getCleanPrice() == null ? 0
                         : shipmentItem.getCleanPrice()) * editSkuCodeAndQuantityMap.get(OutSkuCodeUtil.getShipmentItemComplexSkuCode(shipmentItem));
             }
         }
-        //未退款金额
-        Integer unReturnedFee = Math.toIntExact(totalCleanFee - alreadyRefundFee);
-        return totalEditCleanFee > unReturnedFee ? unReturnedFee : totalEditCleanFee;
+        //剩余最大可退金额
+        Integer maxReturnFee = Math.toIntExact(totalCleanFee - alreadyRefundFee);
+        return Math.min(totalEditCleanFee, maxReturnFee);
     }
 
     /**

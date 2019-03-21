@@ -8,7 +8,6 @@ import com.pousheng.middle.order.dto.ShipmentRequest;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
-import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
@@ -271,7 +270,7 @@ public class CreateShipments {
             if (warehouse.getWarehouseSubType().equals(WarehouseType.SHOP_WAREHOUSE.value())) {
                 Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.parseLong(warehouse.getCompanyId()));
                 if (ShopType.ORDERS_SHOP.value() == shop.getType()) {
-                    log.info("shop({0}).type.abnormal", shop.getId());
+                    log.info("shop({}).type.abnormal", shop.getId());
                     throw new JsonResponseException("shop.type.abnormal");
                 }
             }

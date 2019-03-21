@@ -1305,7 +1305,11 @@ public class RefundWriteLogic {
         refund.setReleOrderCode(submitRefundInfo.getReleOrderNo());
         //获取订单下的任意发货单
         List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(shopOrder.getId());
-        Shipment shipment = shipments.stream().filter(Objects::nonNull).filter(it -> (!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(), MiddleShipmentsStatus.REJECTED.getValue()))).findAny().get();
+        Shipment shipment = shipments.stream()
+                .filter(Objects::nonNull)
+                .filter(it -> (!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(), MiddleShipmentsStatus.REJECTED.getValue())))
+                .findAny()
+                .get();
         ReceiverInfo receiverInfo = JsonMapper.JSON_NON_DEFAULT_MAPPER.fromJson(shipment.getReceiverInfos(), ReceiverInfo.class);
         refundExtra.setReceiverInfo(receiverInfo);
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
@@ -1377,7 +1381,9 @@ public class RefundWriteLogic {
                 shipmentItem.setQuantity(originSkuCodesAndQuantity.get(shipmentItem.getSkuCode()));
                 BeanMapper.copy(shipmentItem, refundItem);
                 //填入售后申请数量
-                refundItem.setApplyQuantity(skuCodesAndQuantity.get(shipmentItem.getSkuCode()));
+                Integer q = skuCodesAndQuantity.get(shipmentItem.getSkuCode());
+                refundItem.setApplyQuantity(q);
+                refundItem.setCleanFee(refundItem.getCleanPrice() * q);
                 //填入货品条码
                 refundItem.setSkuCode(shipmentItem.getSkuCode());
                 refundItems.add(refundItem);

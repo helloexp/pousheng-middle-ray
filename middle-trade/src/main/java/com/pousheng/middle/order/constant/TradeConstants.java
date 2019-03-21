@@ -592,4 +592,8 @@ public class TradeConstants {
     public static final Integer FAIL_REFUND_SHIP_TO_TMALL = 73;
 
     public static final String IS_CUSTOMER_PICK_UP = "is_customer_pick_up";
+    /**
+     * 退货仓账套校验（宝唯）
+     */
+    public static final Integer BAO_WEI_COMPANY_ID = 325;
 }

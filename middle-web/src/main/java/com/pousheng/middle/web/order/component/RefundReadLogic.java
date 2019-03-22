@@ -2,8 +2,7 @@ package com.pousheng.middle.web.order.component;
 
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.*;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
@@ -12,7 +11,6 @@ import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.service.MiddleRefundReadService;
-import com.pousheng.middle.web.utils.OutSkuCodeUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -312,11 +310,8 @@ public class RefundReadLogic {
      * @return
      */
     public int getAlreadyRefundFee(String orderCode, Long refundId, String shipmentCode, List<RefundFeeData> refundFeeDatas) {
-        //传输进来的售后单sku集合
-        List<String> editSkuCodes = refundFeeDatas.stream().map(RefundFeeData::getComplexSkuCode).collect(Collectors.toList());
-        //传输进来的售后单sku以及数量的map
-        Map<String, Integer> editSkuCodeAndQuantityMap = Maps.newHashMap();
-        refundFeeDatas.forEach(refundFeeData -> editSkuCodeAndQuantityMap.put(refundFeeData.getComplexSkuCode(), refundFeeData.getApplyQuantity()));
+        Map<Long, Integer> requestSkuOrderId2Quantity = refundFeeDatas.stream()
+                .collect(Collectors.toMap(RefundFeeData::getSkuOrderId, RefundFeeData::getApplyQuantity));
         //获取订单信息
         Response<List<Refund>> rltRes = refundReadService.findByOrderCodeAndOrderLevel(orderCode, OrderLevel.SHOP);
         if (!rltRes.isSuccess()) {
@@ -348,10 +343,11 @@ public class RefundReadLogic {
         //申请的商品总净价
         Integer totalEditCleanFee = 0;
         for (ShipmentItem shipmentItem : shipmentItems) {
+            Long skuOrderId = shipmentItem.getSkuOrderId();
             totalCleanFee += shipmentItem.getCleanFee();
-            if (editSkuCodeAndQuantityMap.containsKey(OutSkuCodeUtil.getShipmentItemComplexSkuCode(shipmentItem))) {
+            if (requestSkuOrderId2Quantity.containsKey(skuOrderId)) {
                 totalEditCleanFee += (shipmentItem.getCleanPrice() == null ? 0
-                        : shipmentItem.getCleanPrice()) * editSkuCodeAndQuantityMap.get(OutSkuCodeUtil.getShipmentItemComplexSkuCode(shipmentItem));
+                        : shipmentItem.getCleanPrice()) * requestSkuOrderId2Quantity.get(skuOrderId);
             }
         }
         //剩余最大可退金额

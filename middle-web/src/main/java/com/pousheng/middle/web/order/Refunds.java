@@ -206,7 +206,7 @@ public class Refunds {
                     throw new JsonResponseException("submit.ship.info.exists");
                 }                
                 // 退货退款，换货，的发货仓和退货仓账套是否匹配325的校验
-                if(Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN) || Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE)){
+                if(Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value()) || Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
                     String oriShipmentCode = editSubmitRefundInfo.getShipmentCode();
                     if (StringUtils.hasText(oriShipmentCode)) {
                         Shipment oriShipment = shipmentReadLogic.findShipmentByShipmentCode(oriShipmentCode);
@@ -290,7 +290,7 @@ public class Refunds {
                 checkFailedRefundCodes.add(refund.getRefundCode());
                 log.error("refund(id:{}) check fail", refund.getId());
                 return false;
-            }else if(Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN) || Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE)){
+            }else if(Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value()) || Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
                 String isNot325company = getisNot325CompanyCode(refund, refundExtraMap);
                 if(StringUtils.hasText(isNot325company)){ 
                     refundCompanyCodeIsNot325.add(isNot325company);

@@ -1402,7 +1402,7 @@ public class Refunds {
             String shipmentExtrajson = shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO);
             ShipmentExtra shipmentExtra = JsonMapper.nonEmptyMapper().fromJson(shipmentExtrajson,ShipmentExtra.class);
             Long oriDeliverid = shipmentExtra.getWarehouseId();
-            if(Objects.equals(shipment.getShipWay(), TradeConstants.MPOS_SHOP_DELIVER)){
+            if(Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_SHOP_DELIVER)){
                 // 校验店发账套
                 Response<OpenShop> openshopRes = openShopReadService.findById(oriDeliverid);
                 if(openshopRes.isSuccess() && openshopRes.getResult() != null){
@@ -1415,7 +1415,7 @@ public class Refunds {
                     }
                 }
                 //查询失败，就过去吧 不处理
-            }else if(Objects.equals(shipment.getShipWay(), TradeConstants.MPOS_WAREHOUSE_DELIVER)){
+            }else if(Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_WAREHOUSE_DELIVER)){
                 // 校验仓发账套
                 WarehouseDTO checkWarehousedto = findWarehouseById(oriDeliverid);
                 if(checkWarehousedto != null && Objects.equals(checkWarehousedto.getCompanyId(),TradeConstants.BAO_WEI_COMPANY_ID.toString())){

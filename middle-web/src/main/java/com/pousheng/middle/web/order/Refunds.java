@@ -363,9 +363,10 @@ public class Refunds {
             }
         });
 
-        if (!CollectionUtils.isEmpty(checkFailedRefundCodes)
-                || !CollectionUtils.isEmpty(handleFailedRefundCodes)
-                || !CollectionUtils.isEmpty(syncFailedRefundCodes)) {
+        if(!CollectionUtils.isEmpty(checkFailedRefundCodes)
+                ||!CollectionUtils.isEmpty(handleFailedRefundCodes)
+                ||!CollectionUtils.isEmpty(syncFailedRefundCodes)
+                ||!CollectionUtils.isEmpty(refundCompanyCodeIsNot325)) {
             throw new InvalidException("refund.batch.deal.fail.info(check.incomplete={0},handle.failed={1},sync.failed={2},not.match.companyCode={3})",
                     checkFailedRefundCodes.toString(),
                     handleFailedRefundCodes.toString(),

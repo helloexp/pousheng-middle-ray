@@ -1105,6 +1105,7 @@ public class RefundWriteLogic {
                 refundItem.setSharePlatformDiscount(shipmentItem.getSharePlatformDiscount());
                 refundItems.add(refundItem);
             } else {
+                invalidSkuCodes.add(key);
                 count++;
             }
         }
@@ -1170,6 +1171,7 @@ public class RefundWriteLogic {
                 refundItem.setSkuAfterSaleId(editSubmitRefundItem.getSkuAfterSaleId());//子退货单号 yunju add
                 refundItems.add(refundItem);
             } else {
+                invalidSkuCodes.add(key);
                 count++;
             }
         }

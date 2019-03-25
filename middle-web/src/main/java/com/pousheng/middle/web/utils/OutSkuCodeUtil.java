@@ -31,7 +31,7 @@ public class OutSkuCodeUtil {
      * @param shipmentItem
      * @return
      */
-    public static final String getShipmentItemComplexSkuCode(ShipmentItem shipmentItem) {
+    public static final String getCombineCode(ShipmentItem shipmentItem) {
         String skuOrderId = shipmentItem.getSkuOrderId() != null ? shipmentItem.getSkuOrderId().toString() : EMPTY_STR;
         String skuCode = MoreObjects.firstNonNull(shipmentItem.getSkuCode(), EMPTY_STR);
         String outSkuCode = MoreObjects.firstNonNull(shipmentItem.getOutSkuCode(), EMPTY_STR);

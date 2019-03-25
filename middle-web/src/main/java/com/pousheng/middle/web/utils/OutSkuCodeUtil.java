@@ -19,7 +19,7 @@ public class OutSkuCodeUtil {
      * @param refundItem
      * @return
      */
-    public static final String getRefundItemComplexSkuCode(RefundItem refundItem) {
+    public static final String getCombineCode(RefundItem refundItem) {
         String skuOrderId = refundItem.getSkuOrderId() != null ? refundItem.getSkuOrderId().toString() : EMPTY_STR;
         String skuCode = MoreObjects.firstNonNull(refundItem.getSkuCode(),  EMPTY_STR);
         String outSkuCode = MoreObjects.firstNonNull(refundItem.getOutSkuCode(), EMPTY_STR);
@@ -43,7 +43,7 @@ public class OutSkuCodeUtil {
      * @param editSubmitRefundItem
      * @return
      */
-    public static final String getEditSubmitRefundItemComplexSkuCode(EditSubmitRefundItem editSubmitRefundItem) {
+    public static final String getCombineCode(EditSubmitRefundItem editSubmitRefundItem) {
         String skuOrderId = editSubmitRefundItem.getSkuOrderId() != null
                 ? editSubmitRefundItem.getSkuOrderId().toString() : EMPTY_STR;
         String skuCode = editSubmitRefundItem.getRefundSkuCode();

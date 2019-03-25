@@ -11,6 +11,8 @@ import org.springframework.util.StringUtils;
 @Data
 public class EditSubmitRefundItem implements java.io.Serializable {
     private static final long serialVersionUID = 5366346151064699012L;
+
+    private Long skuOrderId;
     /**
      *  商品编码和数量 (退货)
      */

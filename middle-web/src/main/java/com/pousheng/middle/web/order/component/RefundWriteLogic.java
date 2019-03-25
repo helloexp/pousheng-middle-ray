@@ -1202,7 +1202,8 @@ public class RefundWriteLogic {
             throw new JsonResponseException(skuTemplateRes.getError());
         }
         //获取货品条码，货品条码信息的map集合，但是要过滤掉已经删除的条码
-        Map<String, SkuTemplate> skuCodeAndTemplateMap = skuTemplateRes.getResult().stream().filter(Objects::nonNull).filter(it -> !Objects.equals(it.getStatus(), -3))
+        Map<String, SkuTemplate> skuCodeAndTemplateMap = skuTemplateRes.getResult().stream()
+                .filter(Objects::nonNull).filter(it -> !Objects.equals(it.getStatus(), -3))
                 .collect(Collectors.toMap(SkuTemplate::getSkuCode, it -> it));
         if (skuCodeAndTemplateMap.size() == 0) {
             throw new JsonResponseException("sku.may.be.deleted");
@@ -1374,7 +1375,7 @@ public class RefundWriteLogic {
                 refundItem.setApplyQuantity(q);
                 refundItem.setCleanFee(refundItem.getCleanPrice() * q);
                 //填入货品条码
-                refundItem.setSkuCode(key);
+                refundItem.setSkuCode(shipmentItem.getSkuCode());
                 refundItems.add(refundItem);
                 changeSkuCodes.remove(key);
             }

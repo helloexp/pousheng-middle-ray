@@ -7,7 +7,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 import com.google.common.collect.Sets.SetView;
-import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
@@ -54,7 +53,6 @@ import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
 import io.terminus.parana.order.service.RefundWriteService;
-import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
@@ -65,6 +63,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -1227,14 +1226,14 @@ public class RefundWriteLogic {
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         Map<String, Integer> refundKey2ApplyQuantity = Maps.newHashMap();
         for (RefundItem refundItem : refundItems) {
-            String key = OutSkuCodeUtil.getRefundItemComplexSkuCode(refundItem);
+            String key = OutSkuCodeUtil.getCombineCode(refundItem);
             Integer quantity = MoreObjects.firstNonNull(refundKey2ApplyQuantity.get(key), 0)
                     + MoreObjects.firstNonNull(refundItem.getApplyQuantity(), 0);
             refundKey2ApplyQuantity.put(key, quantity);
         }
 
         shipmentItems.forEach(it -> {
-            String shipmentKey = OutSkuCodeUtil.getShipmentItemComplexSkuCode(it);
+            String shipmentKey = OutSkuCodeUtil.getCombineCode(it);
             Integer applyQuantity = refundKey2ApplyQuantity.get(shipmentKey);
             if (applyQuantity != null) {
                 it.setRefundQuantity(it.getRefundQuantity() - applyQuantity);

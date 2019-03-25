@@ -97,14 +97,10 @@ public class RefundWriteLogic {
     private WarehouseClient warehouseClient;
     @Autowired
     private SyncErpReturnLogic syncErpReturnLogic;
-    @RpcConsumer
-    private ShipmentReadService shipmentReadService;
     @Autowired
     private PoushengSettlementPosReadService poushengSettlementPosReadService;
     @Autowired
     private RefundAmountWriteService refundAmountWriteService;
-    @Autowired
-    private EventBus eventBus;
     @Autowired
     private SyncRefundLogic syncRefundLogic;
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -1229,22 +1225,22 @@ public class RefundWriteLogic {
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-
-        Map<String, RefundItem> skuCodeAndRefundItemMap = refundItems.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(RefundItem::getSkuCode, it -> it));
+        Map<String, Integer> refundKey2ApplyQuantity = Maps.newHashMap();
+        for (RefundItem refundItem : refundItems) {
+            String key = OutSkuCodeUtil.getRefundItemComplexSkuCode(refundItem);
+            Integer quantity = MoreObjects.firstNonNull(refundKey2ApplyQuantity.get(key), 0)
+                    + MoreObjects.firstNonNull(refundItem.getApplyQuantity(), 0);
+            refundKey2ApplyQuantity.put(key, quantity);
+        }
 
         shipmentItems.forEach(it -> {
-            RefundItem refundItem = skuCodeAndRefundItemMap.get(it.getSkuCode());
-            if (refundItem != null) {
-                it.setRefundQuantity(it.getRefundQuantity() - refundItem.getApplyQuantity());
+            String shipmentKey = OutSkuCodeUtil.getShipmentItemComplexSkuCode(it);
+            Integer applyQuantity = refundKey2ApplyQuantity.get(shipmentKey);
+            if (applyQuantity != null) {
+                it.setRefundQuantity(it.getRefundQuantity() - applyQuantity);
             }
-
         });
-        //TODO 更新发货单明细
         shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
-        //        Map<String, String> shipmentExtraMap = shipment.getExtra();
-        //        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
-        //        shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
     }
 
 

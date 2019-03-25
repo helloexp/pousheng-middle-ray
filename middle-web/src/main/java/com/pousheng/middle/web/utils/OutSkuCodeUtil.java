@@ -1,12 +1,10 @@
 package com.pousheng.middle.web.utils;
 
 import com.google.common.base.MoreObjects;
-import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.dto.EditSubmitRefundItem;
 import com.pousheng.middle.order.dto.RefundItem;
 import io.terminus.common.utils.Joiners;
 import io.terminus.parana.order.model.ShipmentItem;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author Xiongmin
@@ -34,7 +32,7 @@ public class OutSkuCodeUtil {
      * @return
      */
     public static final String getShipmentItemComplexSkuCode(ShipmentItem shipmentItem) {
-        String skuOrderId = MoreObjects.firstNonNull(shipmentItem.getSkuOutId(), EMPTY_STR);
+        String skuOrderId = shipmentItem.getSkuOrderId() != null ? shipmentItem.getSkuOrderId().toString() : EMPTY_STR;
         String skuCode = MoreObjects.firstNonNull(shipmentItem.getSkuCode(), EMPTY_STR);
         String outSkuCode = MoreObjects.firstNonNull(shipmentItem.getOutSkuCode(), EMPTY_STR);
         return Joiners.COLON.join(skuOrderId, skuCode, outSkuCode);

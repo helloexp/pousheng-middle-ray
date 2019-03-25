@@ -829,10 +829,8 @@ public class SkuTemplates {
         if(!PsItemGroupSkuType.EXCLUDE.value().equals(type) && !PsItemGroupSkuType.GROUP.value().equals(type)){
             throw new JsonResponseException("请求参数type值错误！");
         }
-        //1为组内商品，0为排除商品
-        // 校验该分组是否关联店或者仓的规则，如果关联规则不允许删除
-        this.checkCanDelGroup(groupId);        
-        boolean hasNext = true;
+        //1为组内商品，0为排除商品        
+        boolean hasNext = doForRemoveGroup(1,1000,groupId,type);
         while(hasNext){
             hasNext = doForRemoveGroup(1,1000,groupId,type);
         }

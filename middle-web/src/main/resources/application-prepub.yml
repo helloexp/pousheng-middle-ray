@@ -25,9 +25,6 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
       maximum-pool-size: 100
-      minimum-idle: 25
-      idle-timeout: 600
-      max-lifetime: 600
   #用户登陆和分布式缓存使用的redis
   redis:
     host: ${POUSHENG_REDIS_SESSION_HOST}

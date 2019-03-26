@@ -1067,7 +1067,7 @@ public class RefundWriteLogic {
         Map<String, ShipmentItem> skuCodesAndShipmentItems = Maps.newHashMap();
         shipmentItems.forEach(shipmentItem -> {
             String outSkuCode = OutSkuCodeUtil.getCombineCode(shipmentItem);
-            skuCodesAndQuantity.put(outSkuCode, shipmentItem.getQuantity());
+            skuCodesAndQuantity.put(outSkuCode, shipmentItem.getShipQuantity());
             skuCodesAndShipmentItems.put(outSkuCode, shipmentItem);
             skuCodes.add(outSkuCode);
         });

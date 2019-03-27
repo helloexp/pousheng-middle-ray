@@ -25,10 +25,11 @@ spring:
     continue-on-error: false
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
-      maximum-pool-size: 200
+      maximum-pool-size: 100
       leak-detection-threshold: 180000
       connection-timeout: 180000
       validation-timeout: 180000
+      idle-timeout: 180000
 
   #用户登陆和分布式缓存使用的redis
   redis:

@@ -26,7 +26,7 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
       maximum-pool-size: 100
-      minimum-idle: 10
+      minimum-idle: 0
       leak-detection-threshold: 180000
       connection-timeout: 180000
       validation-timeout: 180000

@@ -24,7 +24,10 @@ spring:
     continue-on-error: false
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
-      maximum-pool-size: 100
+      maximum-pool-size: 200
+      leak-detection-threshold: 180
+      connection-timeout: 180
+
   #用户登陆和分布式缓存使用的redis
   redis:
     host: ${POUSHENG_REDIS_SESSION_HOST}

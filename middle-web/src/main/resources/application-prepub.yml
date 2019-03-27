@@ -7,6 +7,7 @@ logging:
     io.terminus.open.client: DEBUG
     MiddleUser: DEBUG
     com.pousheng: DEBUG
+    com.zaxxer.hikari: ${HIKARI_LOG_LEVEL:INFO}
   path: /var/logs/pousheng
 
 

@@ -1057,6 +1057,13 @@ public class RefundWriteLogic {
      * @return
      */
     private List<RefundItem> checkRefundQuantity(EditSubmitRefundInfo submitRefundInfo, List<ShipmentItem> shipmentItems) {
+        final Integer refundType;
+        if (submitRefundInfo instanceof SubmitRefundInfo) {
+            refundType = ((SubmitRefundInfo) submitRefundInfo).getRefundType();
+        } else {
+            refundType = null;
+        }
+
         //退货商品的列表集合
         List<EditSubmitRefundItem> editSubmitRefundItems = submitRefundInfo.getEditSubmitRefundItems();
         //发货单的sku-quantity集合
@@ -1067,7 +1074,13 @@ public class RefundWriteLogic {
         Map<String, ShipmentItem> skuCodesAndShipmentItems = Maps.newHashMap();
         shipmentItems.forEach(shipmentItem -> {
             String outSkuCode = OutSkuCodeUtil.getCombineCode(shipmentItem);
-            skuCodesAndQuantity.put(outSkuCode, shipmentItem.getShipQuantity());
+            Integer quantity;
+            if (Objects.equals(refundType, MiddleRefundType.AFTER_SALES_REFUND.value())) {
+                quantity = shipmentItem.getQuantity();
+            } else {
+                quantity = shipmentItem.getShipQuantity();
+            }
+            skuCodesAndQuantity.put(outSkuCode, quantity);
             skuCodesAndShipmentItems.put(outSkuCode, shipmentItem);
             skuCodes.add(outSkuCode);
         });

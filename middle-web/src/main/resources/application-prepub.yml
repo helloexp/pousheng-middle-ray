@@ -7,6 +7,7 @@ logging:
     io.terminus.open.client: DEBUG
     MiddleUser: DEBUG
     com.pousheng: DEBUG
+    com.zaxxer.hikari: ${HIKARI_LOG_LEVEL:INFO}
   path: /var/logs/pousheng
 
 
@@ -25,9 +26,12 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
       maximum-pool-size: 100
-      minimum-idle: 25
-      idle-timeout: 600
-      max-lifetime: 600
+      minimum-idle: 0
+      leak-detection-threshold: 180000
+      connection-timeout: 180000
+      validation-timeout: 180000
+      idle-timeout: 180000
+
   #用户登陆和分布式缓存使用的redis
   redis:
     host: ${POUSHENG_REDIS_SESSION_HOST}

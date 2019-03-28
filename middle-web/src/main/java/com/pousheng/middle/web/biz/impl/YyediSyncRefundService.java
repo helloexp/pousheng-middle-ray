@@ -206,7 +206,7 @@ public class YyediSyncRefundService implements CompensateBizService {
         Map<String, Integer> refundConfirmQuantityMap = Maps.newHashMap();
 
         for (RefundItem refundItem : refundItems) {
-            String key = OutSkuCodeUtil.getRefundItemComplexSkuCode(refundItem);
+            String key = OutSkuCodeUtil.getCombineCode(refundItem);
             Integer applyQuantity = MoreObjects.firstNonNull(refundApplyQuantityMap.get(key), 0)
                     + refundItem.getApplyQuantity();
             Integer confirmQuantity = MoreObjects.firstNonNull(refundConfirmQuantityMap.get(key), 0)
@@ -218,7 +218,7 @@ public class YyediSyncRefundService implements CompensateBizService {
         //校准后发货单售后实际申请数量=当前发货单售后申请数量-(退货单申请数量-售后实际入库数量)
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         for (ShipmentItem shipmentItem:shipmentItems){
-            String shipmentComplexSkuCode = OutSkuCodeUtil.getShipmentItemComplexSkuCode(shipmentItem);
+            String shipmentComplexSkuCode = OutSkuCodeUtil.getCombineCode(shipmentItem);
             Integer confirmQuantity = refundConfirmQuantityMap.get(shipmentComplexSkuCode);
             if (confirmQuantity != null && confirmQuantity > 0) {
                 Integer applyQuantity = refundApplyQuantityMap.get(shipmentComplexSkuCode);

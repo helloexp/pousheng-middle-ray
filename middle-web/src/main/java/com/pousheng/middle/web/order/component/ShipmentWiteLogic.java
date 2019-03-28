@@ -1511,7 +1511,7 @@ public class ShipmentWiteLogic {
             shipmentItem.setSkuOrderId(skuOrderId);
             shipmentItem.setSkuName(skuOrder.getItemName());
             shipmentItem.setSkuOutId(skuOrder.getOutId());
-            shipmentItem.setSkuPrice(Math.round(skuOrder.getOriginFee() / shipmentItem.getQuantity()));
+            shipmentItem.setSkuPrice(Math.round(skuOrder.getOriginFee() / skuOrder.getQuantity()));
             //目前是子单整单发货，所以不需要分摊平台优惠金额
             Map<String,String> skuExtra = skuOrder.getExtra();
             String skuPlatformDiscount = skuExtra.get(TradeConstants.PLATFORM_DISCOUNT_FOR_SKU);

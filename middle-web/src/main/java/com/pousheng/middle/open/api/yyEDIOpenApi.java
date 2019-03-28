@@ -138,7 +138,7 @@ public class yyEDIOpenApi {
             Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentCode(shipmentCode);
             ShopOrder order = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
-            //如果发货单不是取消中 直接通知就行了
+            //如果发货  单不是取消中 直接通知就行了
             if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue())) {
                 if (Objects.equals(errorCode, TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
                     //判断发货单类型，如果发货单类型是销售发货单正常处理

@@ -1,13 +1,12 @@
 package com.pousheng.middle.web.order.component;
 
-import com.google.common.collect.Maps;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.RefundExtra;
-import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.RejectShipmentOccupy;
+import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
@@ -16,7 +15,6 @@ import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
@@ -177,8 +175,9 @@ public class MposShipmentLogic {
                     throw new JsonResponseException(updateShippedRlt.getError());
                 }
                 skuOrder = updateShippedRlt.getResult();
-                //如果未达到全部发货，则不更新子单状态
-                if (skuOrder.getQuantity() > skuOrder.getShipped()) {
+                // 1. 如果未达到全部发货，则不更新子单状态
+                // 2. 如果部分取消（withHold = 0, quantity > shipped），也更新订单状态
+                if (skuOrder.getQuantity() > skuOrder.getShipped() && skuOrder.getWithHold() > 0) {
                     continue;
                 }
                 Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());

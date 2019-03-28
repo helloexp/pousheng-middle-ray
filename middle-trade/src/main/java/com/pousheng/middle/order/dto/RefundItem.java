@@ -1,14 +1,13 @@
 package com.pousheng.middle.order.dto;
 
 import lombok.Data;
-
 import java.io.Serializable;
 
 /**
  * Created by songrenfei on 2017/6/26
  */
 @Data
-public class RefundItem extends BasicItemInfo implements Serializable{
+public class RefundItem extends BasicItemInfo implements Serializable {
 
     private static final long serialVersionUID = 4505554839511740470L;
 
@@ -49,5 +48,4 @@ public class RefundItem extends BasicItemInfo implements Serializable{
      * 最终退货数量
      */
     private Integer finalRefundQuantity;
-
 }

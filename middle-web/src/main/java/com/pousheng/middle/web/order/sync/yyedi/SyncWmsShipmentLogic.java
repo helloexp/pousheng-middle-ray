@@ -38,6 +38,7 @@ import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Strings;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,7 +121,7 @@ public class SyncWmsShipmentLogic {
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 }
-                return Response.fail(response.getReturnJson());
+                return Response.fail(Strings.concat(response.getMessage(),response.getReturnJson()));
             }
         } catch (Exception e) {
             log.error("sync wms shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));

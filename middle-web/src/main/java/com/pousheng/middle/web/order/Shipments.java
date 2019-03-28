@@ -3,8 +3,7 @@ package com.pousheng.middle.web.order;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.*;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -534,8 +533,15 @@ public class Shipments {
             List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
             skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
             List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
-            Map<String, Integer> skuCodeAndQuantityMap = skuOrders.stream().filter(Objects::nonNull)
-                    .collect(Collectors.toMap(SkuOrder::getSkuCode, it -> skuOrderIdAndQuantity.get(it.getId())));
+
+            // sku order 可能 skuCode 相同，那么就把他们的数量加起来校验库存
+            Map<String, Integer> skuCodeAndQuantityMap = Maps.newHashMap();
+            skuOrders.forEach(it -> {
+                Integer q = skuOrderIdAndQuantity.get(it.getId());
+                q += skuCodeAndQuantityMap.getOrDefault(it.getSkuCode(), 0);
+                skuCodeAndQuantityMap.put(it.getSkuCode(), q);
+            });
+
             //检查库存是否充足
             checkStockIsEnough(warehouseId, skuCodeAndQuantityMap, shopOrder.getShopId());
             //检查商品是不是一次发货还是拆成数次发货,如果不是一次发货抛出异常

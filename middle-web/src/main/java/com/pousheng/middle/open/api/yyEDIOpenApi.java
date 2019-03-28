@@ -49,7 +49,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -118,7 +117,7 @@ public class yyEDIOpenApi {
                 Refund refund = refundReadLogic.findRefundByRefundCode(shipmentCode);
                 //如果不是取消中 忽略请求
                 if (!Objects.equals(refund.getStatus(), MiddleRefundStatus.SYNC_HK_CANCEL_ING.getValue())) {
-                    log.info("refund {} current status is {}, errorCode {} ", shipmentCode, refund.getStatus());
+                    log.info("refund {} current status is {}", shipmentCode, refund.getStatus());
                     return;
                 }
                 OrderOperation syncSuccessOrderOperation;
@@ -139,7 +138,7 @@ public class yyEDIOpenApi {
             Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentCode(shipmentCode);
             ShopOrder order = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
-            //如果发货单不是取消中 直接通知就行了
+            //如果发货  单不是取消中 直接通知就行了
             if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue())) {
                 if (Objects.equals(errorCode, TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
                     //判断发货单类型，如果发货单类型是销售发货单正常处理
@@ -268,7 +267,7 @@ public class yyEDIOpenApi {
      * @param shipInfo yyEdi or yjErp 回调中台传回发货信息
      */
     public void dealErpShipmentInfo(String shipInfo) {
-        List<YyEdiShipInfo> results = null;
+        List<YyEdiShipInfo> results;
         List<YyEdiResponseDetail> fields = Lists.newArrayList();
         List<YyEdiShipInfo> okShipInfos = Lists.newArrayList();
         YyEdiResponse error = new YyEdiResponse();

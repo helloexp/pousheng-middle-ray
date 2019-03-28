@@ -88,7 +88,7 @@ public class HKShipmentDoneLogic {
     private AutoCompensateLogic autoCompensateLogic;
 
     public void doneShipment(Shipment shipment) {
-        log.info("HK SHIPMENT DONE LISTENER start, shipmentId is {},shipmentType is {}", shipment.getId(), shipment.getType());
+        log.info("HK SHIPMENT DONE LISTENER start, shipmentId is {}, shipmentType is {}", shipment.getId(), shipment.getType());
         //判断发货单是否发货完
         if (shipment.getType() == ShipmentType.SALES_SHIP.value()) {
             //判断发货单是否已经全部发货完成,如果全部发货完成之后需要更新order的状态为待收货
@@ -98,7 +98,7 @@ public class HKShipmentDoneLogic {
             Flow flow = flowPicker.pickOrder();
             log.info("HK SHIPMENT id:{} DONE LISTENER shopOrderStatus is {}", shipment.getId(), shopOrder.getStatus());
 
-            if (Objects.equals(shopOrder.getOutFrom(), "yunjujit")) {
+            if (MiddleChannel.YUNJUJIT.getValue().equals(shopOrder.getOutFrom())) {
                 //jit大单 整单发货，所以将所有子单合并处理即可
                 Response<Boolean> response = middleOrderWriteService.updateOrderStatusForJit(shopOrder, MiddleOrderEvent.SHIP.toOrderOperation());
                 if (!response.isSuccess()) {
@@ -118,10 +118,14 @@ public class HKShipmentDoneLogic {
                                 skuOrder.getId(), skuInfos.get(skuOrder.getId()), updateShippedRlt.getError());
                         throw new JsonResponseException(updateShippedRlt.getError());
                     }
+
                     if (flow.operationAllowed(skuOrder.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation())) {
                         skuOrder = updateShippedRlt.getResult();
-                        //如果未达到全部发货，则不更新子单状态
-                        if (skuOrder.getQuantity() > skuOrder.getShipped()) {
+
+                        // 是否部分取消，而且已经发货完成
+                        boolean partialCancelAndDone = Objects.equals(skuOrder.getWithHold(), 0) && Objects.equals(skuOrder.getShipped(), skuOrder.getShipping());
+                        // 如果未达到全部发货，则不更新子单状态
+                        if (!partialCancelAndDone && skuOrder.getQuantity() > skuOrder.getShipped()) {
                             continue;
                         }
                         Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
@@ -186,7 +190,7 @@ public class HKShipmentDoneLogic {
                     //天猫换货单 需要反馈物流发货，调用 tmall.exchange.consigngoods
                     OpenShop openShop = openShopCacher.findById(orderShipment.getShopId());//根据店铺id查询店铺
                     Map<String, String> extraMap = openShop.getExtra();
-                    if (Objects.equals(openShop.getChannel(), MiddleChannel.TAOBAO.getValue())&&extraMap.containsKey(TradeConstants.EXCHANGE_PULL) && Objects.equals(extraMap.get(TradeConstants.EXCHANGE_PULL), "Y")) {
+                    if (Objects.equals(openShop.getChannel(), MiddleChannel.TAOBAO.getValue()) && extraMap.containsKey(TradeConstants.EXCHANGE_PULL) && Objects.equals(extraMap.get(TradeConstants.EXCHANGE_PULL), "Y")) {
 
                         OpenClientAfterSaleExchangeService afterSaleExchangeService = afterSaleExchangeServiceRegistryCenter.getAfterSaleExchangeService(openShop.getChannel());
                         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
@@ -197,7 +201,7 @@ public class HKShipmentDoneLogic {
                         ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
                         String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
                         OpenClientOrderShipment openOrderShipment = new OpenClientOrderShipment();
-                        openOrderShipment.setOuterOrderId(refund.getOutId().substring(refund.getOutId().indexOf("_")+1));
+                        openOrderShipment.setOuterOrderId(refund.getOutId().substring(refund.getOutId().indexOf("_") + 1));
                         openOrderShipment.setLogisticsType("200");//100表示平邮，200表示快递
                         openOrderShipment.setLogisticsCompany(expressCompanyCode);
                         openOrderShipment.setWaybill(shipmentSerialNo);
@@ -211,9 +215,9 @@ public class HKShipmentDoneLogic {
                         }
                         openOrderShipment.setOuterSkuCodes(outerSkuCodes);
                         openOrderShipment.setOuterItemOrderIds(outerItemOrderIds);
-                        log.info("notice taobao refund order ship (id:{}) shopId (shopId:{}) openOrderShipment (openOrderShipment:{})",refund.getId(),openShop.getId(),mapper.toJson(openOrderShipment));
-                        Response<Boolean> result = afterSaleExchangeService.ship(openShop.getId(),openOrderShipment);
-                        log.info("notice taobao refund order ship result (result:{})",mapper.toJson(result));
+                        log.info("notice taobao refund order ship (id:{}) shopId (shopId:{}) openOrderShipment (openOrderShipment:{})", refund.getId(), openShop.getId(), mapper.toJson(openOrderShipment));
+                        Response<Boolean> result = afterSaleExchangeService.ship(openShop.getId(), openOrderShipment);
+                        log.info("notice taobao refund order ship result (result:{})", mapper.toJson(result));
                         if (!result.isSuccess()) {
                             log.error("fail to notice taobao refund order ship (id:{})  ", refund.getId());
                             Map<String, Object> param2 = Maps.newHashMap();

@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 public class QueryHkWarhouseOrShopStockApi {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
+    private static final Splitter DASH = Splitter.on("-").omitEmptyStrings().trimResults();
 
     @Autowired
     private ErpClient erpClient;
@@ -94,51 +95,52 @@ public class QueryHkWarhouseOrShopStockApi {
 
     /**
      * 查询库存信息
+     *
      * @param stockCodes 仓或门店外码集合
-     * @param skuCodes 商品编码集合
-     * @param stockType 0 = 不限; 1 = 店仓; 2 = 总仓
+     * @param skuCodes   商品编码集合
+     * @param stockType  0 = 不限; 1 = 店仓; 2 = 总仓
      */
-    public List<HkSkuStockInfo> doQueryStockInfo(List<String> stockCodes, List<String> skuCodes, Integer stockType){
-        Map<String,String> map= Maps.newHashMap();
-        if(!CollectionUtils.isEmpty(stockCodes)){
-            map.put("stock_codes",Joiners.COMMA.join(stockCodes));
-        }else {
-            log.warn("do query stock info for:{} ,stock type:{} skip,because stockCodes is empty",skuCodes,stockType);
+    public List<HkSkuStockInfo> doQueryStockInfo(List<String> stockCodes, List<String> skuCodes, Integer stockType) {
+        Map<String, String> map = Maps.newHashMap();
+        if (!CollectionUtils.isEmpty(stockCodes)) {
+            map.put("stock_codes", Joiners.COMMA.join(stockCodes));
+        } else {
+            log.warn("do query stock info for:{} ,stock type:{} skip,because stockCodes is empty", skuCodes, stockType);
             //新版查询库存必须传仓库范围，所以如果这里没有范围则直接返回空列表
             return Lists.newArrayList();
         }
-        if(CollectionUtils.isEmpty(skuCodes)){
+        if (CollectionUtils.isEmpty(skuCodes)) {
             log.error("sku code info invalid");
             throw new ServiceException("sku.code.invalid");
         }
-        map.put("barcodes",Joiners.COMMA.join(skuCodes));
-        map.put("stock_type",stockType.toString());
-        log.info("[QUERY-STOCK]query hk stock request param:{}",map);
-        String responseBody = erpClient.get("common/erp/base/countmposinstock",map);
-        log.info("[QUERY-STOCK]query hk stock success result:{}",responseBody);
+        map.put("barcodes", Joiners.COMMA.join(skuCodes));
+        map.put("stock_type", stockType.toString());
+        log.info("[QUERY-STOCK]query hk stock request param:{}", map);
+        String responseBody = erpClient.get("common/erp/base/countmposinstock", map);
+        log.info("[QUERY-STOCK]query hk stock success result:{}", responseBody);
         //当查询商品的在各个门店后仓的库存未0，则返回接口为空
         //当查询某个门店中的三个sku，如果只有两个sku有库存则只返回这两个有库存的sku
-        List<HkSkuStockInfo> hkSkuStockInfoList =  readStockFromJson(responseBody);
+        List<HkSkuStockInfo> hkSkuStockInfoList = readStockFromJson(responseBody);
 
-        List<HkSkuStockInfo> middleStockList =  Lists.newArrayListWithCapacity(hkSkuStockInfoList.size());
+        List<HkSkuStockInfo> middleStockList = Lists.newArrayListWithCapacity(hkSkuStockInfoList.size());
 
-        for (HkSkuStockInfo skuStockInfo : hkSkuStockInfoList){
-            if(Objects.equals(2,Integer.valueOf(skuStockInfo.getStock_type()))){
+        for (HkSkuStockInfo skuStockInfo : hkSkuStockInfoList) {
+            if (Objects.equals(2, Integer.valueOf(skuStockInfo.getStock_type()))) {
                 try {
-                    WarehouseDTO warehouse = warehouseCacher.findByCode(skuStockInfo.getCompany_id()+"-"+skuStockInfo.getStock_id());
+                    WarehouseDTO warehouse = warehouseCacher.findByCode(skuStockInfo.getCompany_id() + "-" + skuStockInfo.getStock_id());
                     skuStockInfo.setBusinessId(warehouse.getId());
                     skuStockInfo.setBusinessName(warehouse.getWarehouseName());
                     middleStockList.add(skuStockInfo);
 
-                }catch (Exception e){
-                    log.error("find warehouse by company id:{} and stock id:{} fail,cause:{}",skuStockInfo.getCompany_id(),skuStockInfo.getStock_code(),Throwables.getStackTraceAsString(e));
+                } catch (Exception e) {
+                    log.error("find warehouse by company id:{} and stock id:{} fail,cause:{}", skuStockInfo.getCompany_id(), skuStockInfo.getStock_code(), Throwables.getStackTraceAsString(e));
                 }
-            }else {
+            } else {
                 try {
-                    Shop shop = middleShopCacher.findByOuterIdAndBusinessId(skuStockInfo.getStock_code(),Long.valueOf(skuStockInfo.getCompany_id()));
+                    Shop shop = middleShopCacher.findByOuterIdAndBusinessId(skuStockInfo.getStock_code(), Long.valueOf(skuStockInfo.getCompany_id()));
                     //过滤掉已冻结或已删除的店铺
-                    if(!Objects.equals(shop.getStatus(),1)){
-                        log.warn("current shop(id:{}) status:{} invalid,so skip",shop.getId(),shop.getStatus());
+                    if (!Objects.equals(shop.getStatus(), 1)) {
+                        log.warn("current shop(id:{}) status:{} invalid,so skip", shop.getId(), shop.getStatus());
                         continue;
                     }
                     skuStockInfo.setBusinessId(shop.getId());
@@ -150,10 +152,10 @@ public class QueryHkWarhouseOrShopStockApi {
                         log.error("shop(id:{}) not mapping open shop", shop.getId());
                         throw new JsonResponseException("shop.not.mapping.open.shop");
                     }
-                    filterIsMposSku(skuStockInfo,middleStockList,openShopId);
+                    filterIsMposSku(skuStockInfo, middleStockList, openShopId);
 
-                }catch (Exception e){
-                    log.error("find shop by outer id:{} fail,cause:{}",skuStockInfo.getStock_code(),Throwables.getStackTraceAsString(e));
+                } catch (Exception e) {
+                    log.error("find shop by outer id:{} fail,cause:{}", skuStockInfo.getStock_code(), Throwables.getStackTraceAsString(e));
                 }
 
             }
@@ -163,9 +165,8 @@ public class QueryHkWarhouseOrShopStockApi {
     }
 
 
-
     //只有打标为mpos标签的货品才可以参与派单
-    private void filterIsMposSku(HkSkuStockInfo skuStockInfo,List<HkSkuStockInfo> middleStockList,Long openShopId){
+    private void filterIsMposSku(HkSkuStockInfo skuStockInfo, List<HkSkuStockInfo> middleStockList, Long openShopId) {
 
         List<HkSkuStockInfo.SkuAndQuantityInfo> materialList = skuStockInfo.getMaterial_list();
         List<HkSkuStockInfo.SkuAndQuantityInfo> newMaterialList = Lists.newArrayListWithCapacity(materialList.size());
@@ -178,17 +179,17 @@ public class QueryHkWarhouseOrShopStockApi {
         });
 
         Response<List<SkuTemplate>> listRes = skuTemplateReadService.findBySkuCodes(skuCodes);
-        if( !listRes.isSuccess()){
-            log.error("find sku template by sku codes:{} fail,error:{}",skuCodes,listRes.getError());
+        if (!listRes.isSuccess()) {
+            log.error("find sku template by sku codes:{} fail,error:{}", skuCodes, listRes.getError());
             //这里将查询失败当做非mpos商品处理（严格意义上这里应该要报错的）
             return;
         }
         List<SkuTemplate> skuTemplates = listRes.getResult();
 
-        if (CollectionUtils.isEmpty(skuTemplates)){
-            log.error("not find sku template by sku codes:{} ",skuCodes);
+        if (CollectionUtils.isEmpty(skuTemplates)) {
+            log.error("not find sku template by sku codes:{} ", skuCodes);
             //这里将查询不到的当做非mpos商品处理（严格意义上这里应该要报错的）
-            return ;
+            return;
         }
 
         Map<String, SkuTemplate> skuInfoMap = skuTemplates.stream().filter(Objects::nonNull)
@@ -196,11 +197,11 @@ public class QueryHkWarhouseOrShopStockApi {
 
         for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : materialList) {
             SkuTemplate skuTemplate = skuInfoMap.get(skuAndQuantityInfo.getBarcode());
-            if (Arguments.isNull(skuTemplate)){
-                log.error("not find sku template by sku code:{}",skuAndQuantityInfo.getBarcode());
+            if (Arguments.isNull(skuTemplate)) {
+                log.error("not find sku template by sku code:{}", skuAndQuantityInfo.getBarcode());
                 continue;
             }
-            if (isVendible(skuTemplate.getSkuCode(),openShopId)){
+            if (isVendible(skuTemplate.getSkuCode(), openShopId)) {
                 newMaterialList.add(skuAndQuantityInfo);
             }
         }
@@ -209,7 +210,6 @@ public class QueryHkWarhouseOrShopStockApi {
         middleStockList.add(skuStockInfo);
 
     }
-
 
 
     public Boolean isVendible(String skuCode, Long openShopId) {
@@ -227,7 +227,7 @@ public class QueryHkWarhouseOrShopStockApi {
             log.error("query sku template by materialId:{} and size:{} fail,error:{}", skuCode, response.getError());
             throw new JsonResponseException(response.getError());
         }
-        return response.getResult().getTotal() !=0;
+        return response.getResult().getTotal() != 0;
 
     }
 
@@ -313,10 +313,9 @@ public class QueryHkWarhouseOrShopStockApi {
     }
 
 
-
     private List<HkSkuStockInfo> readStockFromJson(String json) {
 
-        if(Strings.isNullOrEmpty(json)){
+        if (Strings.isNullOrEmpty(json)) {
             log.warn("not query stock from hk");
             return Lists.newArrayList();
         }
@@ -324,7 +323,7 @@ public class QueryHkWarhouseOrShopStockApi {
         try {
             return JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(json, LIST_OF_SKU_STOCK);
         } catch (IOException e) {
-            log.error("analysis json:{} to stock dto error,cause:{}",json, Throwables.getStackTraceAsString(e));
+            log.error("analysis json:{} to stock dto error,cause:{}", json, Throwables.getStackTraceAsString(e));
         }
 
         return Lists.newArrayList();
@@ -335,26 +334,29 @@ public class QueryHkWarhouseOrShopStockApi {
      * 〈根据仓库ID和skucode查询商品库存信息〉
      *
      * @param warehouseIds 仓库ID
-     * @param skuCodes sku
-     * @param withSafe 是否使用安全库存，如果不使用的话 直接忽略库存为0的记录
+     * @param skuCodes     sku
+     * @param withSafe     是否使用安全库存，如果不使用的话 直接忽略库存为0的记录
      * @return: 商品库存信息集合
      * Author:xiehong
      * Date: 2018/6/20 下午5:48
      */
     public List<HkSkuStockInfo> doQueryStockInfo(List<Long> warehouseIds, List<String> skuCodes, Long shopId, Object... withSafe) {
-        if (CollectionUtils.isEmpty(warehouseIds) || CollectionUtils.isEmpty(skuCodes)){
+        if (CollectionUtils.isEmpty(warehouseIds) || CollectionUtils.isEmpty(skuCodes)) {
             log.error("warehouseIds or skuCodes is null");
             return Lists.newArrayList();
         }
+        // 去重
+        skuCodes = skuCodes.stream().distinct().collect(Collectors.toList());
+
         //获取
         Response<List<SkuTemplate>> listRes = skuTemplateReadService.findBySkuCodes(skuCodes);
-        if( !listRes.isSuccess()){
-            log.error("find sku template by sku codes:{} fail,error:{}",skuCodes,listRes.getError());
+        if (!listRes.isSuccess()) {
+            log.error("find sku template by sku codes:{} fail,error:{}", skuCodes, listRes.getError());
             return Lists.newArrayList();
         }
         List<SkuTemplate> skuTemplates = listRes.getResult();
-        if (CollectionUtils.isEmpty(skuTemplates)){
-            log.error("not find sku template by sku codes:{} ",skuCodes);
+        if (CollectionUtils.isEmpty(skuTemplates)) {
+            log.error("not find sku template by sku codes:{} ", skuCodes);
             return Lists.newArrayList();
         }
         Map<String, SearchSkuTemplate> searchSkuTemplateMap = new HashMap<>();
@@ -385,7 +387,7 @@ public class QueryHkWarhouseOrShopStockApi {
         OpenShop openShop = openShopCacher.findById(shopId);
         String companyCode = openShop.getExtra().get(COMPANY_CODE);
         if (StringUtils.isEmpty(companyCode)) {
-            companyCode = Splitter.on("-").splitToList(openShop.getAppKey()).get(0);
+            companyCode = DASH.splitToList(openShop.getAppKey()).get(0);
         }
         //TODO 单测
         List<HkSkuStockInfo> hkSkuStockInfos = Lists.newArrayListWithExpectedSize(warehouseIds.size());
@@ -407,17 +409,17 @@ public class QueryHkWarhouseOrShopStockApi {
                 continue;
             }
 
-            List<String> codes= Splitter.on("-").omitEmptyStrings().trimResults().splitToList(warehouse.getWarehouseCode());
+            List<String> codes = DASH.splitToList(warehouse.getWarehouseCode());
             String company_id = codes.get(0);
             String stock_id = codes.get(1);
             Long businessId = warehouseId;
             String businessName = warehouse.getWarehouseName();
             Integer type = warehouse.getWarehouseSubType();
             HkSkuStockInfo info = new HkSkuStockInfo();
-            if (Objects.equals(WarehouseType.SHOP_WAREHOUSE.value(),type)){
+            if (Objects.equals(WarehouseType.SHOP_WAREHOUSE.value(), type)) {
                 //获取shop
                 Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.valueOf(company_id));
-                if(!com.google.common.base.Objects.equal(shop.getStatus(),1)||com.google.common.base.Objects.equal(shop.getType(), ShopType.ORDERS_SHOP.value())){
+                if (!Objects.equals(shop.getStatus(), 1) || Objects.equals(shop.getType(), ShopType.ORDERS_SHOP.value())) {
                     continue;
                 }
                 businessId = shop.getId();
@@ -435,19 +437,23 @@ public class QueryHkWarhouseOrShopStockApi {
             List<HkSkuStockInfo.SkuAndQuantityInfo> material_list = Lists.newArrayList();
             info.setMaterial_list(material_list);
 
-            //获取库存
-            Map<String,AvailableInventoryDTO> skuStockMap = availableInv.stream().filter(Objects::nonNull).collect(Collectors.toMap(AvailableInventoryDTO::getSkuCode,a->a));
-            List<String> stockSkuCodes = skuStockMap.keySet().stream().collect(Collectors.toList());
-            for (String c : stockSkuCodes){
+            // 获取库存
+            // sku 编码可能重复
+            Map<String, AvailableInventoryDTO> skuStockMap = availableInv.stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toMap(AvailableInventoryDTO::getSkuCode, a -> a));
+
+            List<String> stockSkuCodes = new ArrayList<>(skuStockMap.keySet());
+            for (String c : stockSkuCodes) {
                 AvailableInventoryDTO stock = skuStockMap.get(c);
                 SkuTemplate temp = skuTemplateMap.get(c);
-                if (null != stock && null != temp){
+                if (null != stock && null != temp) {
                     //当是自动派单时间 无论是什么类型的仓库 都要去检查能否发货 手工派单则忽略
                     if (withSafe.length == 0 && !canDeliveryForStock(searchSkuTemplateMap.get(c), warehouse, companyCode, Boolean.TRUE)) {
                         continue;
                     }
-                    Map<String,String> tempExtra = temp.getExtra();
-                    if (MapUtils.isNotEmpty(tempExtra)){
+                    Map<String, String> tempExtra = temp.getExtra();
+                    if (MapUtils.isNotEmpty(tempExtra)) {
                         String materialId = tempExtra.get("materialId");
                         HkSkuStockInfo.SkuAndQuantityInfo skuquantity = new HkSkuStockInfo.SkuAndQuantityInfo();
                         skuquantity.setBarcode(c);
@@ -457,7 +463,7 @@ public class QueryHkWarhouseOrShopStockApi {
                         skuquantity.setQuantityWithOutSafe(stock.getAvailableQuantityWithoutSafe());
                         material_list.add(skuquantity);
                     } else {
-                        log.warn("warehouse {} sku {} SkuTemplate {} extra is null ",warehouseId,c,temp.getId());
+                        log.warn("warehouse {} sku {} SkuTemplate {} extra is null ", warehouseId, c, temp.getId());
                     }
                 }
             }
@@ -489,6 +495,7 @@ public class QueryHkWarhouseOrShopStockApi {
 
     /**
      * 验证可售仓库
+     *
      * @param skuCode
      * @param warehouseIds
      * @param companyCode
@@ -516,7 +523,7 @@ public class QueryHkWarhouseOrShopStockApi {
                 }
             } catch (Exception e) {
                 log.error("failed to find shop type and businessInfo for warehouse (id:{}),case:{}",
-                    warehouseId, Throwables.getStackTraceAsString(e));
+                        warehouseId, Throwables.getStackTraceAsString(e));
                 continue;
             }
         }

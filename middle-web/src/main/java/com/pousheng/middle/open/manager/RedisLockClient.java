@@ -1,6 +1,7 @@
 package com.pousheng.middle.open.manager;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import io.terminus.common.redis.utils.JedisTemplate;
@@ -9,7 +10,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import redis.clients.jedis.exceptions.JedisNoScriptException;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -44,23 +47,7 @@ public class RedisLockClient implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        LUA_LOCK_SCRIPT = Resources.toString(Resources.getResource(REDIS_LOCK_LUA_PATH), Charsets.UTF_8);
-        if (StringUtils.isNotBlank(LUA_LOCK_SCRIPT)) {
-
-            LUA_LOCK_SCRIPT_SHA = jedisTemplate.execute(jedis -> {
-                return jedis.scriptLoad(LUA_LOCK_SCRIPT);
-            });
-            log.info("redis lock script sha:{}", LUA_LOCK_SCRIPT_SHA);
-        }
-
-        LUA_UNLOCK_SCRIPT = Resources.toString(Resources.getResource(REDIS_UNLOCK_LUA_PATH), Charsets.UTF_8);
-        if (StringUtils.isNotBlank(LUA_UNLOCK_SCRIPT)) {
-            LUA_UNLOCK_SCRIPT_SHA = jedisTemplate.execute(jedis -> {
-                return jedis.scriptLoad(LUA_UNLOCK_SCRIPT);
-            });
-            log.info("redis unlock script sha:{}", LUA_UNLOCK_SCRIPT_SHA);
-        }
-
+        this.loadScript();
     }
 
     /**
@@ -90,6 +77,13 @@ public class RedisLockClient implements InitializingBean {
                 return false;
             }
             return "1".equals(flag.toString());
+        } catch (JedisNoScriptException jse){
+            log.warn("redis lock script is missing,cause:{}",jse.getMessage());
+            try {
+                this.loadScript();
+            }catch(Exception e){
+                log.error("redis lock script reload failed,cause:{}",Throwables.getStackTraceAsString(e));
+            }
         } catch (Exception e) {
             log.error("failed to get a redis lock.key:{}", key, e);
         }
@@ -116,8 +110,44 @@ public class RedisLockClient implements InitializingBean {
                     jedis.eval(LUA_UNLOCK_SCRIPT, keys, args);
                 }
             });
-        } catch (Exception e) {
+        } catch (JedisNoScriptException jse) {
+            log.warn("redis lock script is missing,cause:{}", jse.getMessage());
+            try {
+                this.loadScript();
+            } catch (Exception e) {
+                log.error("redis lock script reload failed,cause:{}", Throwables.getStackTraceAsString(e));
+            }
+        }catch (Exception e) {
             log.error("failed to unlock {}.", key, e);
+        }
+    }
+
+    /**
+     * @Description 加载脚本
+     * @Date        2019/3/5
+     * @param
+     * @return
+     */
+    private void loadScript(){
+        try {
+            LUA_LOCK_SCRIPT = Resources.toString(Resources.getResource(REDIS_LOCK_LUA_PATH), Charsets.UTF_8);
+            if (StringUtils.isNotBlank(LUA_LOCK_SCRIPT)) {
+
+                LUA_LOCK_SCRIPT_SHA = jedisTemplate.execute(jedis -> {
+                    return jedis.scriptLoad(LUA_LOCK_SCRIPT);
+                });
+                log.info("redis lock script sha:{}", LUA_LOCK_SCRIPT_SHA);
+            }
+
+            LUA_UNLOCK_SCRIPT = Resources.toString(Resources.getResource(REDIS_UNLOCK_LUA_PATH), Charsets.UTF_8);
+            if (StringUtils.isNotBlank(LUA_UNLOCK_SCRIPT)) {
+                LUA_UNLOCK_SCRIPT_SHA = jedisTemplate.execute(jedis -> {
+                    return jedis.scriptLoad(LUA_UNLOCK_SCRIPT);
+                });
+                log.info("redis unlock script sha:{}", LUA_UNLOCK_SCRIPT_SHA);
+            }
+        }catch (IOException e){
+            log.error("redis lock script load failed,cause:{}",e.getMessage());
         }
     }
 

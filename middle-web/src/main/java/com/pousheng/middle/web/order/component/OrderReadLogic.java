@@ -753,8 +753,8 @@ public class OrderReadLogic {
             log.error("fail to find sku order(id:{}),cause by {}",skuOrderId,resp.getError());
             throw new ServiceException("find.skuOrder.failed");
         }
-        //子单商品数量大于1,已发货数量大于1，且待发货数量大于0，则认为已经经过数量级拆单
-        if(resp.getResult()!=null && resp.getResult().getQuantity().intValue()>1 && (resp.getResult().getShipped().intValue()+resp.getResult().getShipping().intValue())>=1 && resp.getResult().getWithHold().intValue()>0){
+        //子单商品数量大于1,已发货数量小于商品数量，则认为已经经过数量级拆单
+        if(resp.getResult()!=null && resp.getResult().getQuantity().intValue()>1 && resp.getResult().getShipping().intValue()<resp.getResult().getQuantity().intValue()){
             log.debug("sku order(id={}) has separated",skuOrderId);
             return true;
         }

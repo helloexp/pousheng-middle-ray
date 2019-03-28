@@ -2,13 +2,13 @@ package com.pousheng.middle.warehouse.companent;
 
 import com.alibaba.fastjson.JSON;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.dto.ShopStockRule;
 import com.pousheng.middle.warehouse.dto.ShopStockRuleDto;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -136,8 +136,9 @@ public class WarehouseShopRuleClient {
     public Paging<ShopStockRule> shopRulePagination(Integer pageNo, Integer pageSize, List<Long> shopIds) {
         try {
             Map<String, Object> params = Maps.newHashMap();
-            params.put("shopIds", JSON.toJSONString(shopIds));
-
+            if (CollectionUtils.isNotEmpty(shopIds)) {
+                params.put("shopIds", JSON.toJSONString(shopIds));
+            }
             Paging<ShopStockRule> rulePaging = (Paging<ShopStockRule>) inventoryBaseClient.get("api/inventory/shop-rule/paging",
                     pageNo, pageSize, params, Paging.class, false);
 
@@ -149,7 +150,7 @@ public class WarehouseShopRuleClient {
             log.error("shop rule pagination fail, cause:{}", Throwables.getStackTraceAsString(e));
         }
 
-        return new Paging<ShopStockRule>(0L, Lists.newArrayList());
+        return Paging.empty();
     }
 
     /**

@@ -15,13 +15,14 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
+import io.terminus.parana.common.enums.UserRole;
 import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.UserUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -89,7 +90,10 @@ public class ShopStockRules {
 
             shopIds = Lists.newArrayList(shopId);
         }
-
+        // 管理员特殊处理，避免 get 请求长度超过限制
+        if (user.getRoles().contains(UserRole.ADMIN.name())) {
+            shopIds = Collections.emptyList();
+        }
         return warehousePushRuleClient.shopRulePagination(pageNo, pageSize,shopIds);
 
     }

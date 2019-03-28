@@ -17,26 +17,28 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://${POUSHENG_MIDDLE_MYSQL_HOST}:${POUSHENG_MIDDLE_MYSQL_PORT}/${POUSHENG_MIDDLE_MYSQL_DATABASE}?useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&autoReconnect=true
-    username: ${POUSHENG_MIDDLE_MYSQL_USERNAME}
-    password: ${POUSHENG_MIDDLE_MYSQL_PASSWORD}
+    url: jdbc:mysql://${POUSHENG_MIDDLE_EXPORT_MYSQL_HOST}:${POUSHENG_MIDDLE_EXPORT_MYSQL_PORT}/${POUSHENG_MIDDLE_EXPORT_MYSQL_DATABASE}?useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&autoReconnect=true
+    username: ${POUSHENG_MIDDLE_EXPORT_MYSQL_USERNAME}
+    password: ${POUSHENG_MIDDLE_EXPORT_MYSQL_PASSWORD}
     initialize: false
     continue-on-error: false
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
       maximum-pool-size: 100
-      minimum-idle: 25
-      idle-timeout: 600
-      max-lifetime: 600
+      minimum-idle: 0
+      leak-detection-threshold: 180000
+      connection-timeout: 180000
+      validation-timeout: 180000
+      idle-timeout: 180000
   #用户登陆和分布式缓存使用的redis
   redis:
     host: ${POUSHENG_REDIS_SESSION_HOST}
     port: ${POUSHENG_REDIS_SESSION_PORT}
     password: ${POUSHENG_REDIS_SESSION_PASSWORD}
     pool:
-      max-idle: 8
+      max-idle: 100
       max-wait: -1
-      max-active: 64
+      max-active: 1000
   application:
     name: pousheng-middle
   messages:
@@ -79,8 +81,8 @@ session:
   redis-index: 0
   redis-cluster: false
   redis-test-on-borrow: true
-  redis-max-total: 64
-  redis-max-idle: 8
+  redis-max-total: 10
+  redis-max-idle: 0
   redis-prefix: afsession
 
 # 代码中redis操作使用的redis
@@ -88,8 +90,8 @@ redis:
   host: ${POUSHENG_REDIS_SESSION_HOST}
   port: ${POUSHENG_REDIS_SESSION_PORT}
   auth: ${POUSHENG_REDIS_SESSION_PASSWORD}
-  max-total: 64
-  max-idle: 8
+  max-total: 10
+  max-idle: 100
   test-on-borrow: true
 
 rpc.mode: false
@@ -118,8 +120,6 @@ open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}
 open.api.gateway: ${OPEN_API_GATEWAY}
 middle.api.gateway: ${MIDDLE_API_GATEWAY}
-ps.middle.system.gateway: ${PS_MIDDLE_SYSTEM_GATEWAY}
-ps.middle.system.accesskey: ${PS_MIDDLE_SYSTEM_ACCESSKEY}
 
 
 azure:
@@ -238,10 +238,7 @@ jd.yunding.gateway: http://114.67.68.158:8008/api/gateway
 #middle的订单商品库存等job开关
 trade.job.enable: ${TRADE_JOB_ENABLE}
 
-#拉取售后单job开关
 open.client.sync.after.sale.job.enable: ${TRADE_JOB_ENABLE}
-
-#拉取天猫换货单job开关
 open.client.sync.after.sale.exchange.job.enable: ${TRADE_JOB_ENABLE}
 
 #拉取商品映射job开关
@@ -373,14 +370,8 @@ biz.export.wait.handle.job.enable: ${BIZ_EXPORT_WAIT_HANDLE_JOB_ENABLE:true}
 # 失败任务补偿开关
 biz.failed.job.enable: ${BIZ_FAILED_JOB_ENABLE:true}
 
-# 定时刷新Token开关
-open.client.refresh.token.job.enable: ${OPEN_CLIENT_REFRESH_TOKEN_JOB_ENABLE:false}
-
-# 统一接入层地址
-terminus.erp.gateway: ${TERMINUS.ERP.GETEWAY:https://retail-gateway-pagoda-prod.app.terminus.io/api/gateway}
-
 ### 中台补拍邮费商品SKU_CODE
-postage.sku.code: ${POSTAGE_SKU_CODE}
+postage.sku.code: ${POSTAGE_SKU_CODE:BYC0001$}
 
 ### 补偿bizMq队列大小
 common.biz.mq.queue.size: ${COMMON_BIZ_MQ_QUEUE_SIZE:0}

@@ -16,7 +16,6 @@ import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.Refund;
@@ -76,9 +75,5 @@ public class ReceiveYyediResultLogic {
         return Response.ok(compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC));
 
     }
-
-
-
-
 
 }

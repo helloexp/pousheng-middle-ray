@@ -818,18 +818,18 @@ public class SkuTemplates {
             cancelGroup(id, groupId);
         }
     }
-    
+
     @ApiOperation("将分组id中的组内商品或者排除商品全部删除")
     @PutMapping(value = "/api/sku-template/removeAll/itemGroupSku")
     public void removeAllitemGroupsku(@RequestParam Long groupId,@RequestParam Integer type){
         log.info("request cleanAll cancel item group groupId:{}, type:{}", groupId,type);
         if (Objects.isNull(groupId) || Objects.isNull(type)){
-            throw new JsonResponseException("请求参数错误不能为空！"); 
+            throw new JsonResponseException("请求参数错误不能为空！");
         }
         if(!PsItemGroupSkuType.EXCLUDE.value().equals(type) && !PsItemGroupSkuType.GROUP.value().equals(type)){
             throw new JsonResponseException("请求参数type值错误！");
         }
-        //1为组内商品，0为排除商品        
+        //1为组内商品，0为排除商品
         boolean hasNext = doForRemoveGroup(1,1000,groupId,type);
         while(hasNext){
             hasNext = doForRemoveGroup(1,1000,groupId,type);
@@ -863,7 +863,7 @@ public class SkuTemplates {
      * 分页获取删除分组商品
      * @param groupId
      * @param type
-     */    
+     */
     private Boolean doForRemoveGroup(int pageNo, int pageSize, Long groupId, Integer type){
         ItemGroupSkuCriteria criteria = new ItemGroupSkuCriteria();
         criteria.setPageNo(pageNo);
@@ -898,15 +898,15 @@ public class SkuTemplates {
             }
             //先批量删除该分页的分组商品，再异步更新搜索
             itemGroupSkuWriteService.batchDeleteByids(itemgroupskuids);
-            for (SkuTemplate skuTemplate : rskuExist.getResult()){               
+            for (SkuTemplate skuTemplate : rskuExist.getResult()){
                 //异步更新es搜索
-                postUpdateSearchEvent(skuTemplate.getId());                
+                postUpdateSearchEvent(skuTemplate.getId());
             }
             int currentCount = findResp.getResult().getData().size();
             return currentCount == pageSize;
         }
         return Boolean.FALSE;
-    }    
+    }
 
     @ApiOperation("将货品移出分组")
     @PutMapping(value = "/api/sku-template/{id}/cancel/group")

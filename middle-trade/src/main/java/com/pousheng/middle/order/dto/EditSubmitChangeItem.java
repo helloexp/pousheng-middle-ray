@@ -10,6 +10,8 @@ import lombok.Data;
 @Data
 public class EditSubmitChangeItem implements java.io.Serializable {
     private static final long serialVersionUID = 5499681004201604796L;
+
+    private Long skuOrderId;
     //商品编码和数量 (换货)
     private String changeSkuCode;
     //数量 (换货)

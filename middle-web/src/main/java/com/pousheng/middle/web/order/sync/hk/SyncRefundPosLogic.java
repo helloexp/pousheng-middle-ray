@@ -19,6 +19,7 @@ import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import com.pousheng.middle.web.user.dto.MemberProfile;
+import com.pousheng.middle.web.utils.OutSkuCodeUtil;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
@@ -35,7 +36,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -284,38 +284,36 @@ public class SyncRefundPosLogic {
      * @return
      */
     private List<HkShipmentPosItem> makeHkShipmentPosItemWarehouse(Refund refund,String shipmentCode) {
-
         List<YYEdiRefundConfirmItem> refundYYEdiConfirmItems = refundReadLogic.findRefundYYEdiConfirmItems(refund);
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
-        Map<String,Integer> refundItemAndPriceMap = Maps.newHashMap();
-        for (RefundItem refundItem:refundItems){
-            refundItemAndPriceMap.put(refundItem.getSkuCode(),refundItem.getCleanPrice());
-        }
-        Map<String,Integer> skuCodeAndShareDiscountMap = Maps.newHashMap();
-        for (RefundItem refundItem:refundItems){
-            skuCodeAndShareDiscountMap.put(refundItem.getSkuCode(),refundItem.getSharePlatformDiscount());
-        }
+        Map<String, String> skuCode2WarehouseCode = Maps.newHashMap();
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundYYEdiConfirmItems.size());
-        for (YYEdiRefundConfirmItem refundConfirmItem : refundYYEdiConfirmItems){
+        for (YYEdiRefundConfirmItem yyEdiRefundConfirmItem : refundYYEdiConfirmItems) {
+            // 即使有覆盖也不管了
+            skuCode2WarehouseCode.put(yyEdiRefundConfirmItem.getItemCode(), yyEdiRefundConfirmItem.getWarhouseCode());
+        }
+        for (RefundItem refundItem:refundItems){
+            Integer finalRefundQuantity = refundItem.getFinalRefundQuantity();
             //如果退货数量是0则过滤掉
-            if (Objects.equal(refundConfirmItem.getQuantity(),"0")){
+            if (finalRefundQuantity == null || finalRefundQuantity == 0){
                 continue;
             }
             HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
-            hkShipmentPosItem.setStockcode(refundConfirmItem.getWarhouseCode());
+            hkShipmentPosItem.setStockcode(skuCode2WarehouseCode.get(refundItem.getSkuCode()));
             hkShipmentPosItem.setSourcenetbillno(shipmentCode);
-            hkShipmentPosItem.setMatbarcode(refundConfirmItem.getItemCode());
-            hkShipmentPosItem.setQty(Integer.valueOf(refundConfirmItem.getQuantity()));
-            hkShipmentPosItem.setBalaprice(new BigDecimal(refundItemAndPriceMap.get(refundConfirmItem.getItemCode())==null
-                    ?0:refundItemAndPriceMap.get(refundConfirmItem.getItemCode())).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
-            hkShipmentPosItem.setCouponprice(new BigDecimal(skuCodeAndShareDiscountMap.get(refundConfirmItem.getItemCode())==null
-                    ?0:skuCodeAndShareDiscountMap.get(refundConfirmItem.getItemCode())).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            hkShipmentPosItem.setMatbarcode(refundItem.getSkuCode());
+            hkShipmentPosItem.setQty(finalRefundQuantity);
+            Integer cleanPrice = refundItem.getCleanPrice();
+            Integer sharePlatformDiscount = refundItem.getSharePlatformDiscount();
+            hkShipmentPosItem.setBalaprice(new BigDecimal(cleanPrice == null ? 0 : cleanPrice)
+                    .divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            hkShipmentPosItem.setCouponprice(new BigDecimal(sharePlatformDiscount == null ? 0 : sharePlatformDiscount)
+                    .divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //售后不涉及到优惠
             posItems.add(hkShipmentPosItem);
         }
         return posItems;
     }
-
 
     /**
      * 仓库发货退货信息
@@ -329,11 +327,9 @@ public class SyncRefundPosLogic {
         List<HkConfirmReturnItemInfo> hkConfirmItemInfos = refundExtra.getHkConfirmItemInfos();
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         Map<String,Integer> refundItemAndPriceMap = Maps.newHashMap();
-        for (RefundItem refundItem:refundItems){
-            refundItemAndPriceMap.put(refundItem.getSkuCode(),refundItem.getCleanPrice());
-        }
         Map<String,Integer> skuCodeAndShareDiscountMap = Maps.newHashMap();
         for (RefundItem refundItem:refundItems){
+            refundItemAndPriceMap.put(refundItem.getSkuCode(),refundItem.getCleanPrice());
             skuCodeAndShareDiscountMap.put(refundItem.getSkuCode(),refundItem.getSharePlatformDiscount());
         }
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(hkConfirmItemInfos.size());

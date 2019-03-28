@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 〈yyedi回传退货信息业务处理〉
@@ -222,7 +223,8 @@ public class YyediSyncRefundService implements CompensateBizService {
             Integer confirmQuantity = refundConfirmQuantityMap.get(shipmentComplexSkuCode);
             if (confirmQuantity != null && confirmQuantity > 0) {
                 Integer applyQuantity = refundApplyQuantityMap.get(shipmentComplexSkuCode);
-                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity() - confirmQuantity);
+                // 这个逻辑有点看不懂
+                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity() - (applyQuantity - confirmQuantity));
                 shipmentItem.setShipmentId(shipment.getId());
             }
         }

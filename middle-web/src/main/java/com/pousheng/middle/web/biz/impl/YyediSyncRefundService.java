@@ -222,8 +222,9 @@ public class YyediSyncRefundService implements CompensateBizService {
             Integer confirmQuantity = refundConfirmQuantityMap.get(shipmentComplexSkuCode);
             if (confirmQuantity != null && confirmQuantity > 0) {
                 Integer applyQuantity = refundApplyQuantityMap.get(shipmentComplexSkuCode);
-                // 这个逻辑有点看不懂
-                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity() - confirmQuantity);
+                // shipmentItem.getRefundQuantity 初始值创建时已处理 = 历史到货数量 + applyQuantity
+                // 所以最终是：历史售后到货数量 + confirmQuantity
+                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity() + confirmQuantity - applyQuantity);
                 shipmentItem.setShipmentId(shipment.getId());
             }
         }

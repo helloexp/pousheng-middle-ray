@@ -123,11 +123,12 @@ public class yyEDIOpenApi {
                 OrderOperation syncSuccessOrderOperation;
                 if (Objects.equals(errorCode, TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
                     syncSuccessOrderOperation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
-                    refundWriteLogic.updateStatusLocking(refund, syncSuccessOrderOperation);
                     refundWriteLogic.rollbackRefundQuantities(refund);
                 } else {
                     syncSuccessOrderOperation = MiddleOrderEvent.SYNC_CANCEL_FAIL.toOrderOperation();
                 }
+                refundWriteLogic.updateStatusLocking(refund, syncSuccessOrderOperation);
+
                 //取消成功的情况下 售后换后要解锁库存
                 if (Objects.equals(syncSuccessOrderOperation, MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation()) && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())) {
                     refundWriteLogic.cancelAfterSaleOccupyShipments(refund.getId());

@@ -23,7 +23,7 @@ import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
-import com.pousheng.middle.web.utils.OutSkuCodeUtil;
+import com.pousheng.middle.web.utils.SkuCodeUtil;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
@@ -41,7 +41,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 〈yyedi回传退货信息业务处理〉
@@ -207,7 +206,7 @@ public class YyediSyncRefundService implements CompensateBizService {
         Map<String, Integer> refundConfirmQuantityMap = Maps.newHashMap();
 
         for (RefundItem refundItem : refundItems) {
-            String key = OutSkuCodeUtil.getCombineCode(refundItem);
+            String key = SkuCodeUtil.getCombineCode(refundItem);
             Integer applyQuantity = MoreObjects.firstNonNull(refundApplyQuantityMap.get(key), 0)
                     + refundItem.getApplyQuantity();
             Integer confirmQuantity = MoreObjects.firstNonNull(refundConfirmQuantityMap.get(key), 0)
@@ -219,12 +218,13 @@ public class YyediSyncRefundService implements CompensateBizService {
         //校准后发货单售后实际申请数量=当前发货单售后申请数量-(退货单申请数量-售后实际入库数量)
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         for (ShipmentItem shipmentItem:shipmentItems){
-            String shipmentComplexSkuCode = OutSkuCodeUtil.getCombineCode(shipmentItem);
+            String shipmentComplexSkuCode = SkuCodeUtil.getCombineCode(shipmentItem);
             Integer confirmQuantity = refundConfirmQuantityMap.get(shipmentComplexSkuCode);
             if (confirmQuantity != null && confirmQuantity > 0) {
                 Integer applyQuantity = refundApplyQuantityMap.get(shipmentComplexSkuCode);
-                // 这个逻辑有点看不懂
-                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity() - (applyQuantity - confirmQuantity));
+                // shipmentItem.getRefundQuantity 初始值创建时已处理 = 历史到货数量 + applyQuantity
+                // 所以最终是：历史售后到货数量 + confirmQuantity
+                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity() + confirmQuantity - applyQuantity);
                 shipmentItem.setShipmentId(shipment.getId());
             }
         }
@@ -233,6 +233,8 @@ public class YyediSyncRefundService implements CompensateBizService {
         int count = 0;
         for (RefundItem refundItem : refundItems) {
             Integer confirmQuantity = refundItem.getFinalRefundQuantity();
+            log.info("售后子单确认到货，refundId={}, skuOrderId={}, applyQuantity={}, confirmQuantity={}, count={}",
+                    refund.getId(), refundItem.getSkuOrderId(), refundItem.getApplyQuantity(), refundItem.getFinalRefundQuantity(), count);
             if (confirmQuantity != null) {
                 if (!Objects.equals(refundItem.getApplyQuantity(), refundItem.getFinalRefundQuantity())) {
                     log.warn("refund item apply quantity not equals confirmed quantity,refundId {}, applyQuantity{}, confirmedQuantity {}",

@@ -10,7 +10,7 @@ import io.terminus.parana.order.model.ShipmentItem;
  * @author Xiongmin
  * 2019/3/17
  */
-public class OutSkuCodeUtil {
+public class SkuCodeUtil {
 
     private static final String EMPTY_STR = "";
 

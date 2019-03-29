@@ -30,9 +30,9 @@ spring:
       max-lifetime: 600
   #用户登陆和分布式缓存使用的redis
   redis:
-    host: ${POUSHENG_REDIS_HOST}
-    port: ${POUSHENG_REDIS_PORT}
-    password: ${POUSHENG_REDIS_PASSWORD}
+    host: ${POUSHENG_REDIS_SESSION_HOST}
+    port: ${POUSHENG_REDIS_SESSION_PORT}
+    password: ${POUSHENG_REDIS_SESSION_PASSWORD}
     pool:
       max-idle: 8
       max-wait: -1
@@ -73,9 +73,9 @@ session:
   max-inactive-interval: 604800
   source: redis
   serialize-type: json
-  redis-host: ${POUSHENG_REDIS_HOST}
-  redis-port: ${POUSHENG_REDIS_PORT}
-  redis-auth: ${POUSHENG_REDIS_PASSWORD}
+  redis-host: ${POUSHENG_REDIS_SESSION_HOST}
+  redis-port: ${POUSHENG_REDIS_SESSION_PORT}
+  redis-auth: ${POUSHENG_REDIS_SESSION_PASSWORD}
   redis-index: 0
   redis-cluster: false
   redis-test-on-borrow: true
@@ -85,9 +85,9 @@ session:
 
 # 代码中redis操作使用的redis
 redis:
-  host: ${POUSHENG_REDIS_HOST}
-  port: ${POUSHENG_REDIS_PORT}
-  auth: ${POUSHENG_REDIS_PASSWORD}
+  host: ${POUSHENG_REDIS_SESSION_HOST}
+  port: ${POUSHENG_REDIS_SESSION_PORT}
+  auth: ${POUSHENG_REDIS_SESSION_PASSWORD}
   max-total: 64
   max-idle: 8
   test-on-borrow: true

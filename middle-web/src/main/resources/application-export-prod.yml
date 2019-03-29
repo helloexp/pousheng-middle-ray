@@ -25,9 +25,11 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
       maximum-pool-size: 100
-      minimum-idle: 25
-      idle-timeout: 600
-      max-lifetime: 600
+      minimum-idle: 0
+      leak-detection-threshold: 180000
+      connection-timeout: 180000
+      validation-timeout: 180000
+      idle-timeout: 180000
   #用户登陆和分布式缓存使用的redis
   redis:
     host: ${POUSHENG_REDIS_SESSION_HOST}
@@ -52,17 +54,17 @@ mybatis:
   configuration:
     default-statement-timeout: 60
   type-aliases-package: >
-        com.pousheng.(erp|auth).model,
-        com.pousheng.middle.(group|task).model,
-        com.pousheng.middle.warehouse.model,
-        com.pousheng.middle.order.model,
-        io.terminus.parana.user.address.model,
-        io.terminus.parana.user.model,
-        io.terminus.parana.(item|category|brand|spu|shop).model,
-        io.terminus.parana.(order|cart|express|promotion|delivery|settle|auth).model,
-        io.terminus.open.client.common.(mappings|token|shop).model,
-        io.terminus.open.client.item.model,
-        io.terminus.applog.core.model
+    com.pousheng.(erp|auth).model,
+    com.pousheng.middle.(group|task).model,
+    com.pousheng.middle.warehouse.model,
+    com.pousheng.middle.order.model,
+    io.terminus.parana.user.address.model,
+    io.terminus.parana.user.model,
+    io.terminus.parana.(item|category|brand|spu|shop).model,
+    io.terminus.parana.(order|cart|express|promotion|delivery|settle|auth).model,
+    io.terminus.open.client.common.(mappings|token|shop).model,
+    io.terminus.open.client.item.model,
+    io.terminus.applog.core.model
 
 
 session:
@@ -109,10 +111,10 @@ gateway:
   parana:
     host: ${PARANA_HOST}
   yyedi:
-      host: ${YYEDI_HOST}
-      accessKey: ${YYEDI_ACCESS_KEY}
+    host: ${YYEDI_HOST}
+    accessKey: ${YYEDI_ACCESS_KEY}
   inventory:
-      host: ${POUSHENG_INVENTORY_HOST}
+    host: ${POUSHENG_INVENTORY_HOST}
 
 open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}
@@ -214,7 +216,7 @@ msg.template.list:
   - key: email.order.confirm
     title: 派单提醒
     content: >
-        {{shopName}} 店铺，你有一张订单待接单，订单号为:{{orderId}}，请立即处理
+      {{shopName}} 店铺，你有一张订单待接单，订单号为:{{orderId}}，请立即处理
 
 # mpos邮件组
 pousheng.order.email.confirm.group: ${EMAIL_GROUP}

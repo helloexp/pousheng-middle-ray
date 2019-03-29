@@ -224,7 +224,7 @@ public class YyediSyncRefundService implements CompensateBizService {
             if (confirmQuantity != null && confirmQuantity > 0) {
                 Integer applyQuantity = refundApplyQuantityMap.get(shipmentComplexSkuCode);
                 // 这个逻辑有点看不懂
-                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity() - (applyQuantity - confirmQuantity));
+                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity() - confirmQuantity);
                 shipmentItem.setShipmentId(shipment.getId());
             }
         }
@@ -233,6 +233,8 @@ public class YyediSyncRefundService implements CompensateBizService {
         int count = 0;
         for (RefundItem refundItem : refundItems) {
             Integer confirmQuantity = refundItem.getFinalRefundQuantity();
+            log.info("售后子单确认到货，refundId={}, skuOrderId={}, applyQuantity={}, confirmQuantity={}, count={}",
+                    refund.getId(), refundItem.getSkuOrderId(), refundItem.getApplyQuantity(), refundItem.getFinalRefundQuantity(), count);
             if (confirmQuantity != null) {
                 if (!Objects.equals(refundItem.getApplyQuantity(), refundItem.getFinalRefundQuantity())) {
                     log.warn("refund item apply quantity not equals confirmed quantity,refundId {}, applyQuantity{}, confirmedQuantity {}",

@@ -23,6 +23,7 @@ import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
+import com.pousheng.middle.web.utils.SkuCodeUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -947,15 +948,11 @@ public class ShipmentReadLogic {
             shipmentItems.addAll(newShipmentItemList);
         }
         //根据货品条码去重
-        Map<Long, ShipmentItem> skuCodeShipmentItems = Maps.newHashMap();
+        Map<Object, ShipmentItem> skuCodeShipmentItems = Maps.newHashMap();
         for (ShipmentItem shipmentItem : shipmentItems) {
-            skuCodeShipmentItems.put(shipmentItem.getSkuOrderId(), shipmentItem);
+            skuCodeShipmentItems.put(SkuCodeUtil.getCombineCode(shipmentItem), shipmentItem);
         }
-        List<ShipmentItem> newShipmentItems = Lists.newArrayList();
-        for (Long skuOrderId : skuCodeShipmentItems.keySet()) {
-            newShipmentItems.add(skuCodeShipmentItems.get(skuOrderId));
-        }
-        return newShipmentItems;
+        return Lists.newArrayList(skuCodeShipmentItems.values());
     }
 
     /**

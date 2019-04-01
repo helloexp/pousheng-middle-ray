@@ -2,10 +2,12 @@ package com.pousheng.middle.web.item.group;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.middle.group.dto.ItemGroupCriteria;
 import com.pousheng.middle.group.model.ItemGroup;
 import com.pousheng.middle.group.model.ItemRuleGroup;
 import com.pousheng.middle.group.service.ItemGroupReadService;
+import com.pousheng.middle.group.service.ItemGroupSkuReadService;
 import com.pousheng.middle.group.service.ItemGroupWriteService;
 import com.pousheng.middle.group.service.ItemRuleGroupReadService;
 import com.pousheng.middle.item.dto.ItemGroupAutoRule;
@@ -23,7 +25,11 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Splitters;
 import io.terminus.parana.common.utils.UserUtil;
+import io.terminus.parana.spu.model.SkuTemplate;
+import io.terminus.parana.spu.model.Spu;
+import io.terminus.parana.spu.service.SkuTemplateReadService;
 import io.terminus.search.api.model.WithAggregations;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +40,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @author zhaoxw
@@ -67,6 +75,15 @@ public class ItemGroups {
     @Autowired
     private ItemGroupCacherProxy itemGroupCacherProxy;
 
+    @Autowired
+    private PoushengMiddleSpuService poushengMiddleSpuService;
+
+    @RpcConsumer
+    private ItemGroupSkuReadService itemGroupSkuReadService;
+
+    @RpcConsumer
+    private SkuTemplateReadService skuTemplateReadService;
+
 
 
     @ApiOperation("查看商品分组信息")
@@ -88,7 +105,12 @@ public class ItemGroups {
     @GetMapping("/paging")
     public Paging<ItemGroup> findBy(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                     @RequestParam(required = false, value = "pageSize") Integer pageSize,
-                                    @RequestParam(required = false, value = "name") String name) {
+                                    @RequestParam(required = false, value = "name") String name,
+                                    @RequestParam(required = false, value = "skuCode") String skuCode,
+                                    @RequestParam(required = false, value = "spuCode") String spuCode,
+                                    @RequestParam(required = false, value = "exSkuCode") String exSkuCode,
+                                    @RequestParam(required = false, value = "exSpuCode") String exSpuCode,
+                                    @RequestParam(required = false, value = "skuType") Integer skuType) {
         ItemGroupCriteria criteria = new ItemGroupCriteria();
         if (StringUtils.isNoneEmpty(name)) {
             criteria.setName(name);
@@ -98,6 +120,30 @@ public class ItemGroups {
         }
         if (pageSize != null) {
             criteria.setPageSize(pageSize);
+        }
+        if (skuType != null) {
+            if(Objects.equals(skuType,PsItemGroupSkuType.EXCLUDE.value())){
+                skuCode = exSkuCode;
+                spuCode = exSpuCode;
+            }
+            // 如果skucode不为空，则以skucode为准，忽略spucode
+            if (StringUtils.isNotBlank(skuCode)) {
+                List<Long> groupIds = getGroupIdsBySkucode(skuCode,skuType);
+                if (!CollectionUtils.isEmpty(groupIds)){
+                    criteria.setIds(groupIds);
+                } else {
+                    return new Paging<ItemGroup>(); 
+                }                
+            } else {
+                if (StringUtils.isNotBlank(spuCode)) {
+                    List<Long> groupIds = getGroupIdsBySpucode(spuCode,skuType);
+                    if (!CollectionUtils.isEmpty(groupIds)){
+                        criteria.setIds(groupIds); 
+                    } else {
+                        return new Paging<ItemGroup>();
+                    }
+                }
+            }            
         }
         Response<Paging<ItemGroup>> findResp = itemGroupReadService.findByCriteria(criteria);
         if (!findResp.isSuccess()) {
@@ -218,5 +264,33 @@ public class ItemGroups {
             throw new JsonResponseException(response.getError());
         }
         return response.getResult().getTotal();
+    }
+    
+    private List<Long> getGroupIdsBySkucode(String skuCode,Integer skuType){
+        List<Long> groupIds = Lists.newArrayList();
+        Response<List<Long>> groupIdsRes = itemGroupSkuReadService.findGroupIdsBySkuCodeAndType(Splitters.COMMA.splitToList(skuCode),skuType);
+        if (groupIdsRes.isSuccess() && !CollectionUtils.isEmpty(groupIdsRes.getResult())){
+            groupIds = groupIdsRes.getResult();
+        }
+        return groupIds;
+    }
+
+    private List<Long> getGroupIdsBySpucode(String spuCode,Integer skuType){
+        List<Long> groupIds = Lists.newArrayList();
+        Response<List<Spu>> spuResp = poushengMiddleSpuService.findBySpuCode(spuCode);
+        if (spuResp.isSuccess() && !CollectionUtils.isEmpty(spuResp.getResult())){
+            List<Long> spuIds = spuResp.getResult().stream().map(e ->e.getId()).collect(Collectors.toList());
+            spuIds.forEach(spId ->{
+            Response<List<SkuTemplate>> skuTemResp = skuTemplateReadService.findBySpuId(spId);
+            if (skuTemResp.isSuccess() && !CollectionUtils.isEmpty(skuTemResp.getResult())){
+                List<String> filterSkuCodes = skuTemResp.getResult().stream().map(e -> e.getSkuCode()).collect(Collectors.toList());
+                Response<List<Long>> groupIdsRes = itemGroupSkuReadService.findGroupIdsBySkuCodeAndType(filterSkuCodes,skuType);
+                if (groupIdsRes.isSuccess() && !CollectionUtils.isEmpty(groupIdsRes.getResult())){
+                    groupIds.addAll(groupIdsRes.getResult());
+                }
+            }
+            });            
+        }
+        return groupIds;
     }
 }

@@ -34,6 +34,10 @@
     </sql>
 
     <sql id="queryCondition">
+        <if test="ids != null">and `id` in 
+            <foreach collection="ids" open="(" separator="," close=")" item="id">
+            #{id}
+        </foreach></if>
         <if test="name != null">and `name` LIKE concat('%',#{name}, '%')</if>
         <if test="type != null">and `type` = #{type}</if>
         <if test="groupRuleJson != null">and `group_rule_json` = #{groupRuleJson}</if>

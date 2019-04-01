@@ -51,4 +51,13 @@ public class ErpSpuDao extends MyBatisDao<Spu> {
         List<Spu> datas = sqlSession.selectList(sqlId(ERPPAGING), criteria);
         return new Paging<Spu>(total, datas);
     }
+
+    /**
+     * 根据spucode获取有效的spu
+     * @param spuCode
+     * @return
+     */
+    public List<Spu> findBySpuCode(String spuCode){
+        return getSqlSession().selectList(sqlId("findBySpuCode"),spuCode);
+    }
 }

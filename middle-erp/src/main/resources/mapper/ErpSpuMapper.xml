@@ -27,6 +27,12 @@
         LIMIT #{offset}, #{limit}
     </select>
 
+    <select id="findBySpuCode" parameterType="string" resultMap="SpuMap">
+        SELECT * FROM
+        <include refid="tb"/>
+        WHERE spu_code=#{spuCode} AND status =1
+    </select>
+
 </mapper>
 
 

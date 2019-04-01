@@ -194,6 +194,18 @@
         AND group_id = #{groupId}
     </select>
 
+    <select id="findGroupIdsBySkuCodeAndType" parameterType="map"  resultType="long">
+        SELECT
+        DISTINCT group_id 
+        FROM
+        <include refid="tb"/>
+        WHERE `sku_code` in 
+        <foreach collection="skuCodes" open="(" separator="," close=")"
+                 item="skuCode">
+            #{skuCode}
+        </foreach>
+        AND `type` = #{type}
+    </select>
 
     <delete id="deleteByGroupIdAndSkuCode" parameterType="map">
         DELETE FROM

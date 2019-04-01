@@ -38,4 +38,12 @@ public interface ItemGroupSkuReadService {
      * @return
      */
     Response<Long> count(Long groupId, Integer type);
+
+    /**
+     * 根据skuCode获取groupids
+     * @param skuCodes
+     * @param type
+     * @return
+     */
+    Response<List<Long>> findGroupIdsBySkuCodeAndType(List<String> skuCodes, Integer type);
 }

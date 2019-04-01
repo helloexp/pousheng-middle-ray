@@ -122,7 +122,7 @@ public class ItemGroupsTest extends AbstractRestApiTest {
     @Test
     public void testPagingSuccess() {
         when(itemGroupReadService.findByCriteria(any())).thenReturn(Response.ok(new Paging<>(1L,Lists.newArrayList(group))));
-        Paging<ItemGroup> result = api.findBy(null,null,null);
+        Paging<ItemGroup> result = api.findBy(null,null,null,null,null,null,null,null);
         assertThat(result.getTotal(), is(1L));
         assertThat(result.getData().size(), is(1));
     }

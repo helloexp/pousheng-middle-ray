@@ -62,4 +62,14 @@ public class ItemGroupSkuReadServiceImpl implements ItemGroupSkuReadService {
             return Response.fail("itemGroupSku.count.fail");
         }
     }
+
+    @Override
+    public Response<List<Long>> findGroupIdsBySkuCodeAndType(List<String> skuCodes, Integer type) {
+        try {
+            return Response.ok(itemGroupSkuDao.findGroupIdsBySkuCodeAndType(skuCodes,type));
+        } catch (Exception e){
+            log.error("find ItemGroupSku fail ,cause:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail("itemGroupSku.find.fail"); 
+        }
+    }
 }

@@ -51,5 +51,9 @@ public class ItemGroupSkuDao extends MyBatisDao<ItemGroupSku> {
     public List<ItemGroupSku> findByGroupIdAndType(Long groupId, Integer type) {
         return getSqlSession().selectList(sqlId("findByGroupIdAndType"), ImmutableMap.of("groupId",groupId,"type",type));
     }
+    
+    public List<Long> findGroupIdsBySkuCodeAndType(List<String> skuCodes, Integer type){
+        return getSqlSession().selectList(sqlId("findGroupIdsBySkuCodeAndType"), ImmutableMap.of("skuCodes",skuCodes,"type",type));
+    }
 
 }

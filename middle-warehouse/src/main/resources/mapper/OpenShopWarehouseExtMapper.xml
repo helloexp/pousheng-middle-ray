@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2016. 杭州端点网络科技有限公司.  All rights reserved.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="OpenShop">
+
+	<sql id="warehouseExtra">
+        <if test="shopName != null">AND shop_name LIKE CONCAT(#{shopName}, '%')</if>
+        <if test="warehouseName != null">AND extra_json LIKE CONCAT('%', 'defaultReWarehouseName', '%', #{warehouseName}, '%')</if>
+        <!-- <if test="warehouseName != null">JSON_SEARCH(extra_json, 'all', CONCAT(#{warehouseName}, '%')) IS NOT NULL</if> -->
+		<!-- <if test="warehouseName != null">json_unquote(json_extract(extra_json,'$.defaultReWarehouseName')) LIKE CONCAT(#{warehouseName}, '%')</if> -->
+    </sql>
+    
+    <select id="countWithConditions" parameterType="map" resultType="long">
+        select count(1) from <include refid="tb"/>
+        <where>
+            <include refid="warehouseExtra"/>
+        </where>
+    </select>
+
+    <select id="pagingWithConditions" parameterType="map" resultMap="OpenShopMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        <where>
+			<include refid="warehouseExtra"/>
+        </where>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+
+</mapper>

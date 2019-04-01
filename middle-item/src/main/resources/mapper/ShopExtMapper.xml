@@ -13,5 +13,11 @@
         <include refid="tb"/>
         WHERE outer_id=#{outerId} AND business_id =#{businessId}
     </select>
+    
+    <select id="findAllShopsOn" resultMap="ShopMap">
+        SELECT * FROM
+        <include refid="tb"/>
+        WHERE status=1 OR status =-2
+    </select>
 
 </mapper>

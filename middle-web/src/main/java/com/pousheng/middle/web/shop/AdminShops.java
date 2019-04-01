@@ -18,11 +18,14 @@ import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.ZoneContractReadService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.*;
+import com.pousheng.middle.shop.enums.ShopEnableStatus;
 import com.pousheng.middle.shop.enums.ShopOpeningStatus;
+import com.pousheng.middle.shop.enums.ShopType;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.web.export.ShopsExportEntity;
 import com.pousheng.middle.web.order.component.ShopMaxOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.MiddleParanaClient;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
@@ -35,6 +38,9 @@ import com.pousheng.middle.web.shop.event.UpdateShopEvent;
 import com.pousheng.middle.web.shop.event.listener.CreateOpenShopRelationListener;
 import com.pousheng.middle.web.user.component.ParanaUserOperationLogic;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
+import com.pousheng.middle.web.utils.export.ExportClientUtil;
+import com.pousheng.middle.web.utils.export.ExportContext;
+import com.pousheng.middle.web.utils.export.ExportUtil;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.swagger.annotations.Api;
@@ -74,6 +80,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -211,6 +219,80 @@ public class AdminShops {
     public Response<Shop> findShopByUserId(@PathVariable("id") Long userId) {
         return shopReadService.findByUserId(userId);
     }
+
+    @ApiOperation("导出全部账户门店")
+    @RequestMapping(value = "/allShops/download", method = RequestMethod.GET)
+    public void exportAllShops(HttpServletRequest request,HttpServletResponse response){
+        Response<List<Shop>> shopRes = psShopReadService.findAllShopsOn();
+        if (!shopRes.isSuccess()) {
+            throw new JsonResponseException(shopRes.getError());
+        }
+        List<Shop> shoplist = shopRes.getResult();
+        if(CollectionUtils.isEmpty(shoplist)){
+            throw new JsonResponseException("export.data.empty");
+        }
+        try {
+            List<ShopsExportEntity> entities = Lists.newArrayList();
+            for(Shop shop:shoplist){
+                ShopsExportEntity entity = new ShopsExportEntity();
+                entity.setZoneName(shop.getZoneName());
+                entity.setBusinessId(shop.getBusinessId().toString());
+                entity.setOutId(shop.getOuterId());
+                entity.setShopName(shop.getName());
+                entity.setShopAccount(shop.getUserName());
+                entity.setShopAddress(shop.getAddress());
+                entity.setShopTelephone(shop.getPhone());
+                //门店手机号、邮箱、地址实时查询会员中心
+                Optional<MemberShop> memberShopOptional = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(),1,shop.getBusinessId().toString());
+                if(memberShopOptional.isPresent()){
+                    entity.setShopEmail(memberShopOptional.get().getEmail());
+                    if(StringUtils.hasText(memberShopOptional.get().getTelphone())){
+                        entity.setShopTelephone(memberShopOptional.get().getTelphone());
+                    }                    
+                }
+                entity.setShopType(ShopType.fromValue(shop.getType()));
+                entity.setNotReject("否");
+                Map<String,String> extra = shop.getExtra();
+                if(!CollectionUtils.isEmpty(extra)){
+                ShopExtraInfo extraInfo = ShopExtraInfo.fromJson(extra);
+                ShopBusinessTime shopTime = extraInfo.getShopBusinessTime();
+                if(shopTime != null){
+                    entity.setShopOrderAcceptMax(shopTime.getOrderAcceptQtyMax() == null ? "" : shopTime.getOrderAcceptQtyMax().toString());
+                }
+                List<ShopExpresssCompany> expCompanys = extraInfo.getExpresssCompanyList();
+                if(!CollectionUtils.isEmpty(expCompanys)){
+                    if(expCompanys.size() == 1){
+                        entity.setExpressCompany(expCompanys.get(0).getName());
+                    }else {
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < expCompanys.size(); i++) {
+                            if(i==0){
+                                sb.append(expCompanys.get(i).getName());
+                            }else{
+                                sb.append(","+expCompanys.get(i).getName());
+                            }
+                        }
+                        entity.setExpressCompany(sb.toString());
+                    }
+                }
+                if(extra.containsKey("canNotReject")){
+                    if(Objects.equal(extra.get("canNotReject"),"true")){
+                        entity.setNotReject("是");
+                    }
+                  }
+                }
+                entity.setShopStatus(ShopEnableStatus.fromValue(shop.getStatus()));
+                entities.add(entity);
+            }
+            ExportContext context = new ExportContext(entities);
+            context.setFilename("店铺清单.xlsx");
+            context.setResultType(ExportContext.ResultType.FILE);
+            ExportClientUtil.export(context,request,response);           
+        }catch (Exception e){
+            log.error("downlaod shops failed. cause: {}", Throwables.getStackTraceAsString(e));
+            throw new JsonResponseException(500, "导出门店失败！");
+        }        
+    }    
 
     /**
      *  分页查询门店信息

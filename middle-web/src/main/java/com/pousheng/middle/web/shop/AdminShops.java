@@ -1480,4 +1480,67 @@ public class AdminShops {
         }
     }
 
+    /**
+     *  2019.03.29 RAY: 增加快遞公司篩選
+     *  分页查询门店信息
+     * @param id id
+     * @param name 名称
+     * @param userId 用户id
+     * @param type 类型
+     * @param status 状态
+     * @param outerId 门店外码
+     * @param companyId 公司Id
+     * @param expresssCompany 快遞公司名稱
+     * @param pageNo 页码 預設1
+     * @param pageSize 页大小 預設50
+     * @return 门店信息
+     */
+	@ApiOperation("分页查询门店信息可帶入快遞公司")
+	@RequestMapping(value = "/pagingWithExpresssCompany", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public Paging<ShopPaging> pagingWithExpresssCompany(@RequestParam(required = false) Long id,
+			@RequestParam(required = false) String name, @RequestParam(required = false) Long userId,
+			@RequestParam(required = false) Integer type, @RequestParam(required = false) Integer status,
+			@RequestParam(required = false) String outerId, @RequestParam(required = false) Long companyId,
+			@RequestParam(required = false) String expresssCompany,
+			@RequestParam(required = false, defaultValue = "1") Integer pageNo,
+			@RequestParam(required = false, defaultValue = "50") Integer pageSize) {
+		if (id != null) {
+			Response<Shop> rShop = shopReadService.findById(id);
+			if (!rShop.isSuccess()) {
+				log.debug("shop find by id={} failed, error={}", id, rShop.getError());
+				return Paging.empty();
+			}
+			return new Paging<>();
+		}
+
+		ParanaUser paranaUser = UserUtil.getCurrentUser();
+
+		List<String> zoneIds = null;
+
+		if (!userTypeBean.isAdmin(paranaUser)) {
+			Map<String, String> extraMap = paranaUser.getExtra();
+
+			// 如果没有设置区域则返回空
+			if (CollectionUtils.isEmpty(extraMap) || !extraMap.containsKey(MANAGE_ZONE_IDS)) {
+				return new Paging<>();
+			}
+
+			String zoneIdStr = extraMap.get(MANAGE_ZONE_IDS);
+			// 如果没有设置区域则返回空
+			if (Strings.isNullOrEmpty(zoneIdStr)) {
+				return new Paging<>();
+			}
+
+			zoneIds = JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(extraMap.get(Constants.MANAGE_ZONE_IDS),
+					JsonMapper.JSON_NON_EMPTY_MAPPER.createCollectionType(List.class, String.class));
+		}
+
+		Response<Paging<Shop>> resp = psShopReadService.pagingWithExpresssCompany(name, userId, type, status, outerId,
+				companyId, zoneIds, expresssCompany, pageNo, pageSize);
+		if (!resp.isSuccess()) {
+			throw new JsonResponseException(resp.getError());
+		}
+
+		return transShopPaging(resp.getResult());
+	}
 }

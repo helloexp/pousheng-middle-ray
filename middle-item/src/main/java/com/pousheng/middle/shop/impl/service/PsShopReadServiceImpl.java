@@ -15,9 +15,10 @@ import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by songrenfei on 2017/12/6
@@ -63,6 +64,30 @@ public class PsShopReadServiceImpl implements PsShopReadService{
             return Response.fail("shop.find.fail");
         }
     }
+
+
+
+	@Override
+	public Response<Paging<Shop>> pagingWithExpresssCompany(String name, Long userId, Integer type, Integer status,
+			String outerId, Long businessId, List<String> zoneIds, String expresssCompany, Integer pageNo,
+			Integer pageSize) {
+		try {
+			Map<String, Object> criteria = Stream
+					.of(new Object[][] { { "name", Params.trimToNull(name) }, { "userId", userId }, { "type", type },
+							{ "status", status }, { "outerId", outerId }, { "businessId", businessId },
+							{ "zoneIds", zoneIds }, { "expresssCompany", expresssCompany } })
+					.filter(data -> data[1] != null)
+					.collect(Collectors.toMap(data -> data[0].toString(), data -> data[1]));
+
+			return Response.ok(shopExtDao.pagingWithExpresssCompany(pageNo, pageSize, criteria));
+		} catch (Exception e) {
+			log.error(
+					"paging shop failed, name={}, userId={}, type={}, status={},outerId={},business={}, expresssCompany={}, pageNo={}, pageSize={}, cause:{}",
+					name, userId, type, status, outerId, businessId, expresssCompany, pageNo, pageSize,
+					Throwables.getStackTraceAsString(e));
+			return Response.fail("shop.find.fail");
+		}
+	}
 
 
 }

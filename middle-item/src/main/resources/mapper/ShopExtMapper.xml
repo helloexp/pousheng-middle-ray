@@ -13,5 +13,21 @@
         <include refid="tb"/>
         WHERE outer_id=#{outerId} AND business_id =#{businessId}
     </select>
-
+    
+    <!-- 2019.03.29 RAY: 增加快遞公司篩選 -->
+    <select id="pagingWithExpresssCompany" parameterType="map" resultMap="ShopMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        <where>
+            <include refid="criteria"/>
+        </where>
+        <!-- 2019.03.29 RAY: 增加expresssCompany:快遞公司  -->
+        <if test="expresssCompany != null"> 
+            AND `extra_json` LIKE CONCAT('%', 'expresssCompanyList', '%', #{expresssCompany}, '%') 
+        </if>        
+        order by `id` desc
+        LIMIT #{offset}, #{limit}
+    </select>    
 </mapper>

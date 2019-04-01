@@ -22,4 +22,8 @@ public class ItemGroupDao extends MyBatisDao<ItemGroup> {
         return getSqlSession().selectList(sqlId("findAutoGroups"));
     }
 
+    public List<ItemGroup> findByLikeName(String name) {
+        return getSqlSession().selectList(sqlId("findByLikeName"),name);
+    }
+
 }

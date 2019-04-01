@@ -52,4 +52,11 @@ public interface ItemGroupReadService {
      */
     Response<Boolean> checkName(String name);
 
+    /**
+     * 根据分组名称模糊查询
+     * @param name
+     * @return
+     */
+    Response<List<ItemGroup>> findByLikeName(String name);
+
 }

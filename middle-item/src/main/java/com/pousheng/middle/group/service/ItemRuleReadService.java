@@ -24,4 +24,11 @@ public interface ItemRuleReadService {
      * @return
      */
     Response<Paging<ItemRule>> paging(ItemRuleCriteria criteria);
+
+    /**
+     * 分页查询规则，可以根据多个规则id查询
+     * @param criteria
+     * @return
+     */
+    Response<Paging<ItemRule>> pagingIds(ItemRuleCriteria criteria);
 }

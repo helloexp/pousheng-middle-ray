@@ -143,7 +143,7 @@ public class ItemRulesTest extends AbstractRestApiTest {
     @Test
     public void testPagingSuccess() {
         when(itemRuleReadService.paging(any())).thenReturn(Response.ok(new Paging<>(1L, Lists.newArrayList(rule))));
-        Paging<ItemRuleDetail> result = api.findBy(null, null, null, 1);
+        Paging<ItemRuleDetail> result = api.findBy(null, null, null, null,null,null, 1);
         assertThat(result.getData().size(), is(1));
         assertThat(result.getTotal(), is(1L));
     }

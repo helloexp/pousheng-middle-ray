@@ -139,4 +139,12 @@
         WHERE auto = TRUE
     </select>
 
+    <select id="findByLikeName" parameterType="string" resultMap="ItemGroupMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        WHERE name LIKE concat('%',#{name}, '%')
+    </select>
+
 </mapper>

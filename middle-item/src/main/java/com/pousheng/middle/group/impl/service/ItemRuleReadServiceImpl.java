@@ -43,4 +43,14 @@ public class ItemRuleReadServiceImpl implements ItemRuleReadService {
             return Response.fail("item.rule.find.fail");
         }
     }
+
+    @Override
+    public Response<Paging<ItemRule>> pagingIds(ItemRuleCriteria criteria) {
+        try {
+            return Response.ok(itemRuleDao.pagingIds(criteria.getOffset(),criteria.getLimit(),criteria.toMap()));
+        } catch (Exception e) {
+            log.error("find itemRule by criteria :{} failed,  cause:{}", criteria, Throwables.getStackTraceAsString(e));
+            return Response.fail("item.rule.find.fail");
+        }
+    }
 }

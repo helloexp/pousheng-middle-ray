@@ -1,0 +1,32 @@
+logging:
+  file: logs/erp.log
+
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:test;MODE=MySQL
+#spring:
+#  datasource:
+#    driver-class-name: com.mysql.jdbc.Driver
+#    url: jdbc:mysql://127.0.0.1:3306/pousheng-middle?useUnicode=true&characterEncoding=UTF8
+#    username: root
+#    password: anywhere
+
+
+mybatis:
+  mapper-locations: classpath*:mapper/*Mapper.xml
+  type-aliases-package: >
+    com.pousheng.erp.model,
+    com.pousheng.middle.warehouse.model,
+    io.terminus.parana.(item|category|brand|spu|shop).model,
+    io.terminus.parana.(order|cart|express|promotion|delivery|settle).model,
+    io.terminus.open.client.common.(mappings|token|shop).model,
+    io.terminus.open.client.item.model
+
+gateway:
+  erp:
+    host: http://esbt.pousheng.com
+    accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
+
+
+rpc.mode: false

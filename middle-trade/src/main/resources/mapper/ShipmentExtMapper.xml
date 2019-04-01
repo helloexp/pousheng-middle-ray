@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2016. 杭州端点网络科技有限公司.  All rights reserved.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="Shipment">
+
+
+
+    <sql id="criteriaExt">
+        <if test="id!=null">AND `id`=#{id}</if>
+        <if test="shipmentCode!=null">AND `shipment_code`=#{shipmentCode}</if>
+        <if test="shopId!=null">AND shop_id=#{shopId}</if>
+        <if test="shopIds != null">AND shop_id IN
+            <foreach collection="shopIds" open="(" separator="," close=")" item="shopId">
+                #{shopId}
+            </foreach>
+        </if>
+        <if test="status != null">AND status =#{status}</if>
+        <if test="statusList != null">AND status IN
+            <foreach collection="statusList" open="(" separator="," close=")" item="status">
+                #{status}
+            </foreach>
+        </if>
+        <if test="type != null">AND `type` = #{type}</if>
+        <if test="shipWay != null">AND `ship_way` = #{shipWay}</if>
+        <if test="startAt != null">AND <![CDATA[created_at >= #{startAt}]]> </if>
+        <if test="endAt != null">AND <![CDATA[created_at <= #{endAt}]]> </if>
+    </sql>
+
+
+
+    <select id="pagingExt" parameterType="map" resultMap="ShipmentMap">
+        select id,
+        <include refid="cols_exclude_id"/>
+        from
+        <include refid="tb"/>
+        <where>
+            <include refid="criteriaExt"/>
+        </where>
+        order by `id` desc
+        limit #{offset}, #{limit}
+    </select>
+
+    <select id="countExt" parameterType="map" resultType="long">
+        select count(1) from
+        <include refid="tb"/>
+        <where>
+            <include refid="criteriaExt"/>
+        </where>
+    </select>
+
+    <select id="pagingSort" parameterType="map" resultMap="ShipmentMap">
+        select id,
+        <include refid="cols_exclude_id"/>
+        from
+        <include refid="tb"/>
+        <where>
+            <include refid="criteria"/>
+        </where>
+        <if test="sort!=null">
+            order by #{sort}
+        </if>
+        limit #{offset}, #{limit}
+    </select>
+</mapper>

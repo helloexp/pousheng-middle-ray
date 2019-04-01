@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2016. 杭州端点网络科技有限公司.  All rights reserved.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="OrderReceiverInfo">
+
+    <select id="pagingSort" parameterType="map" resultMap="OrderReceiverInfoMap">
+        select id,
+        <include refid="cols_exclude_id"/>
+        from
+        <include refid="tb"/>
+        <include refid="queryCondition"/>
+        <if test="sort!=null">
+          order by #{sort}
+        </if>
+        limit #{offset}, #{limit}
+    </select>
+
+
+
+</mapper>

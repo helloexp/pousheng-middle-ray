@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2016. 杭州端点网络科技有限公司.  All rights reserved.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="OpenShop">
+
+    <select id="searchByOuterIdAndBusinessId" parameterType="map" resultMap="OpenShopMap">
+        SELECT * FROM
+        <include refid="tb"/>
+        WHERE extra_json like concat('%hkPerformanceShopOutCode\":\"',#{outerId},'%')
+        and extra_json like concat('%companyCode\":\"',#{businessId},'%');
+    </select>
+
+
+
+</mapper>

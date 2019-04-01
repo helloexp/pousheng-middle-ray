@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.pousheng</groupId>
+    <artifactId>pousheng-middle</artifactId>
+    <version>4.0.0.BUILD-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>middle-warehouse</module>
+        <module>middle-erp</module>
+        <module>middle-trade</module>
+        <module>middle-item</module>
+        <module>middle-web</module>
+        <module>middle-auth</module>
+        <module>middle-web-common</module>
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>1.8</java.version>
+        <parana.version>5.1.5.MIDDLE-SNAPSHOT</parana.version>
+        <terminus-boot.version>1.5.1.RELEASE</terminus-boot.version>
+        <open-client.version>1.8.0-BUILD-SNAPSHOT</open-client.version>
+        <guava.version>19.0</guava.version>
+        <spring-boot.version>1.5.3.RELEASE</spring-boot.version>
+        <apache-poi.version>3.16</apache-poi.version>
+        <azure-storage.version>5.4.0</azure-storage.version>
+        <terminus-search.version>3.2.BUILD-SNAPSHOT</terminus-search.version>
+        <terminus-msg.version>1.6.BUILD-SNAPSHOT</terminus-msg.version>
+        <springfox-swagger.version>2.6.1</springfox-swagger.version>
+        <log.version>1.2.3.SUPPORT-MIDDLE-SNAPSHOT</log.version>
+        <powermock.version>1.7.0</powermock.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-api-mockito</artifactId>
+            <version>${powermock.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-module-junit4</artifactId>
+            <version>${powermock.version}</version>
+        </dependency>
+    </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.terminus</groupId>
+                <artifactId>terminus-common</artifactId>
+                <version>2.0.3.RELEASE</version>
+            </dependency>
+            <dependency>
+                <groupId>io.terminus.boot</groupId>
+                <artifactId>spring-boot-starter-mybatis</artifactId>
+                <version>1.5.1.RELEASE</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.terminus.boot</groupId>
+                <artifactId>terminus-spring-boot-starter-redis</artifactId>
+                <version>${terminus-boot.version}</version>
+            </dependency>
+
+            <!-- terminus-search -->
+            <dependency>
+                <groupId>io.terminus.search</groupId>
+                <artifactId>search-api</artifactId>
+                <version>${terminus-search.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.terminus.boot</groupId>
+                <artifactId>terminus-spring-boot-starter-session</artifactId>
+                <version>1.6.1.RELEASE</version>
+            </dependency>
+            <!-- terminus-msg -->
+            <dependency>
+                <groupId>io.terminus.msg</groupId>
+                <artifactId>terminus-msg-api</artifactId>
+                <version>${terminus-msg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.terminus.msg</groupId>
+                <artifactId>terminus-msg-light</artifactId>
+                <version>${terminus-msg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.terminus.msg</groupId>
+                <artifactId>terminus-msg-email-javax</artifactId>
+                <version>${terminus-msg.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.terminus.boot.rpc</groupId>
+                <artifactId>rpc-common</artifactId>
+                <version>1.0.5.RELEASE</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>log4j</groupId>
+                        <artifactId>log4j</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+
+            <dependency>
+                <groupId>org.apache.poi</groupId>
+                <artifactId>poi</artifactId>
+                <version>${apache-poi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.poi</groupId>
+                <artifactId>poi-ooxml</artifactId>
+                <version>${apache-poi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.azure</groupId>
+                <artifactId>azure-storage</artifactId>
+                <version>${azure-storage.version}</version>
+            </dependency>
+            <!-- swagger begin-->
+            <dependency>
+                <groupId>io.springfox</groupId>
+                <artifactId>springfox-swagger2</artifactId>
+                <version>${springfox-swagger.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.springfox</groupId>
+                <artifactId>springfox-swagger-ui</artifactId>
+                <version>${springfox-swagger.version}</version>
+            </dependency>
+            <!-- swagger end-->
+            <!-- 日志框架 -->
+            <dependency>
+                <groupId>io.terminus</groupId>
+                <artifactId>applog-boot-starter</artifactId>
+                <version>${log.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

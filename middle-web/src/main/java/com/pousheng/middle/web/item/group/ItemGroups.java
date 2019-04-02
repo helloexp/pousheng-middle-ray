@@ -277,19 +277,23 @@ public class ItemGroups {
 
     private List<Long> getGroupIdsBySpucode(String spuCode,Integer skuType){
         List<Long> groupIds = Lists.newArrayList();
-        Response<List<Spu>> spuResp = poushengMiddleSpuService.findBySpuCode(spuCode);
-        if (spuResp.isSuccess() && !CollectionUtils.isEmpty(spuResp.getResult())){
-            List<Long> spuIds = spuResp.getResult().stream().map(e ->e.getId()).collect(Collectors.toList());
-            spuIds.forEach(spId ->{
-            Response<List<SkuTemplate>> skuTemResp = skuTemplateReadService.findBySpuId(spId);
-            if (skuTemResp.isSuccess() && !CollectionUtils.isEmpty(skuTemResp.getResult())){
-                List<String> filterSkuCodes = skuTemResp.getResult().stream().map(e -> e.getSkuCode()).collect(Collectors.toList());
-                Response<List<Long>> groupIdsRes = itemGroupSkuReadService.findGroupIdsBySkuCodeAndType(filterSkuCodes,skuType);
-                if (groupIdsRes.isSuccess() && !CollectionUtils.isEmpty(groupIdsRes.getResult())){
-                    groupIds.addAll(groupIdsRes.getResult());
-                }
+
+        //1、根据货号查询
+        String templateName = "ps_search.mustache";
+        Map<String, String> params = Maps.newHashMap();
+        params.put("spuCode", spuCode);
+        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 1000, templateName, params, SearchSkuTemplate.class);
+        if (!response.isSuccess()) {
+            log.error("query sku template by spuCode:{} fail,error:{}", spuCode, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getData();
+        if (!CollectionUtils.isEmpty(searchSkuTemplates)) {
+            List<String> filterSkuCodes = searchSkuTemplates.stream().map(e -> e.getSkuCode()).collect(Collectors.toList());
+            Response<List<Long>> groupIdsRes = itemGroupSkuReadService.findGroupIdsBySkuCodeAndType(filterSkuCodes,skuType);
+            if (groupIdsRes.isSuccess() && !CollectionUtils.isEmpty(groupIdsRes.getResult())){
+                groupIds.addAll(groupIdsRes.getResult());
             }
-            });            
         }
         return groupIds;
     }

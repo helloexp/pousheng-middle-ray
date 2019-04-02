@@ -52,6 +52,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import com.pousheng.middle.order.service.ExpressCodeReadService;
+import com.pousheng.middle.order.model.ExpressCode;
 
 /**
  * Created by songrenfei on 2017/6/26
@@ -91,6 +93,9 @@ public class Refunds {
     private AfterSaleExchangeServiceRegistryCenter afterSaleExchangeServiceRegistryCenter;
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
+    // 2019.04.02 讀取快遞公司訊息
+    @Autowired
+    private ExpressCodeReadService expressCodeService;
     @RpcConsumer
     private OpenShopReadService openShopReadService;
     @org.springframework.beans.factory.annotation.Value("${skx.open.shop.id}")
@@ -152,6 +157,9 @@ public class Refunds {
         if (Arguments.isNull(refundId)) {
             EditMiddleRefund editMiddleRefund = new EditMiddleRefund();
             editMiddleRefund.setIsToCreate(Boolean.TRUE);
+            // 2019.04.02 RAY: 新增快遞公司資料
+            Response<List<ExpressCode>> resp = expressCodeService.findAllByName(null);
+            editMiddleRefund.setExpressItems(resp.getResult());        
             return editMiddleRefund;
         }
         EditMiddleRefund refund = makeEditMiddleRefund(refundId);

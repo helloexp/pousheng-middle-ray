@@ -171,6 +171,7 @@ public class Refunds {
 
 
     /**
+     * 2019.04.03 RAY: POUS925 新增快遞公司值
      * 创建逆向单
      *
      * @param submitRefundInfo 提交信息

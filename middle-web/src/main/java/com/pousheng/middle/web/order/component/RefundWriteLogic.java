@@ -1343,6 +1343,8 @@ public class RefundWriteLogic {
         refund.setTags(tagMap);
         //添加一个锁标识
         refund.setTradeNo(TradeConstants.AFTER_SALE_EXHCANGE_UN_LOCK);
+        // 2019.04.03 RAY: POUS925 新增快遞公司
+        refund.setShipmentCorpCode(submitRefundInfo.getShipmentCorpCode());
         //创建售后单
         Response<Long> rRefundRes = middleRefundWriteService.create(refund, Lists.newArrayList(shopOrder.getId()), OrderLevel.SHOP);
         if (!rRefundRes.isSuccess()) {

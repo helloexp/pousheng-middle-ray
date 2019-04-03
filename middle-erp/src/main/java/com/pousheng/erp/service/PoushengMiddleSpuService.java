@@ -121,4 +121,19 @@ public class PoushengMiddleSpuService {
             return Response.fail("sku.template.find.fail");
         }
     }
+
+    /**
+     * 根据spucode获取有效spu
+     * @param spuCode
+     * @return
+     */
+    public Response<List<Spu>> findBySpuCode(String spuCode){
+        try {
+            List<Spu> spus = erpSpuDao.findBySpuCode(spuCode);
+            return Response.ok(spus);
+        }catch (Exception e){
+            log.error("failed to find spus by spucode {}, cause:{}", spuCode, Throwables.getStackTraceAsString(e));
+            return Response.fail("spu.find.fail");
+        }
+    }
 }

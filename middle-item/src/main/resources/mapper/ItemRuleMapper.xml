@@ -47,6 +47,27 @@
         <if test="endAt != null">and created_at &lt; #{endAt}</if>
     </sql>
 
+    <sql id="queryConditionByIds">
+
+        <if test="ids != null">and `id` IN 
+            <foreach collection="ids" open="(" separator="," close=")" item="id">
+                #{id}
+            </foreach>
+        </if>
+
+        <if test="name != null">and `name` = #{name}</if>
+
+        <if test="type != null">and `type` = #{type}</if>
+
+        <if test="createdAt != null">and `created_at` = #{createdAt}</if>
+
+        <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
+
+        <if test="startAt != null">and created_at &gt; #{startAt}</if>
+
+        <if test="endAt != null">and created_at &lt; #{endAt}</if>
+    </sql>
+
     <sql id="order">
         order by id desc
     </sql>
@@ -105,6 +126,23 @@
         from <include refid="tb"/>
         <where>
         <include refid="queryCondition"/>
+        </where>
+    </select>
+
+    <select id="pagingIds" parameterType="list" resultMap="ItemRuleMap">
+        select id, <include refid="cols_exclude_id"/>
+        from <include refid="tb"/>
+        <where>
+            <include refid="queryConditionByIds"/>
+        </where>
+        order by id desc limit #{offset},#{limit}
+    </select>
+
+    <select id="countIds" parameterType="list" resultType="long">
+        select count(1)
+        from <include refid="tb"/>
+        <where>
+            <include refid="queryConditionByIds"/>
         </where>
     </select>
 

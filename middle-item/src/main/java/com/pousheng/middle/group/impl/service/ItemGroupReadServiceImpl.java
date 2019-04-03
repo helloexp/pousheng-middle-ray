@@ -89,5 +89,15 @@ public class ItemGroupReadServiceImpl implements ItemGroupReadService {
             return Response.fail("item.group.check.fail");
         }
     }
+
+    @Override
+    public Response<List<ItemGroup>> findByLikeName(String name) {
+        try {
+            return Response.ok(itemGroupDao.findByLikeName(name));
+        } catch (Exception e) {
+            log.error("find item group fail {} ,cause:{}",name,Throwables.getStackTraceAsString(e));
+            return Response.fail("item.group.find.fail");
+        }
+    }
 }
 

@@ -34,6 +34,10 @@
     </sql>
 
     <sql id="queryCondition">
+        <if test="ids != null">and `id` in 
+            <foreach collection="ids" open="(" separator="," close=")" item="id">
+            #{id}
+        </foreach></if>
         <if test="name != null">and `name` LIKE concat('%',#{name}, '%')</if>
         <if test="type != null">and `type` = #{type}</if>
         <if test="groupRuleJson != null">and `group_rule_json` = #{groupRuleJson}</if>
@@ -133,6 +137,14 @@
         FROM
         <include refid="tb"/>
         WHERE auto = TRUE
+    </select>
+
+    <select id="findByLikeName" parameterType="string" resultMap="ItemGroupMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        WHERE name LIKE concat('%',#{name}, '%')
     </select>
 
 </mapper>

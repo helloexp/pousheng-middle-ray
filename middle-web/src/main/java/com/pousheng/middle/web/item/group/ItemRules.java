@@ -1,10 +1,12 @@
 package com.pousheng.middle.web.item.group;
 
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.group.model.*;
 import com.pousheng.middle.item.enums.ItemRuleType;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
@@ -14,6 +16,7 @@ import com.pousheng.middle.group.service.*;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.dto.ShopChannel;
 import com.pousheng.middle.web.shop.dto.ShopChannelGroup;
+import de.danielbechler.util.Strings;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -24,6 +27,8 @@ import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Joiners;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +67,9 @@ public class ItemRules {
     @RpcConsumer
     @Setter
     private ItemGroupReadService itemGroupReadService;
+    @RpcConsumer
+    @Setter
+    private OpenShopReadService openShopReadService;
     @Autowired
     @Setter
     private ShopChannelGroupCacher shopChannelGroupCacher;
@@ -72,6 +80,8 @@ public class ItemRules {
     @Setter
     private GroupRuleCacherProxy groupRuleCacherProxy;
     @Autowired
+    private WarehouseClient warehouseClient;
+    @Autowired
     private WarehouseCacher warehouseCacher;
 
 
@@ -80,13 +90,74 @@ public class ItemRules {
     public Paging<ItemRuleDetail> findBy(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                          @RequestParam(required = false, value = "pageSize") Integer pageSize,
                                          @RequestParam(required = false, value = "id") Long id,
+                                         @RequestParam(required = false, value = "groupId") Long groupId,
+                                         @RequestParam(required = false, value = "groupName") String groupName,
+                                         @RequestParam(required = false, value = "shopName") String shopName,
                                          Integer type) {
         ItemRuleCriteria criteria = new ItemRuleCriteria();
-        criteria.setId(id);
+        List<Long> ids = Lists.newArrayList();
+        if(groupId != null){
+            List<Long> ruleIds1 = getRuleIdsByGroupId(groupId);
+            if(!CollectionUtils.isEmpty(ruleIds1)){              
+                ids = ruleIds1;    
+            }else{
+                return new Paging<ItemRuleDetail>();
+            }            
+        }
+        if(Strings.hasText(groupName)){
+            List<Long> ruleIds2 = getRuleIdsByGroupName(groupName);
+            if(!CollectionUtils.isEmpty(ruleIds2)){
+                if(!CollectionUtils.isEmpty(ids)){
+                    List<Long> intersection = ids.stream().filter(ruleId -> ruleIds2.contains(ruleId)).collect(Collectors.toList());
+                    if(!CollectionUtils.isEmpty(intersection)){
+                        ids = intersection;
+                    }else{
+                        return new Paging<ItemRuleDetail>();
+                    }                     
+                }else{
+                    ids = ruleIds2;
+                }                   
+            }else{
+                return new Paging<ItemRuleDetail>();
+            }            
+        }
+        if(Strings.hasText(shopName)){
+            List<Long> ruleIds3 = getRuleIdsByShopName(shopName,type);
+            if(!CollectionUtils.isEmpty(ruleIds3)){
+                if(!CollectionUtils.isEmpty(ids)){
+                    List<Long> intersection2 = ids.stream().filter(ruleId -> ruleIds3.contains(ruleId)).collect(Collectors.toList());
+                    if(!CollectionUtils.isEmpty(intersection2)){
+                        ids = intersection2; 
+                    }else{
+                        return new Paging<ItemRuleDetail>();
+                    }
+                }else{
+                    ids = ruleIds3;  
+                }                
+            }else{
+                return new Paging<ItemRuleDetail>();
+            }           
+        }
+        if(id != null){
+            if(!CollectionUtils.isEmpty(ids)){
+                if(ids.contains(id)){
+                  ids = Lists.newArrayList(id);  
+                }else{
+                    return new Paging<ItemRuleDetail>();  
+                }
+            }else{
+                ids.add(id);   
+            }            
+        }
+        if(!CollectionUtils.isEmpty(ids)){
+            ids = ids.stream().distinct().collect(Collectors.toList());
+        }
+        criteria.setIds(ids);
         criteria.setPageNo(pageNo);
         criteria.setPageSize(pageSize);
         criteria.setType(type);
-        Response<Paging<ItemRule>> r = itemRuleReadService.paging(criteria);
+        Response<Paging<ItemRule>> r = itemRuleReadService.pagingIds(criteria);
+        
         if (!r.isSuccess()) {
             log.error("failed to pagination rule group, error code:{}", r.getError());
             throw new JsonResponseException(r.getError());
@@ -308,6 +379,84 @@ public class ItemRules {
         }
     }
 
+    // 通过groupid获取到关联的规则id，byGroupId
+    private List<Long> getRuleIdsByGroupId(Long groupId){
+        List<Long> ruleIds = Lists.newArrayList();
+        Response<List<ItemRuleGroup>> itemRuleGroupsResp = itemRuleGroupReadService.findByGroupId(groupId);
+        if (!itemRuleGroupsResp.isSuccess()) {
+            throw new JsonResponseException(itemRuleGroupsResp.getError());
+        }
+        if(!CollectionUtils.isEmpty(itemRuleGroupsResp.getResult())){
+            ruleIds = Lists.transform(itemRuleGroupsResp.getResult(),input -> input.getRuleId());
+        }
+        return ruleIds;
+    }
+    
+    // 通过groupName获取关联的规则id，byGroupName
+    private List<Long> getRuleIdsByGroupName(String groupName){
+        List<Long> ruleIds = Lists.newArrayList();
+        Response<List<ItemGroup>> resp = itemGroupReadService.findByLikeName(groupName);
+        if (!resp.isSuccess()) {
+            throw new JsonResponseException(resp.getError());
+        }
+        if(!CollectionUtils.isEmpty(resp.getResult())){
+            List<Long> groupIds = Lists.transform(resp.getResult(),input -> input.getId());
+            groupIds.forEach(groupId -> {
+                Response<List<ItemRuleGroup>> results = itemRuleGroupReadService.findByGroupId(groupId);
+                if (!results.isSuccess()) {
+                    throw new JsonResponseException(results.getError());
+                }
+                if(!CollectionUtils.isEmpty(results.getResult())){
+                    ruleIds.addAll(Lists.transform(results.getResult(), input -> input.getRuleId()));
+                }                
+              });
+        }
+        return ruleIds;
+    }
+    
+    // 通过shopName(店铺或者仓库)获取关联的规则id，ByshopName,BywarehouseName;
+    private List<Long>  getRuleIdsByShopName(String shopName, Integer type){
+        List<Long> ruleIds = Lists.newArrayList();
+        if(type.equals(ItemRuleType.SHOP.value())){
+            Response<Paging<OpenShop>> results = openShopReadService.pagination(shopName,null,null,1,5000);
+            if(!results.isSuccess()){
+                throw new JsonResponseException(results.getError());
+            }
+            if(!CollectionUtils.isEmpty(results.getResult().getData())){
+                List<OpenShop> openshops = results.getResult().getData();
+                openshops.forEach(openShop -> {
+                    Response<Long> ruleIdRes = itemRuleShopReadService.findRuleIdByShopId(openShop.getId());
+                    if(!ruleIdRes.isSuccess()){
+                        throw new JsonResponseException(ruleIdRes.getError());
+                    }
+                    if(ruleIdRes.getResult() != null){
+                        ruleIds.add(ruleIdRes.getResult());
+                    }
+                });
+            }  
+        }
+        if(type.equals(ItemRuleType.WAREHOUSE.value())){
+            Response<Paging<WarehouseDTO>> wareHouseRes = warehouseClient.pagingBy(1,5000,shopName,null);
+            if(!wareHouseRes.isSuccess()){
+                throw new JsonResponseException(wareHouseRes.getError());
+            }
+            if(!CollectionUtils.isEmpty(wareHouseRes.getResult().getData())){
+                // 此接口返回的值可能是一个坑，list里面的对象类型是JSONObject，取值时需要转换
+                List<WarehouseDTO> JSONObjectwarehouses = wareHouseRes.getResult().getData();
+                List<WarehouseDTO> warehouses = JSONObject.parseArray(JSONObjectwarehouses.toString(),WarehouseDTO.class); 
+                warehouses.forEach(warehouseDTO -> {
+                    Response<Long> ruleIdRes = itemRuleWarehouseReadService.findRuleIdByWarehouseId(warehouseDTO.getId());                    
+                    if(!ruleIdRes.isSuccess()){
+                        throw new JsonResponseException(ruleIdRes.getError());
+                    }
+                    if(ruleIdRes.getResult() != null){
+                        ruleIds.add(ruleIdRes.getResult());
+                    }
+                });
+            }
+        }        
+        return ruleIds;
+    }
 
     private Paging<ItemRuleDetail> transToDetail(Paging<ItemRule> paging, Integer type) {
         Paging<ItemRuleDetail> detailPaging = new Paging<>();

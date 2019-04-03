@@ -32,8 +32,18 @@ public enum ShopType{
         }
         return null;
     }
+    
     public int value() {
         return value;
+    }
+
+    public static String fromValue(int value) {
+        for (ShopType source : ShopType.values()) {
+            if (Objects.equals(source.value, value)) {
+                return source.desc;
+            }
+        }
+        return null;
     }
 
 }

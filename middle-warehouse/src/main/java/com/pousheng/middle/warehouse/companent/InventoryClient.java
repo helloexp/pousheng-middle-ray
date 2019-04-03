@@ -18,7 +18,6 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -354,6 +353,14 @@ public class InventoryClient {
      */
     public Response<Boolean> batchSaveShopSkuSupplyRule(ShopSkuSupplyRuleBatchCreateRequest request) {
         Boolean result = (Boolean) inventoryBaseClient.postJson("api/inventory/shop/sku/supply/rule/batch/create", JsonMapper.nonEmptyMapper().toJson(request), Boolean.class);
+        return Response.ok(result);
+    }
+
+    /**
+     * 根据店铺与 sku 查询一个发货限制
+     */
+    public Response<ShopSkuSupplyRule> queryByShopIdAndSkuCode(ShopSkuSupplyRuleQueryOneRequest request) {
+        ShopSkuSupplyRule result = (ShopSkuSupplyRule) inventoryBaseClient.postJson("api/inventory/shop/sku/supply/rule/find", JsonMapper.nonEmptyMapper().toJson(request), ShopSkuSupplyRule.class);
         return Response.ok(result);
     }
 

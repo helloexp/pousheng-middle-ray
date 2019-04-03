@@ -1,7 +1,9 @@
 package com.pousheng.middle.common.utils.component;
 
+import com.github.kevinsawicki.http.HttpRequest;
 import com.google.common.base.Throwables;
 import com.microsoft.azure.storage.CloudStorageAccount;
+import com.microsoft.azure.storage.OperationContext;
 import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.blob.*;
 import io.terminus.common.exception.ServiceException;
@@ -22,6 +24,69 @@ public class AzureOSSBlobClient {
     private CloudStorageAccount account;
     @Autowired
     private AzureOSSAutoConfiguration.AzureOSSProperties ossProperties;
+
+    public String downloadUrl(String url) {
+        try {
+            String sufix;
+            if (url.endsWith("xlsx")) {
+                sufix = ".xlsx";
+            } else {
+                sufix = ".xls";
+            }
+
+            File file = newTempFile("supply-rule-import-temp", "supply-rule-import-", sufix);
+
+            HttpRequest requst = HttpRequest.get(url);
+            requst.receive(file);
+
+            return file.getPath();
+        } catch (Exception e) {
+            log.error("failed to download {} from oss, cause: {}", url, Throwables.getStackTraceAsString(e));
+            return null;
+        }
+    }
+
+    public String download(String fileName, String path) {
+        try {
+            String sufix;
+            if (path.endsWith("xlsx")) {
+                sufix = ".xlsx";
+            } else {
+                sufix = ".xls";
+            }
+            File file = newTempFile("supply-rule-import-temp", "supply-rule-import-", sufix);
+
+            CloudBlobClient client = account.createCloudBlobClient();
+            CloudBlobContainer container = client.getContainerReference(path);
+
+            OperationContext opContext = new OperationContext();
+            opContext.setLoggingEnabled(Boolean.TRUE);
+            CloudBlob blob = container.getBlobReferenceFromServer(fileName, null, null, null, opContext);
+            if (!blob.exists()) {
+                return null;
+            }
+
+            blob.downloadToFile(file.getPath());
+            return file.getPath();
+        } catch (Exception e) {
+            log.error("failed to download {}/{} from oss, cause: {}", path, fileName, Throwables.getStackTraceAsString(e));
+            return null;
+        }
+    }
+
+    private File newTempFile(String path, String prefix, String suffix) throws IOException {
+        File dir = new File(path);
+        if (!dir.exists()) {
+            dir.mkdir();
+        }
+        File file = File.createTempFile(prefix, suffix, dir);
+        log.info("file exist: {}", file.exists());
+        log.info("file path: {}", file.getPath());
+        if (!log.isDebugEnabled()) {
+            file.deleteOnExit();
+        }
+        return file;
+    }
 
     /**
      * 上传至Azure云存储
@@ -72,8 +137,9 @@ public class AzureOSSBlobClient {
 
     private CloudBlockBlob getBlob(String containerName, String blobName) throws URISyntaxException, StorageException {
         CloudBlobClient client = account.createCloudBlobClient();
-        if (null != ossProperties.getTimeout())
+        if (null != ossProperties.getTimeout()) {
             client.getDefaultRequestOptions().setMaximumExecutionTimeInMs(ossProperties.getTimeout());
+        }
         CloudBlobContainer container = client.getContainerReference(containerName);
 
         setUpContainer(container);

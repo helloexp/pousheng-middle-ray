@@ -34,6 +34,7 @@
         <springfox-swagger.version>2.6.1</springfox-swagger.version>
         <log.version>1.2.3.SUPPORT-MIDDLE-SNAPSHOT</log.version>
         <powermock.version>1.7.0</powermock.version>
+        <excel-engine.version>1.1.2-SNAPSHOT</excel-engine.version>
     </properties>
 
     <dependencies>

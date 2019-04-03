@@ -5,7 +5,6 @@ import io.terminus.common.redis.utils.JedisTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import redis.clients.jedis.Jedis;
 
 /**
  * Created with IntelliJ IDEA
@@ -24,11 +23,8 @@ public class RedisQueueCustomer {
     public String pop() {
 
         //弹出一个元素
-        String stockJson = jedisTemplate.execute(new JedisTemplate.JedisAction<String>() {
-            @Override
-            public String action(Jedis jedis) {
-                return jedis.rpop(RedisConstants.PUSH_STOCK_LOG_KEY);
-            }
+        String stockJson = jedisTemplate.execute(jedis -> {
+            return jedis.rpop(RedisConstants.PUSH_STOCK_LOG_KEY);
         });
 
         if (Strings.isNullOrEmpty(stockJson)) {
@@ -37,6 +33,4 @@ public class RedisQueueCustomer {
         return stockJson;
 
     }
-
-
 }

@@ -7,27 +7,51 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="Shop">
-
     <select id="findByOuterIdAndBusinessId" parameterType="map" resultMap="ShopMap">
         SELECT * FROM
-        <include refid="tb"/>
+        <include refid="tb" />
         WHERE outer_id=#{outerId} AND business_id =#{businessId}
     </select>
-    
-    <!-- 2019.03.29 RAY: 增加快遞公司篩選 -->
-    <select id="pagingWithExpresssCompany" parameterType="map" resultMap="ShopMap">
-        SELECT
-        <include refid="cols_all"/>
+    <sql id="criteriaExp">
+        <if test="name != null">AND `name` LIKE CONCAT(#{name}, '%')</if>
+        <if test="userId != null">AND `user_id` = #{userId}</if>
+        <if test="zoneId != null">AND `zone_id` = #{zoneId}</if>
+        <if test="zoneIds != null">AND zone_id IN
+            <foreach collection="zoneIds" open="(" separator="," close=")" item="zoneId">
+                #{zoneId}
+            </foreach>
+        </if>
+        <if test="outerId != null">AND `outer_id` = #{outerId}</if>
+        <if test="businessId != null">AND `business_id` = #{businessId}</if>
+        <if test="type != null">AND `type` = #{type}</if>
+        <if test="status != null">AND `status` = #{status}</if>
+        <if test="status == null">
+            AND `status`!=-1
+        </if>
+        <!-- 2019.03.29 RAY: 增加expresssCompany:快遞公司  -->
+        <if test="expresssCompany != null"> 
+            AND `extra_json` LIKE CONCAT('%', 'expresssCompanyList', '%', #{expresssCompany}, '%')  
+        </if>
+    </sql>
+    <!-- 2019.04.03 RAY: COUNT WITH expresssCompany -->
+    <select id="countExp" parameterType="map" resultType="long">
+        SELECT COUNT(1)
         FROM
         <include refid="tb"/>
         <where>
-            <include refid="criteria"/>
+            <include refid="criteriaExp"/>
         </where>
-        <!-- 2019.03.29 RAY: 增加expresssCompany:快遞公司  -->
-        <if test="expresssCompany != null"> 
-            AND `extra_json` LIKE CONCAT('%', 'expresssCompanyList', '%', #{expresssCompany}, '%') 
-        </if>        
+    </select>    
+    <!-- 2019.03.29 RAY: 增加快遞公司篩選 -->
+    <select id="pagingWithExpresssCompany" parameterType="map" resultMap="ShopMap">
+        SELECT
+        <include refid="cols_all" />
+        FROM
+        <include refid="tb" />
+        <where>
+        	<include refid="criteriaExp" />
+        </where>
         order by `id` desc
         LIMIT #{offset}, #{limit}
-    </select>    
+    </select>
 </mapper>

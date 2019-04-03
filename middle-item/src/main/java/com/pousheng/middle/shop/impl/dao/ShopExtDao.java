@@ -24,20 +24,19 @@ public class ShopExtDao extends MyBatisDao<Shop> {
     }
 
 	/**
-	 * 分页查询门店信息
+	 * RAY: 分页查询门店信息
 	 * 
-	 * @param offset                      頁次
-	 * @param limit                       筆數
+	 * @param offset   頁次
+	 * @param limit    筆數
 	 * @param criteria SQL條件
 	 * @return
 	 */
-	public Paging<Shop> pagingWithExpresssCompany(Integer offset, Integer limit,
-			Map<String, Object> criteria) {
+	public Paging<Shop> pagingWithExpresssCompany(Integer offset, Integer limit, Map<String, Object> criteria) {
 		if (criteria == null) {
 			criteria = Maps.newHashMap();
 		}
 
-		Long total = (Long) sqlSession.selectOne(sqlId("count"), criteria);
+		Long total = (Long) sqlSession.selectOne(sqlId("countExp"), criteria);
 		if (total.longValue() <= 0L) {
 			return new Paging<Shop>(Long.valueOf(0L), Collections.emptyList());
 		}

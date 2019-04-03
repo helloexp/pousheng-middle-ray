@@ -79,7 +79,8 @@ public class PsShopReadServiceImpl implements PsShopReadService{
 					.filter(data -> data[1] != null)
 					.collect(Collectors.toMap(data -> data[0].toString(), data -> data[1]));
 
-			return Response.ok(shopExtDao.pagingWithExpresssCompany(pageNo, pageSize, criteria));
+			PageInfo page = new PageInfo(pageNo, pageSize);
+			return Response.ok(shopExtDao.pagingWithExpresssCompany(page.getOffset(), page.getLimit(), criteria));
 		} catch (Exception e) {
 			log.error(
 					"paging shop failed, name={}, userId={}, type={}, status={},outerId={},business={}, expresssCompany={}, pageNo={}, pageSize={}, cause:{}",

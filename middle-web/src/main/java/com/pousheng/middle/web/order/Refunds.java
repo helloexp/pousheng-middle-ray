@@ -186,7 +186,6 @@ public class Refunds {
 	 */
 	@RequestMapping(value = "/api/refund/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	public Long createRefund(@RequestBody SubmitRefundInfo submitRefundInfo) {
-		log.info("submitRefundInfo: " + submitRefundInfo.toString());
 		if (Objects.equals(submitRefundInfo.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())) {
 			// 创建丢件补发类型的售后单
 			return refundWriteLogic.createRefundForLost(submitRefundInfo);

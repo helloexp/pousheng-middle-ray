@@ -27,7 +27,7 @@ public class SubmitRefundInfo extends EditSubmitRefundInfo {
     //换货收货人信息
     private MiddleChangeReceiveInfo middleChangeReceiveInfo;
     // 2019.04.03 RAY: POUS925 新增快遞公司
-    private String shipmentCorpCode;
+    private String refundCorpName;
 
 
     //售后单id

@@ -67,6 +67,9 @@ import org.springframework.util.StringUtils;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.google.gson.JsonParser;
+import io.terminus.parana.express.model.ExpressCompany;
+import io.terminus.parana.express.service.ExpressCompanyReadService;
 
 /**
  * Created by songrenfei on 2017/7/1
@@ -128,6 +131,9 @@ public class RefundWriteLogic {
 
     @Autowired
     private CompensateBizLogic compensateBizLogic;
+    // 2019.4.11 RAY: 讀取快遞公司訊息
+    @Autowired
+    private ExpressCompanyReadService expressCompanyReadSer;
 
     /**
      * 更新换货商品处理数量
@@ -464,9 +470,16 @@ public class RefundWriteLogic {
         refundExtra.setReleOrderNo(submitRefundInfo.getReleOrderNo());
         //关联单号类型
         refundExtra.setReleOrderType(submitRefundInfo.getReleOrderType());
+        
         refund.setReleOrderCode(submitRefundInfo.getReleOrderNo());
         //完善仓库及物流信息
         completeWareHoseAndExpressInfo(shipment, submitRefundInfo.getRefundType(), refundExtra, submitRefundInfo);
+        
+		// 2019.4.11 RAY: 換貨，設定物流公司代码，名稱
+		if (Objects.equals(submitRefundInfo.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())) {
+			setRefundExtraBean(refundExtra, submitRefundInfo);
+		}
+		
         refund.setShipmentSerialNo(refundExtra.getShipmentSerialNo());
         refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
@@ -920,7 +933,13 @@ public class RefundWriteLogic {
         }
     }
 
-    //完善售后单仓库信息
+    /**　
+     * R完善售后单仓库信息
+     * @param shipment
+     * @param refundType
+     * @param refundExtra
+     * @param submitRefundInfo
+     */
     private void completeWareHoseAndExpressInfo(Shipment shipment, Integer refundType, RefundExtra refundExtra, EditSubmitRefundInfo submitRefundInfo) {
 
         //非仅退款则验证仓库是否有效、物流信息是否有效(因为仅退款不需要仓库信息)
@@ -1315,6 +1334,10 @@ public class RefundWriteLogic {
         refundExtra.setReleOrderNo(submitRefundInfo.getReleOrderNo());
         //关联单号类型
         refundExtra.setReleOrderType(submitRefundInfo.getReleOrderType());
+        
+        // 2019.4.11 RAY: 設定物流公司代码，名稱
+        setRefundExtraBean(refundExtra, submitRefundInfo);  
+        
         //关联单号
         refund.setReleOrderCode(submitRefundInfo.getReleOrderNo());
         //获取订单下的任意发货单
@@ -1342,9 +1365,8 @@ public class RefundWriteLogic {
         tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.MANUAL.value()));
         refund.setTags(tagMap);
         //添加一个锁标识
-        refund.setTradeNo(TradeConstants.AFTER_SALE_EXHCANGE_UN_LOCK);
-        // 2019.04.03 RAY: POUS925 新增快遞公司
-        refund.setShipmentCorpCode(submitRefundInfo.getShipmentCorpCode());
+        refund.setTradeNo(TradeConstants.AFTER_SALE_EXHCANGE_UN_LOCK);      
+        
         //创建售后单
         Response<Long> rRefundRes = middleRefundWriteService.create(refund, Lists.newArrayList(shopOrder.getId()), OrderLevel.SHOP);
         if (!rRefundRes.isSuccess()) {
@@ -2005,76 +2027,87 @@ public class RefundWriteLogic {
         return shipmentRequests;
     }
 
-    /**
-     * 生成单个占用库存的发货单
-     *
-     * @param shipmentRequest
-     * @param refundId
-     */
-    private boolean createOccupyShipment(ShipmentRequest shipmentRequest, Long refundId) {
-        try {
-            //获取skuCode和数量的集合
-            String data = JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());
-            Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
-            //获取生成发货单的仓库
-            Long warehouseId = shipmentRequest.getWarehouseId();
-            Refund refund = refundReadLogic.findRefundById(refundId);
-            OpenShop openShop = orderReadLogic.findOpenShopByShopId(refund.getShopId());
-            List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
-            if (!refundReadLogic.checkRefundWaitHandleNumber(refundChangeItems, skuCodeAndQuantity)) {
-                throw new JsonResponseException("refund.wait.shipment.item.can.not.dupliacte");
-            }
-            OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
-            //检查库存是否充足
-            checkStockIsEnough(warehouseId, skuCodeAndQuantity, openShop.getId());
+	/**
+	 * 生成单个占用库存的发货单
+	 *
+	 * @param shipmentRequest
+	 * @param refundId
+	 */
+	private boolean createOccupyShipment(ShipmentRequest shipmentRequest, Long refundId) {
+		try {
+			// 获取skuCode和数量的集合
+			String data = JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());
+			Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
+			// 获取生成发货单的仓库
+			Long warehouseId = shipmentRequest.getWarehouseId();
+			Refund refund = refundReadLogic.findRefundById(refundId);
+			OpenShop openShop = orderReadLogic.findOpenShopByShopId(refund.getShopId());
+			List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+			if (!refundReadLogic.checkRefundWaitHandleNumber(refundChangeItems, skuCodeAndQuantity)) {
+				throw new JsonResponseException("refund.wait.shipment.item.can.not.dupliacte");
+			}
+			OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
+			// 检查库存是否充足
+			checkStockIsEnough(warehouseId, skuCodeAndQuantity, openShop.getId());
 
-            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+			ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
 
-            //封装发货信息
-            List<ShipmentItem> shipmentItems = makeChangeShipmentItems(refundChangeItems, skuCodeAndQuantity, warehouseId, shopOrder);
-            //发货单商品金额
-            Long shipmentItemFee = 0L;
-            //发货单总的优惠
-            Long shipmentDiscountFee = 0L;
-            //发货单总的净价
-            Long shipmentTotalFee = 0L;
-            //运费
-            Long shipmentShipFee = 0L;
-            //运费优惠
-            Long shipmentShipDiscountFee = 0L;
-            //运费优惠
-            //订单总金额
-            for (ShipmentItem shipmentItem : shipmentItems) {
-                shipmentItemFee = shipmentItem.getSkuPrice() * shipmentItem.getQuantity() + shipmentItemFee;
-                shipmentDiscountFee = (shipmentItem.getSkuDiscount() == null ? 0 : shipmentItem.getSkuDiscount())
-                        + shipmentDiscountFee;
-                shipmentTotalFee = shipmentItem.getCleanFee() + shipmentTotalFee;
-            }
-            //发货单中订单总金额
-            Long shipmentTotalPrice = shipmentTotalFee + shipmentShipFee - shipmentShipDiscountFee;
-            Shipment shipment = makeShipment(orderRefund.getOrderId(), warehouseId, shipmentItemFee,
-                    shipmentDiscountFee, shipmentTotalFee, shipmentShipFee, ShipmentType.EXCHANGE_SHIP.value(),
-                    shipmentShipDiscountFee, shipmentTotalPrice, refund.getShopId());
-            //换货
-            shipment.setReceiverInfos(findRefundReceiverInfo(refundId));
-            Map<String, String> extraMap = shipment.getExtra();
-            extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
-            shipment.setExtra(extraMap);
-            shipment.setShopId(refund.getShopId());
-            shipment.setShopName(refund.getShopName());
-            shipment.setIsOccupyShipment(ShipmentOccupyType.CHANGE_Y.name());
-            //换货的发货关联的订单id 为换货单id
-            Long shipmentId = shipmentWriteManger.createForAfterSale(shipment, orderRefund, refundId);
-            if (!this.refundShipmentOccpy(shipmentId)) {
-                throw new JsonResponseException("update.refund.error");
-            }
-            return true;
-        } catch (Exception e) {
-            log.error("handle shipmentRequest:{} fail,cause;{}",
-                    shipmentRequest, Throwables.getStackTraceAsString(e));
-            return false;
-        }
-    }
+			// 封装发货信息
+			List<ShipmentItem> shipmentItems = makeChangeShipmentItems(refundChangeItems, skuCodeAndQuantity,
+					warehouseId, shopOrder);
+			// 发货单商品金额
+			Long shipmentItemFee = 0L;
+			// 发货单总的优惠
+			Long shipmentDiscountFee = 0L;
+			// 发货单总的净价
+			Long shipmentTotalFee = 0L;
+			// 运费
+			Long shipmentShipFee = 0L;
+			// 运费优惠
+			Long shipmentShipDiscountFee = 0L;
+			// 运费优惠
+			// 订单总金额
+			for (ShipmentItem shipmentItem : shipmentItems) {
+				shipmentItemFee = shipmentItem.getSkuPrice() * shipmentItem.getQuantity() + shipmentItemFee;
+				shipmentDiscountFee = (shipmentItem.getSkuDiscount() == null ? 0 : shipmentItem.getSkuDiscount())
+						+ shipmentDiscountFee;
+				shipmentTotalFee = shipmentItem.getCleanFee() + shipmentTotalFee;
+			}
+			// 发货单中订单总金额
+			Long shipmentTotalPrice = shipmentTotalFee + shipmentShipFee - shipmentShipDiscountFee;
+			Shipment shipment = makeShipment(orderRefund.getOrderId(), warehouseId, shipmentItemFee,
+					shipmentDiscountFee, shipmentTotalFee, shipmentShipFee, ShipmentType.EXCHANGE_SHIP.value(),
+					shipmentShipDiscountFee, shipmentTotalPrice, refund.getShopId());
+			// 换货
+			shipment.setReceiverInfos(findRefundReceiverInfo(refundId));
+			Map<String, String> extraMap = shipment.getExtra();
+			extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
+			shipment.setExtra(extraMap);
+			shipment.setShopId(refund.getShopId());
+			shipment.setShopName(refund.getShopName());
+			shipment.setIsOccupyShipment(ShipmentOccupyType.CHANGE_Y.name());
+
+			// 2019.4.12 RAY: 取快遞商字段，並放到shipment中
+			if (!StringUtils.isEmpty(refund.getExtraJson())) {
+				com.google.gson.JsonObject jsonObj = new JsonParser().parse(refund.getExtraJson()).getAsJsonObject();
+				if (jsonObj != null && jsonObj.get("refundExtraInfo") != null) {
+					jsonObj = jsonObj.get("refundExtraInfo").getAsJsonObject();
+					shipment.setShipmentCorpCode(java.util.Objects.toString(jsonObj.get("shipmentCorpCode"), ""));
+					shipment.setShipmentCorpName(java.util.Objects.toString(jsonObj.get("shipmentCorpName"), ""));
+				}
+			}
+
+			// 换货的发货关联的订单id 为换货单id
+			Long shipmentId = shipmentWriteManger.createForAfterSale(shipment, orderRefund, refundId);
+			if (!this.refundShipmentOccpy(shipmentId)) {
+				throw new JsonResponseException("update.refund.error");
+			}
+			return true;
+		} catch (Exception e) {
+			log.error("handle shipmentRequest:{} fail,cause;{}", shipmentRequest, Throwables.getStackTraceAsString(e));
+			return false;
+		}
+	}
 
     /**
      * 转换skuCode以及数量的map
@@ -2427,5 +2460,22 @@ public class RefundWriteLogic {
         }
         return Response.ok(Boolean.TRUE);
 
+    }
+    
+    /**
+     * 2019.04.15 RAY: 設定快遞公司代碼，名稱
+     * @param bean RefundExtra
+     * @param submitRefundInfo 前端傳入的參數
+     */
+    private void setRefundExtraBean(RefundExtra bean, SubmitRefundInfo submitRefundInfo) {
+        // 2019.4.11 RAY: 設定物流公司代码，名稱
+        String refundExpName = submitRefundInfo.getRefundCorpName();
+        Response<List<ExpressCompany>> expressResp = expressCompanyReadSer.findExpressCompanyByFuzzyName(refundExpName);
+        String expressCode = null;
+        if (expressResp.isSuccess() && expressResp.getResult().size() > 0) {
+        	expressCode = expressResp.getResult().get(0).getCode();
+        }
+        bean.setShipmentCorpCode(expressCode); // 設定物流公司代码          
+        bean.setShipmentCorpName(refundExpName); // 設定物流公司名稱           	
     }
 }

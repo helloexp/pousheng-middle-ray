@@ -96,6 +96,7 @@ public class Refunds {
     // 2019.04.02 讀取快遞公司訊息
     @Autowired
     private ExpressCodeReadService expressCodeService;
+    
     @RpcConsumer
     private OpenShopReadService openShopReadService;
     @org.springframework.beans.factory.annotation.Value("${skx.open.shop.id}")
@@ -148,48 +149,55 @@ public class Refunds {
         return detail;
     }
 
-    //编辑逆向单 或 创建逆向订单
-    @RequestMapping(value = "/api/refund/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public EditMiddleRefund edit(@RequestParam(required = false) @PermissionCheckParam Long refundId) {
-        if (log.isDebugEnabled()) {
-            log.debug("API-REFUND-EDIT-OR-CREATE-START param: refundId [{}]", refundId);
-        }
-        if (Arguments.isNull(refundId)) {
-            EditMiddleRefund editMiddleRefund = new EditMiddleRefund();
-            editMiddleRefund.setIsToCreate(Boolean.TRUE);
-            // 2019.04.02 RAY: 新增快遞公司資料
-            Response<List<ExpressCode>> resp = expressCodeService.findAllByName(null);
-            editMiddleRefund.setExpressItems(resp.getResult());        
-            return editMiddleRefund;
-        }
-        EditMiddleRefund refund = makeEditMiddleRefund(refundId);
-        if (log.isDebugEnabled()) {
-            log.debug("API-REFUND-EDIT-OR-CREATE-END param: refundId [{}] ,resp: [{}]", refundId, JsonMapper.nonEmptyMapper().toJson(refund));
-        }
-        return refund;
-    }
+	/**
+	 * 2019.04.15 RAY: POUS925 新增快遞公司值 
+	 * 编辑逆向单 或 创建逆向订单
+	 * 
+	 * @param refundId 退款單代碼
+	 * @return dto
+	 */
+	@RequestMapping(value = "/api/refund/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public EditMiddleRefund edit(@RequestParam(required = false) @PermissionCheckParam Long refundId) {
+		if (log.isDebugEnabled()) {
+			log.debug("API-REFUND-EDIT-OR-CREATE-START param: refundId [{}]", refundId);
+		}
+		if (Arguments.isNull(refundId)) {
+			EditMiddleRefund editMiddleRefund = new EditMiddleRefund();
+			editMiddleRefund.setIsToCreate(Boolean.TRUE);
+			// 2019.04.02 RAY: 新增快遞公司資料
+			setExpressNameList(editMiddleRefund);
+			return editMiddleRefund;
+		}
+		EditMiddleRefund refund = makeEditMiddleRefund(refundId);
+		if (log.isDebugEnabled()) {
+			log.debug("API-REFUND-EDIT-OR-CREATE-END param: refundId [{}] ,resp: [{}]", refundId,
+					JsonMapper.nonEmptyMapper().toJson(refund));
+		}
+		return refund;
+	}
 
 
-    /**
-     * 2019.04.03 RAY: POUS925 新增快遞公司值
-     * 创建逆向单
-     *
-     * @param submitRefundInfo 提交信息
-     * @return 逆向单id
-     */
-    @RequestMapping(value = "/api/refund/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long createRefund(@RequestBody SubmitRefundInfo submitRefundInfo) {
-        if (Objects.equals(submitRefundInfo.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())) {
-            //创建丢件补发类型的售后单
-            return refundWriteLogic.createRefundForLost(submitRefundInfo);
-        } else {
-            if (!refundReadLogic.checkShipInfoUnique(submitRefundInfo.getShipmentSerialNo())) {
-                throw new JsonResponseException("submit.ship.info.exists");
-            }
-            //创建仅退款，退货退款，换货的售后单
-            return refundWriteLogic.createRefund(submitRefundInfo);
-        }
-    }
+	/**
+	 * 2019.04.03 RAY: POUS925 新增快遞公司值 
+	 *    创建逆向单
+	 *
+	 * @param submitRefundInfo 提交信息
+	 * @return 逆向单id
+	 */
+	@RequestMapping(value = "/api/refund/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	public Long createRefund(@RequestBody SubmitRefundInfo submitRefundInfo) {
+		log.info("submitRefundInfo: " + submitRefundInfo.toString());
+		if (Objects.equals(submitRefundInfo.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())) {
+			// 创建丢件补发类型的售后单
+			return refundWriteLogic.createRefundForLost(submitRefundInfo);
+		} else {
+			if (!refundReadLogic.checkShipInfoUnique(submitRefundInfo.getShipmentSerialNo())) {
+				throw new JsonResponseException("submit.ship.info.exists");
+			}
+			// 创建仅退款，退货退款，换货的售后单
+			return refundWriteLogic.createRefund(submitRefundInfo);
+		}
+	}
 
     /**
      * 完善逆向单
@@ -1260,43 +1268,43 @@ public class Refunds {
     }
 
 
-    //编辑售后单
+	// 编辑售后单
+	private EditMiddleRefund makeEditMiddleRefund(Long refundId) {
+		// 根据售后单id获取售后单信息
+		Refund refund = refundReadLogic.findRefundById(refundId);
+		// 获取售后单订单关联信息
+		OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
+		// 获取需要编辑的信息
+		EditMiddleRefund editMiddleRefund = new EditMiddleRefund();
+		editMiddleRefund.setIsToCreate(Boolean.FALSE);
+		editMiddleRefund.setOrderRefund(orderRefund);
+		editMiddleRefund.setRefund(refund);
+		// 获取售后单extra信息
+		RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+		if (refundExtra.getShipmentId() != null) {
+			Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+			editMiddleRefund.setRefundItems(makeEditRefundItemFromRefund(refund, shipment.getId()));
+		}
+		editMiddleRefund.setRefundExtra(refundExtra);
+		// 如果为丢件补发类型
+		if (isLostRefund(refund)) {
+			// 获取丢件补发需要发货的信息
+			editMiddleRefund.setLostRefundItems(refundReadLogic.findRefundLostItems(refund));
+			// 获取丢件补发需要生成发货单的联系人信息
+			editMiddleRefund.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
+		}
+		// 如果为换货,则获取换货商品信息
+		if (isChangeRefund(refund)) {
+			// 获取换货商品信息
+			editMiddleRefund.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
+			// 获取换货的需要生成发货单的联系人信息
+			editMiddleRefund.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
+		}
+		// 2019.04.02 RAY: 新增快遞公司資料
+		setExpressNameList(editMiddleRefund);
 
-    private EditMiddleRefund makeEditMiddleRefund(Long refundId) {
-        //根据售后单id获取售后单信息
-        Refund refund = refundReadLogic.findRefundById(refundId);
-        //获取售后单订单关联信息
-        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
-        //获取需要编辑的信息
-        EditMiddleRefund editMiddleRefund = new EditMiddleRefund();
-        editMiddleRefund.setIsToCreate(Boolean.FALSE);
-        editMiddleRefund.setOrderRefund(orderRefund);
-        editMiddleRefund.setRefund(refund);
-        //获取售后单extra信息
-        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-        if (refundExtra.getShipmentId() != null) {
-            Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
-            editMiddleRefund.setRefundItems(makeEditRefundItemFromRefund(refund, shipment.getId()));
-        }
-        editMiddleRefund.setRefundExtra(refundExtra);
-        //如果为丢件补发类型
-        if (isLostRefund(refund)) {
-            //获取丢件补发需要发货的信息
-            editMiddleRefund.setLostRefundItems(refundReadLogic.findRefundLostItems(refund));
-            //获取丢件补发需要生成发货单的联系人信息
-            editMiddleRefund.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
-        }
-        //如果为换货,则获取换货商品信息
-        if (isChangeRefund(refund)) {
-            //获取换货商品信息
-            editMiddleRefund.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
-            //获取换货的需要生成发货单的联系人信息
-            editMiddleRefund.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
-        }
-
-        return editMiddleRefund;
-
-    }
+		return editMiddleRefund;
+	}
 
     private MiddleRefundDetail makeRefundDetail(Long refundId) {
         //查询售后单以及售后单关联表
@@ -1465,5 +1473,15 @@ public class Refunds {
         return Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value());
     }
 
-
+	/**
+	 * 2019.04.15 RAY: 設定快遞公司名稱
+	 * 
+	 * @param bean DTO
+	 */
+	private void setExpressNameList(EditMiddleRefund bean) {
+		Response<List<ExpressCode>> resp = expressCodeService.findAllByName("%");
+		if (resp.isSuccess()) { // 只取快遞公司中文
+			bean.setRefundExpressNameList(resp.getResult().stream().map(ExpressCode::getName).collect(Collectors.toList()));
+		}
+	}
 }

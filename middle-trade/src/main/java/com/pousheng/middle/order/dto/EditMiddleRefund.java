@@ -22,7 +22,7 @@ public class EditMiddleRefund extends RichMiddleRefund implements Serializable {
     //丢件补发信息
     private List<RefundItem> lostRefundItems;
 	// 2019.04.02 所有的快遞公司訊息
-	private List<ExpressCode> expressItems;
+	private List<String> refundExpressNameList;
 
     /**
      * 是否为新建售后单

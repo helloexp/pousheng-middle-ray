@@ -162,6 +162,7 @@ public class SyncYYEdiReturnLogic {
 
 
     /**
+     * 2019.4.12 RAY: 傳出快遞商代碼，名稱
      * 组装售后单同步恒康参数1
      *
      * @param refund
@@ -205,8 +206,9 @@ public class SyncYYEdiReturnLogic {
         //买家用户名
         refundInfo.setBcmembername(shopOrder.getBuyerName());
         //客户供应商快递公司内码
-        refundInfo.setCustomercode("");
-        refundInfo.setCustomername("");
+        refundInfo.setCustomercode(shipment.getShipmentCorpCode()); // 2019.4.12 RAY: 傳出快遞商代碼
+        refundInfo.setCustomername(shipment.getShipmentCorpName()); // 2019.4.12 RAY: 傳出快遞商名稱
+        
         refundInfo.setExpressbillno(refundExtra.getShipmentSerialNo());
         refundInfo.setIsrefundinvoice(0);
         //1.退货，0.换货

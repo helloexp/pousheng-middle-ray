@@ -305,16 +305,30 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
      * 下单店铺公司码
      */
     @JsonProperty(value = "shopcompanycode")
-    private String shopcompanycode;
-
-
+    private String shopcompanycode; 
+    
     /**
      * ERP单号
      */
     @JsonProperty(value = "erpbillno")
     private String erpbillno;
 
+    /**
+     * 2019.04.16 RAY: 訂單來源
+     */
+    @JsonProperty(value = "billsource")
+    private String billsource;      
+
     @JsonIgnore
+    public String getBillsource() {
+		return billsource;
+	}
+    @JsonIgnore
+	public void setBillsource(String billsource) {
+		this.billsource = billsource;
+	}
+	
+	@JsonIgnore
     public String getCompanycode() {
         return companycode;
     }

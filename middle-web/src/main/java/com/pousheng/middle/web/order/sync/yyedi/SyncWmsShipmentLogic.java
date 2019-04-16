@@ -20,6 +20,7 @@ import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.constants.WmsShipmentResponseCode;
 import com.pousheng.middle.yyedisyc.component.SyncWmsShipmentOrderApi;
 import com.pousheng.middle.yyedisyc.dto.WmsResponse;
+import com.pousheng.middle.yyedisyc.dto.trade.ParameterWMS;
 import com.pousheng.middle.yyedisyc.dto.trade.WmsShipmentInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.WmsShipmentItem;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -146,6 +147,7 @@ public class SyncWmsShipmentLogic {
     }
 
     /**
+     * RAY 2019.04.16 : POUS934 B2B发货单接口增加billsource參數
      * 组装发往订单派发中心的发货单
      *
      * @param shipment
@@ -221,6 +223,10 @@ public class SyncWmsShipmentLogic {
         ////预期数量
         shipmentInfo.setExpectqty(quantity);
         shipmentInfo.setOrdersizes(items);
+        
+        // XXX RAY 2019.04.16: POUS934 B2B發貨單接口增加billsource參數
+        shipmentInfo.setBillsource(ParameterWMS.BillSource.中台.getCode());
+        
         return shipmentInfo;
     }
 

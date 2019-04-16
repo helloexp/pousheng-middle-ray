@@ -16,6 +16,7 @@ import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiRefundCancelApi;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiRefundOrderApi;
 import com.pousheng.middle.yyedisyc.dto.YYEdiResponse;
+import com.pousheng.middle.yyedisyc.dto.trade.ParameterWMS;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiReturnInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiReturnItem;
@@ -162,6 +163,7 @@ public class SyncYYEdiReturnLogic {
 
 
     /**
+     * RAY 2019.04.16: POUS934 電商退貨單接口增加billsource參數
      * 组装售后单同步恒康参数1
      *
      * @param refund
@@ -266,8 +268,11 @@ public class SyncYYEdiReturnLogic {
             refundInfo.setEdibillno(shipmentExtra.getOutShipmentId());
         }else{
             refundInfo.setEdibillno(String.valueOf(shipment.getId()));
-
         }
+        
+        // XXX RAY 2019.04.16: POUS934 電商退貨單接口增加billsource參數
+        refundInfo.setBillsource(ParameterWMS.BillSource.中台.getCode());
+        
         return refundInfo;
     }
 
@@ -356,6 +361,7 @@ public class SyncYYEdiReturnLogic {
     }
 
     /**
+     * RAY 2019.04.16: POUS934 電商取消退貨單接口，增加companycode參數，標註定單來源
      * 同步恒康退货单取消
      *
      * @param refund 退货单
@@ -373,6 +379,9 @@ public class SyncYYEdiReturnLogic {
             YYEdiCancelInfo yyEdiCancelInfo = new YYEdiCancelInfo();
             yyEdiCancelInfo.setBillno(refund.getRefundCode());
             yyEdiCancelInfo.setRemark(refund.getBuyerNote());
+            // TODO RAY 2019.04.16: POUS934 電商取消退貨單接口，增加companycode參數，標註，定單來源
+            // yyEdiCancelInfo.setCompanycode(null);
+            
             String response = sycYYEdiRefundCancelApi.doCancelOrder(yyEdiCancelInfo);
             YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
             if (Objects.equals(yyEdiResponse.getCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {

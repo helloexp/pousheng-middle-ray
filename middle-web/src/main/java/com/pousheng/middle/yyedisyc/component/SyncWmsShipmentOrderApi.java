@@ -53,4 +53,20 @@ public class SyncWmsShipmentOrderApi {
         log.info("sync shipment to wms erp result:{}, serialNo:{}", responseBody,serialNo);
         return responseBody;
     }
+    
+    
+	/**
+	 * 2019.04.16 RAY: POUS934 B2B发货单接口增加billsource參數
+	 * 
+	 * @param reqData
+	 * @param billSource 訂單來源
+	 * @return responseBody
+	 */
+	public String doSyncShipmentOrder(WmsShipmentInfo reqData,
+			com.pousheng.middle.yyedisyc.dto.trade.ParameterWMS.BillSource billSource) {
+
+		reqData.setBillsource(billSource.getCode());
+		return doSyncShipmentOrder(reqData);
+	}
+    
 }

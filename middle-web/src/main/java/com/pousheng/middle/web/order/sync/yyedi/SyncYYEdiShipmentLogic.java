@@ -27,6 +27,7 @@ import com.pousheng.middle.web.order.sync.constants.OrderInfoConstants;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiOrderCancelApi;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiShipmentOrderApi;
 import com.pousheng.middle.yyedisyc.dto.YYEdiResponse;
+import com.pousheng.middle.yyedisyc.dto.trade.ParameterWMS;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentItem;
@@ -169,6 +170,9 @@ public class SyncYYEdiShipmentLogic {
 
             YYEdiCancelInfo cancelShipmentInfo = new YYEdiCancelInfo();
             cancelShipmentInfo.setBillno(String.valueOf(shipment.getShipmentCode()));
+            // TODO RAY 2019.04.16: POUS934 電商取消銷售單接口，增加companycode參數，標註定單來源
+            // cancelShipmentInfo.setCompanycode(null);
+            
             String response = sycYYEdiOrderCancelApi.doCancelOrder(cancelShipmentInfo);
             YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
             //如果订单派发中心返回没有该订单，nc
@@ -211,6 +215,7 @@ public class SyncYYEdiShipmentLogic {
     }
 
     /**
+     * RAY 2019.04.16: POUS934 電商銷售單接口增加billsource參數
      * 发货单同步恒康参数组装
      *
      * @param shipment
@@ -499,6 +504,10 @@ public class SyncYYEdiShipmentLogic {
         //预期数量
         shipmentInfo.setExpectqty(quantity);
         shipmentInfo.setItems(items);
+        
+        // XXX RAY 2019.04.16: POUS934 電商銷售單接口增加billsource參數
+        shipmentInfo.setBillsource(ParameterWMS.BillSource.中台.getCode());
+        
         return shipmentInfo;
     }
 

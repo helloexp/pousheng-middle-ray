@@ -76,6 +76,21 @@ public class YYEdiReturnInfo implements java.io.Serializable {
     private String edibillno;
 
     private List<YYEdiReturnItem> items;
+    
+    /**
+     * 2019.04.16 RAY: 訂單來源
+     */
+    @JsonProperty(value = "billsource")
+    private String billsource;      
+
+    @JsonIgnore
+    public String getBillsource() {
+		return billsource;
+	}
+    @JsonIgnore
+	public void setBillsource(String billsource) {
+		this.billsource = billsource;
+	}
 
     public static long getSerialVersionUID() {
         return serialVersionUID;

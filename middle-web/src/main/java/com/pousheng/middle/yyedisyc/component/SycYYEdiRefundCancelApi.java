@@ -50,4 +50,16 @@ public class SycYYEdiRefundCancelApi {
         log.info("sync cancel refund to yyedi result:{}, serialNo:{}",responseBody,serialNo);
         return responseBody;
     }
+    
+	/**
+	 * 2019.04.16 RAY: POUS934 電商取消退貨單接口，增加companycode參數，標註定單來源
+	 * 
+	 * @param reqData
+	 * @param companyCode 定單來源
+	 * @return responseBody
+	 */
+	public String doCancelOrder(YYEdiCancelInfo reqData, String companyCode) {
+		reqData.setCompanycode(companyCode);
+		return doCancelOrder(reqData);
+	}
 }

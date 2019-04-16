@@ -16,7 +16,22 @@ public class YYEdiCancelInfo implements java.io.Serializable{
     @JsonProperty(value = "remark")
     private String remark;
 
+    /** 
+     * 2019.04.16 RAY: 增加companycode參數，標註定單來源
+     */
+    @JsonProperty(value = "companycode")
+    private String companycode;    
+    
     @JsonIgnore
+    public String getCompanycode() {
+		return companycode;
+	}
+    @JsonIgnore
+	public void setCompanycode(String companycode) {
+		this.companycode = companycode;
+	}
+	
+	@JsonIgnore
     public String getBillno() {
         return billno;
     }

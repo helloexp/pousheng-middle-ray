@@ -131,5 +131,10 @@ public class WmsShipmentInfo implements java.io.Serializable {
      * 明细
      */
     private List<WmsShipmentItem> ordersizes;
+    
+    /**
+     * 2019.04.16 RAY: 訂單來源
+     */
+    private String billsource;
 
 }

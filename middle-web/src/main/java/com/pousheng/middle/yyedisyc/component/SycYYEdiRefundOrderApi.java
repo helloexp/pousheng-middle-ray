@@ -3,6 +3,8 @@ package com.pousheng.middle.yyedisyc.component;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.yyedisyc.dto.trade.*;
+import com.pousheng.middle.yyedisyc.dto.trade.ParameterWMS.BillSource;
+
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
@@ -75,4 +77,17 @@ public class SycYYEdiRefundOrderApi {
         log.info("sync refund to yj erp result:{}, serialNo:{}", responseBody, serialNo);
         return responseBody;
     }
+    
+	/**
+	 * 2019.04.16 RAY: POUS934 電商退貨單接口增加billsource參數
+	 * 
+	 * @param reqData
+	 * @param billSource 訂單來源
+	 * @return responseBody
+	 */
+	public String doSyncRefundOrder(YYEdiReturnInfo reqData, BillSource billSource) {
+		reqData.setBillsource(billSource.getCode());
+		return doSyncRefundOrder(reqData);
+	}
+    
 }

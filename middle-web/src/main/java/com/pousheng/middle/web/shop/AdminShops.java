@@ -1096,14 +1096,13 @@ public class AdminShops {
             throw new JsonResponseException(e.getMessage());
         }
     }
-
-
+    
     /**
      * @Description 更新门店营业信息
      * @Date 2018/5/9
      * @param shopId
-     * @param type 门店类型
-     * @param shopBusiness 营业时间
+     * @param type 门店类型
+     * @param shopBusiness 营业时间
      * @return io.terminus.common.model.Response<java.lang.Boolean>
      */
     @ApiOperation("更新门店营业信息(门店类型、门店接单时间、门店接单量等)")
@@ -1176,8 +1175,10 @@ public class AdminShops {
         }
 
         Shop toUpdate = rExist.getResult();
-        //类型赋值
-        toUpdate.setType(type);
+        
+        if (type != 0) {
+            toUpdate.setType(type);
+        }
 
         //扩展字段赋值
         if (shopBusinessTime != null) {

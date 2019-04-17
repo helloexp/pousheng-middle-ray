@@ -574,7 +574,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                     if (!Objects.equals(shopOrder.getOutFrom(),"taobao")&&!Objects.equals(shopOrder.getOutFrom(),"tfenxiao")){
                         //eventBus.post(new OpenClientOrderSyncEvent(shopOrderId));
                         //eventBus存在队列阻塞和数据丢失风险，改通过定时任务执行的方式
-                        if(Objects.equals(MiddleChannel.JD.getValue(),shopOrder.getOutFrom())){
+                        if (Objects.equals(MiddleChannel.JD.getValue(), shopOrder.getOutFrom())
+                                && !Objects.equals(
+                                orginRichSkusByShop.getOrderStatus(), OpenClientOrderStatus.NOT_PAID.getValue())) {
                             // jingdong渠道的订单初始biztype给wait_handle
                             createWaitHandleShipmentResultTask(shopOrder.getId());
                         } else {

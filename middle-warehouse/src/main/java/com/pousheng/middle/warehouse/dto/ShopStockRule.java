@@ -75,4 +75,13 @@ public class ShopStockRule implements Serializable {
      */
     private Date updatedAt;
 
+    /**
+     * 是否有扣减待处理数量的标记
+     */
+    private Boolean isSubtractWaitHandle;
+    /**
+     * 是否有平均分配的标记
+     */
+    private Boolean isAverageRatio;
+
 }

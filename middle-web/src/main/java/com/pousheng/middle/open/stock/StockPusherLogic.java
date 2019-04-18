@@ -8,6 +8,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
+import com.pousheng.middle.open.component.ShopWaitHandleSkuQuantityComponent;
 import com.pousheng.middle.open.stock.yunju.YjStockPushClient;
 import com.pousheng.middle.open.stock.yunju.dto.StockPushLogStatus;
 import com.pousheng.middle.open.stock.yunju.dto.YjStockInfo;
@@ -138,6 +139,8 @@ public class StockPusherLogic {
 
     @Autowired
     private MiddleOrderReadService middleOrderReadService;
+    @Autowired
+    private ShopWaitHandleSkuQuantityComponent waitHandleSkuQuantityComponent;
 
 
     @Autowired
@@ -589,14 +592,28 @@ public class StockPusherLogic {
             log.error("error to find available inventory quantity: shopId: {}, caused: {}", shopId, getRes.getError());
             return null;
         }
+
+        Boolean isSubtractWaitHandle = shopStockRuleDto.getShopRule().getIsSubtractWaitHandle();
+
         if (!ObjectUtils.isEmpty(getRes.getResult())) {
             //先计算不包含仓库和商品级别的库存
-            stockSum = calculateWarehouseStockForShop(getRes.getResult(), shopStockRuleDto);
+            stockSum = calculateWarehouseStockForShop(getRes.getResult(), shopStockRuleDto,skuCode);
             //再累加仓库商品级别的库存
             for (AvailableInventoryDTO dto : getRes.getResult()) {
                 if (shopStockRuleDto.getWarehouseRule().containsKey(dto.getWarehouseId())) {
                     log.info("AvailableInventoryDTO dto: {} {} {} ", dto.getWarehouseId(), dto.getSkuCode(), dto.getChannelRealQuantity(), dto.getInventoryUnAllocQuantity());
                     stockSum = stockSum + calculateWarehouseStock(dto, shopStockRuleDto);
+                }
+            }
+
+            //如果需求考虑待处理数量且存在仓或商品级别推送比例
+            if (isSubtractWaitHandle && !CollectionUtils.isEmpty(shopStockRuleDto.getWarehouseRule())){
+                Long waitHandleNumber = waitHandleSkuQuantityComponent.queryWaitHandleQuantiy(shopId,skuCode);
+                log.info("WarehouseRatio-sku code:{} shop(id:{}) is open subtract wait handle flag and not setting warehouse and sku ratio originStock:{},waitHandleNumber:{} ",skuCode,shopId,stockSum,waitHandleNumber);
+
+                stockSum = stockSum - waitHandleNumber;
+                if (stockSum < 0L){
+                    stockSum = 0L;
                 }
             }
 
@@ -648,13 +665,18 @@ public class StockPusherLogic {
     }
 
 
-    private Long calculateWarehouseStockForShop(List<AvailableInventoryDTO> dtos, ShopStockRuleDto shopStockRuleDto) {
+    private Long calculateWarehouseStockForShop(List<AvailableInventoryDTO> dtos, ShopStockRuleDto shopStockRuleDto,String skuCode) {
+
+
+        Long stock = 0L;
         Long channelStock;
         Long shareStock;
         channelStock = dtos.stream().filter(dto -> !shopStockRuleDto.getWarehouseRule().containsKey(dto.getWarehouseId())&&dto.getChannelRealQuantity()>0).mapToLong(AvailableInventoryDTO::getChannelRealQuantity).sum();
         shareStock = dtos.stream().filter(dto -> !shopStockRuleDto.getWarehouseRule().containsKey(dto.getWarehouseId())&&dto.getInventoryUnAllocQuantity()>0).mapToLong(AvailableInventoryDTO::getInventoryUnAllocQuantity).sum();
         //如果库存数量小于0则推送0
         ShopStockRule shopRule = shopStockRuleDto.getShopRule();
+        Boolean isSubtractWaitHandle = shopRule.getIsSubtractWaitHandle();
+
         if (channelStock < 0L) {
             log.warn("shop(id={}) channelStock is less than 0 for sku(code={}), current channelStock is:{}, shareStock is:{}",
                     shopRule.getShopId(), dtos.get(0).getSkuCode(), channelStock, shareStock);
@@ -663,15 +685,41 @@ public class StockPusherLogic {
         if (null != shopRule.getSafeStock()) {
             shareStock = shareStock - shopRule.getSafeStock();
         }
-        //按照设定的比例确定推送数量
-        Long stock = Math.max(0,
-                channelStock
-                        + shareStock * shopRule.getRatio() / 100
-        );
-        log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
-                dtos.get(0).getSkuCode(), shopRule.getShopId(), stock);
+        //是否需要考虑待处理数量
+        //如果需求考虑待处理数量且只有店铺级别推送比例
+        if (isSubtractWaitHandle && CollectionUtils.isEmpty(shopStockRuleDto.getWarehouseRule())){
+            Long waitHandleNumber = waitHandleSkuQuantityComponent.queryWaitHandleQuantiy(shopRule.getShopId(),skuCode);
+
+            //原始推送数量
+            Long originStock = Math.max(0,
+                    channelStock
+                            + shareStock * shopRule.getRatio() / 100
+            );
+
+            //按照设定的比例确定推送数量
+            stock = Math.max(0,
+                    channelStock
+                            + shareStock - waitHandleNumber * shopRule.getRatio() / 100
+            );
+            log.info("ShopRatio-sku code:{} shop(id:{}) is open subtract wait handle flag and not setting warehouse and sku" +
+                    " ratio originStock:{},waitHandleNumber:{},currentStock:{} ",skuCode,shopRule.getShopId(),originStock,waitHandleNumber,stock);
+
+        } else {
+            //按照设定的比例确定推送数量
+            stock = Math.max(0,
+                    channelStock
+                            + shareStock * shopRule.getRatio() / 100
+            );
+
+            log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
+                    dtos.get(0).getSkuCode(), shopRule.getShopId(), stock);
+        }
+
+
         return stock;
     }
+
+
 
 
     /**

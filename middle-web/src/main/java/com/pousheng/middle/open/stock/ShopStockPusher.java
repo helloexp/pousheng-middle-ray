@@ -12,6 +12,7 @@ import com.pousheng.middle.warehouse.dto.ShopStockRule;
 import com.pousheng.middle.warehouse.dto.ShopStockRuleDto;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.web.item.cacher.ItemMappingCacher;
+import com.pousheng.middle.web.item.component.CalculateRatioComponent;
 import com.pousheng.middle.web.order.component.ShopMaxOrderLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
@@ -65,6 +66,8 @@ public class ShopStockPusher {
 
     @Autowired
     private ItemMappingCacher itemMappingCacher;
+    @Autowired
+    private CalculateRatioComponent calculateRatioComponent;
 
     @Autowired
     private ShopMaxOrderLogic shopMaxOrderLogic;
@@ -140,7 +143,7 @@ public class ShopStockPusher {
 
                     //判断当前skuCode是否在当前店铺卖，如果不卖则跳过
                     List<ItemMapping> itemMappings = itemMappingCacher.findBySkuCodeAndShopId(skuCode, shopId);
-                    Collections.sort(itemMappings, (ItemMapping itemMapping1, ItemMapping itemMapping2)->itemMapping2.getCreatedAt().compareTo(itemMapping1.getCreatedAt()));
+                    //Collections.sort(itemMappings, (ItemMapping itemMapping1, ItemMapping itemMapping2)->itemMapping2.getCreatedAt().compareTo(itemMapping1.getCreatedAt()));
                     if (CollectionUtils.isEmpty(itemMappings)) {
                         log.warn("item mapping not found by skuCode={},openShopId={}", skuCode, shopId);
                         return;
@@ -217,7 +220,7 @@ public class ShopStockPusher {
                         //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
                         log.info("parall update stock start");
                         // 如果只有1条，或者多条都没有设置比例，就按默认的推第一个
-                        List<ItemMapping> ratioItemMappings = itemMappings.stream().filter(
+                    /*    List<ItemMapping> ratioItemMappings = itemMappings.stream().filter(
                             im -> Objects.nonNull(im.getRatio())).collect(Collectors.toList());
                         if (CollectionUtils.isEmpty(ratioItemMappings)) {
                             ItemMapping itemMapping = itemMappings.get(0);
@@ -227,6 +230,11 @@ public class ShopStockPusher {
                             for (ItemMapping im : ratioItemMappings) {
                                 stockPushLogic.prallelUpdateStock(im, stock * im.getRatio() / HUNDRED,openShop);
                             }
+                        }*/
+
+                        for (ItemMapping im : itemMappings) {
+                            Integer ratio = calculateRatioComponent.getRatio(im,shopStockRule);
+                            stockPushLogic.prallelUpdateStock(im, stock * ratio / HUNDRED,openShop);
                         }
                         log.info("parall update stock return");
                     }

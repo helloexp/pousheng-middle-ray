@@ -2,7 +2,9 @@ package com.pousheng.middle.web.order;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multiset;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.open.component.ShopWaitHandleSkuQuantityComponent;
 import com.pousheng.middle.open.ych.logger.events.OrderOpEvent;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
@@ -22,6 +24,8 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -43,10 +47,8 @@ import org.mockito.internal.util.collections.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -61,6 +63,7 @@ import java.util.stream.Collectors;
  * Data: 16/6/28
  * Author: yangzefeng
  */
+@Api(description = "订单读服务API")
 @RestController
 @Slf4j
 @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
@@ -84,6 +87,8 @@ public class AdminOrderReader {
 
     @Autowired
     private EventBus eventBus;
+    @Autowired
+    private ShopWaitHandleSkuQuantityComponent waitHandleSkuQuantityComponent;
 
     /**
      * 交易订单分页
@@ -414,6 +419,23 @@ public class AdminOrderReader {
             log.debug("API-ORDER-FINDSHIPMENTIDSBYSHOPORDERID-END param: shopOrderId [{}] ,resp: [{}]",shopOrderId,shipmentIds);
         }
         return  Response.ok(shipmentIds);
+    }
+
+
+    @ApiOperation("查询店铺商品订单待处理数量")
+    @RequestMapping(value = "/api/order/shop/wait/handle/number",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Long orderWaitHandleNumber(@RequestParam Long shopId,@RequestParam String skuCode){
+
+        return waitHandleSkuQuantityComponent.queryWaitHandleQuantiy(shopId,skuCode);
+
+    }
+
+    @ApiOperation("查询店铺商品订单待处理数量明细")
+    @RequestMapping(value = "/api/order/shop/wait/handle/number/detail",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Multiset<String> orderWaitHandleNumberDetail(@RequestParam Long shopId, @RequestParam String skuCode){
+
+        return waitHandleSkuQuantityComponent.queryWaitHandleQuantiyDetail(shopId,skuCode);
+
     }
 
     private void sendLogForTaobao(Response<OrderDetail> response, HttpServletRequest request) {

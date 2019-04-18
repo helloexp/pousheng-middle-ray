@@ -764,6 +764,15 @@ public class Shipments {
                 shipment.setExtra(extraMap);
                 shipment.setShopId(refund.getShopId());
                 shipment.setShopName(refund.getShopName());
+                // XXX RAY 2019.4.18 設定Shipment快遞商ID和名稱
+                RefundExtra refundExt = refundReadLogic.findRefundExtra(refund);
+                shipment.setShipmentCorpCode(refundExt.getShipmentCorpCode());
+                shipment.setShipmentCorpName(refundExt.getShipmentCorpName());
+                // 寫入vendCustID
+                ShipmentExtra shipExt = shipmentReadLogic.getShipmentExtra(shipment);
+                shipExt.setVendCustID(refundExt.getShipmentCorpCode());
+                shipment.getExtra().put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipExt));
+                
                 //换货的发货关联的订单id 为换货单id
                 Long shipmentId = shipmentWriteManger.createForAfterSale(shipment, orderRefund, refundId);
                 if (!refundWriteLogic.refundShipment(shipmentId)) {

@@ -2087,15 +2087,6 @@ public class RefundWriteLogic {
 			shipment.setShopName(refund.getShopName());
 			shipment.setIsOccupyShipment(ShipmentOccupyType.CHANGE_Y.name());
 
-			// 2019.4.12 RAY: 取快遞商字段，並放到shipment中
-			if (!StringUtils.isEmpty(refund.getExtraJson())) {
-				com.google.gson.JsonObject jsonObj = new JsonParser().parse(refund.getExtraJson()).getAsJsonObject();
-				if (jsonObj != null && jsonObj.get("refundExtraInfo") != null) {
-					jsonObj = jsonObj.get("refundExtraInfo").getAsJsonObject();
-					shipment.setShipmentCorpCode(java.util.Objects.toString(jsonObj.get("shipmentCorpCode"), ""));
-					shipment.setShipmentCorpName(java.util.Objects.toString(jsonObj.get("shipmentCorpName"), ""));
-				}
-			}
 
 			// 换货的发货关联的订单id 为换货单id
 			Long shipmentId = shipmentWriteManger.createForAfterSale(shipment, orderRefund, refundId);

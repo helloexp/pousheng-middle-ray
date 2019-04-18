@@ -206,8 +206,8 @@ public class SyncYYEdiReturnLogic {
         //买家用户名
         refundInfo.setBcmembername(shopOrder.getBuyerName());
         //客户供应商快递公司内码
-        refundInfo.setCustomercode(shipment.getShipmentCorpCode()); // 2019.4.12 RAY: 傳出快遞商代碼
-        refundInfo.setCustomername(shipment.getShipmentCorpName()); // 2019.4.12 RAY: 傳出快遞商名稱
+        refundInfo.setCustomercode("");
+        refundInfo.setCustomername("");
         
         refundInfo.setExpressbillno(refundExtra.getShipmentSerialNo());
         refundInfo.setIsrefundinvoice(0);

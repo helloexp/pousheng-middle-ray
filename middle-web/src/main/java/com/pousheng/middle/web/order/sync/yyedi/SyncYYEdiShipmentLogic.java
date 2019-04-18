@@ -499,6 +499,12 @@ public class SyncYYEdiShipmentLogic {
         //预期数量
         shipmentInfo.setExpectqty(quantity);
         shipmentInfo.setItems(items);
+		// XXX RAY 2019.4.18: 傳出快遞公司欄位電商銷售單介面。 在調用該介面時回填指定快遞商欄位（freightcompany/customercode）
+		if (StringUtils.isEmpty(shipmentInfo.getCustomercode())) {
+			shipmentInfo.setCustomercode(shipment.getShipmentCorpCode());
+			shipmentInfo.setFreightcompany(shipment.getShipmentCorpCode());
+		}
+        
         return shipmentInfo;
     }
 

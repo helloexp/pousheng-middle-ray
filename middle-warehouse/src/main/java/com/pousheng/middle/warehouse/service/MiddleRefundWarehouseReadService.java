@@ -14,4 +14,6 @@ import java.util.Map;
 public interface MiddleRefundWarehouseReadService {
 
     Response<Paging<OpenShop>> pagination(Integer pageNo, Integer pageSize, Map<String, Object> params);
+
+    Response<Paging<OpenShop>> paginationExt(Integer pageNo, Integer pageSize, Map<String, Object> params);
 }

@@ -86,8 +86,8 @@ public class MQTaskConsumer {
         Number id = (Number) stop.get("id");
         TaskDTO exist = findTaskById(id.longValue());
         if (exist == null ||
-                !Objects.equals(exist.getStatus(), TaskStatusEnum.EXECUTING.name()) ||
-                !Objects.equals(exist.getStatus(), TaskStatusEnum.INIT.name())) {
+                !(Objects.equals(exist.getStatus(), TaskStatusEnum.EXECUTING.name()) ||
+                        Objects.equals(exist.getStatus(), TaskStatusEnum.INIT.name()))) {
             log.info("task({}) is null or task status {} not match",
                     id,
                     Optional.ofNullable(exist).map(TaskDTO::getStatus).orElse(null));

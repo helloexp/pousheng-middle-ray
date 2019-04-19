@@ -20,6 +20,7 @@ import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -51,6 +52,7 @@ public class MQTaskConsumer {
 
     @MQSubscribe(topic = TOPIC, consumerGroup = GROUP, tag = TAG, consumeMode = ConsumeMode.CONCURRENTLY, consumeThreadMin = 1, consumeThreadMax = 2)
     public void onMessage(String message) throws InterruptedException {
+        log.info("got message {}", message);
         UnifiedEvent event = JsonMapper.nonEmptyMapper().fromJson(message, UnifiedEvent.class);
         if (event.getEventTag().equals("start")) {
             onStartMessage(event.getPayload());
@@ -79,7 +81,12 @@ public class MQTaskConsumer {
         Map<String, Object> stop = JsonMapper.nonEmptyMapper().fromJson(message, HashMap.class);
         Number id = (Number) stop.get("id");
         TaskDTO exist = findTaskById(id.longValue());
-        if (exist == null || !Objects.equals(exist.getStatus(), TaskStatusEnum.EXECUTING.name())) {
+        if (exist == null ||
+                !Objects.equals(exist.getStatus(), TaskStatusEnum.EXECUTING.name()) ||
+                !Objects.equals(exist.getStatus(), TaskStatusEnum.INIT.name())) {
+            log.info("task({}) is null or task status {} not match",
+                    id,
+                    Optional.ofNullable(exist).map(TaskDTO::getStatus).orElse(null));
             return;
         }
 

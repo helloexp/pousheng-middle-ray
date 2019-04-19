@@ -1,9 +1,11 @@
 package com.pousheng.middle.web.excel;
 
 import com.pousheng.middle.task.api.QuerySingleTaskByIdRequest;
+import com.pousheng.middle.task.api.UpdateTaskRequest;
 import com.pousheng.middle.task.dto.TaskDTO;
 import com.pousheng.middle.task.enums.TaskStatusEnum;
 import com.pousheng.middle.task.service.TaskReadFacade;
+import com.pousheng.middle.task.service.TaskWriteFacade;
 import com.pousheng.middle.utils.ConditionalOnEnv;
 import com.pousheng.middle.utils.MatchPolicy;
 import com.pousheng.middle.web.excel.supplyRule.SupplyRuleImportTask;
@@ -40,9 +42,11 @@ public class MQTaskConsumer {
     private TaskContainer taskContainer = new TaskContainer();
 
     private final TaskReadFacade taskReadFacade;
+    private final TaskWriteFacade taskWriteFacade;
 
-    public MQTaskConsumer(TaskReadFacade taskReadFacade) {
+    public MQTaskConsumer(TaskReadFacade taskReadFacade, TaskWriteFacade taskWriteFacade) {
         this.taskReadFacade = taskReadFacade;
+        this.taskWriteFacade = taskWriteFacade;
     }
 
     @PostConstruct
@@ -91,7 +95,16 @@ public class MQTaskConsumer {
         }
 
         log.info("about to kill import task: {}", stop);
-        taskContainer.tryKill(id, ((Number) stop.get("timeout")).longValue(), TimeUnit.SECONDS);
+        boolean success = taskContainer.tryKill(id, ((Number) stop.get("timeout")).longValue(), TimeUnit.SECONDS);
+        if (!success) {
+            UpdateTaskRequest request = new UpdateTaskRequest();
+            request.setTaskId(id.longValue());
+            request.setStatus(TaskStatusEnum.STOPPED.name());
+            Response<Boolean> r = taskWriteFacade.updateTask(request);
+            if (!r.getResult()) {
+                log.error("failed to update task status to stopped, cause: {}", r.getError());
+            }
+        }
     }
 
     private TaskDTO findTaskById(Long id) {

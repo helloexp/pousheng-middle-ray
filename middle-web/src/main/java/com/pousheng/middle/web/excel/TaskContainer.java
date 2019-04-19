@@ -6,7 +6,6 @@ import io.terminus.common.exception.ServiceException;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Objects;
@@ -19,7 +18,6 @@ import java.util.concurrent.TimeUnit;
  * @date 2019-04-08 14:15<br/>
  */
 @Slf4j
-@Component
 public class TaskContainer implements Runnable {
     /**
      * 当前有任务执行时，每隔指定间隔轮询是否执行完毕，以执行下一个任务

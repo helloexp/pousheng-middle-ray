@@ -596,4 +596,9 @@ public class TradeConstants {
      * 退货仓账套校验（宝唯）
      */
     public static final Integer BAO_WEI_COMPANY_ID = 325;
+
+    /**
+     * 虚仓编码
+     */
+    public static final String VISUAL_WAREHOUSE_CODE = "visualWarehouseCode";
 }

@@ -1,13 +1,16 @@
 package com.pousheng.middle.web.item.component;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRule;
 import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRuleBatchCreateRequest;
 import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRuleCreateRequest;
+import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRuleQueryOneRequest;
 import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Joiners;
@@ -19,9 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Description: 商品供货规则组件
@@ -78,17 +79,33 @@ public class ShopSkuSupplyRuleComponent {
     }
 
     public Response<Boolean> save(OpenClientShop openShop, SkuTemplate skuTemplate, String type, List<String> warehouseCodes, String status) {
+        return save(openShop, skuTemplate, type, warehouseCodes, status, Boolean.FALSE);
+    }
+
+    public Response<Boolean> save(OpenClientShop openShop, SkuTemplate skuTemplate, String type, List<String> warehouseCodes, String status, Boolean delta) {
         ShopSkuSupplyRuleBatchCreateRequest request = ShopSkuSupplyRuleBatchCreateRequest.builder()
                 .shopId(openShop.getOpenShopId())
                 .shopName(openShop.getShopName())
                 .skuCode(skuTemplate.getSkuCode())
                 .skuName(skuTemplate.getName())
-                .materialCode(skuTemplate.getExtra().get("materialCode"))
+                .materialCode(
+                        MoreObjects.firstNonNull(skuTemplate.getExtra(), Collections.<String, String>emptyMap())
+                                .get("materialCode"))
                 .type(type)
                 .warehouses(warehouseCodes)
                 .status(status)
+                .delta(delta)
                 .build();
         return inventoryClient.batchSaveShopSkuSupplyRule(request);
+    }
+
+    public Response<ShopSkuSupplyRule> queryByShopIdAndSkuCode(Long shopId, String skuCode, String status) {
+        ShopSkuSupplyRuleQueryOneRequest request = ShopSkuSupplyRuleQueryOneRequest.builder()
+                .shopId(shopId)
+                .skuCode(skuCode)
+                .status(status)
+                .build();
+        return inventoryClient.queryByShopIdAndSkuCode(request);
     }
 
     public Boolean isSkuInShop(List<String> skuCodes, Long openShopId) {

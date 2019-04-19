@@ -10,7 +10,6 @@ import com.pousheng.middle.common.utils.batchhandle.ExcelExportHelper;
 import com.pousheng.middle.common.utils.batchhandle.ItemSupplyRuleAbnormalRecord;
 import com.pousheng.middle.open.api.dto.SkuStockRuleImportInfo;
 import com.pousheng.middle.open.stock.StockPusherLogic;
-import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
@@ -57,7 +56,6 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
     private UploadFileComponent uploadFileComponent;
     private ShopSkuSupplyRuleComponent shopSkuSupplyRuleComponent;
-    private OpenShopCacher openShopCacher;
     private PoushengMiddleSpuService poushengMiddleSpuService;
 
     @RpcConsumer
@@ -84,7 +82,6 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
         this.poushengCompensateBizWriteService = poushengCompensateBizWriteService;
         this.uploadFileComponent = uploadFileComponent;
         this.shopSkuSupplyRuleComponent = shopSkuSupplyRuleComponent;
-        this.openShopCacher = openShopCacher;
         this.poushengMiddleSpuService = poushengMiddleSpuService;
     }
 
@@ -117,6 +114,10 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
     private ShopSkuExcelComponent excelComponent;
 
     protected PoushengCompensateBiz handle(PoushengCompensateBiz poushengCompensateBiz) {
+        // {
+        //   "filePath":"https://e1xossfilehdd.blob.core.chinacloudapi.cn/fileserver01/2019/04/02/13e876cc-4576-4099-ba7b-f25dde89a307.xlsx",
+        //   "fileName":"DE-190325-0033-ENABLE-SP311519.xlsx"
+        // }
         SkuStockRuleImportInfo info = JsonMapper.nonEmptyMapper().fromJson(poushengCompensateBiz.getContext(), SkuStockRuleImportInfo.class);
 
         try {
@@ -228,7 +229,7 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
      * @param shopCode 店铺appCode
      * @return
      */
-    protected OpenClientShop findOpenShop(String shopCode) {
+    public OpenClientShop findOpenShop(String shopCode) {
         Response<List<OpenClientShop>> openShopResponse = openShopReadService.search(null, null, shopCode);
         if (!openShopResponse.isSuccess()) {
             log.error("find open shop failed,shopCode is {},caused by {}", shopCode, openShopResponse.getError());

@@ -5,10 +5,7 @@ import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Table;
+import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.open.stock.yunju.YjStockPushClient;
@@ -17,7 +14,6 @@ import com.pousheng.middle.open.stock.yunju.dto.YjStockInfo;
 import com.pousheng.middle.open.stock.yunju.dto.YjStockRequest;
 import com.pousheng.middle.open.yunding.JdYunDingSyncStockLogic;
 import com.pousheng.middle.order.dto.ShipmentItemCriteria;
-import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.SkuOrderLockStock;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
@@ -316,7 +312,8 @@ public class StockPusherLogic {
      * @Description 库存推送YJ
      * @Date 2018/7/4
      */
-    public void sendToYj(Long shopId, List<YjStockInfo> yunjuStockInfoList) {
+    public void sendToYj(Long shopId, List<YjStockInfo> yunjuStockInfoList,
+                         ArrayListMultimap<String, YjStockInfo> skuCode2YjStockInfos) {
 
         if (log.isDebugEnabled()) {
             log.debug("send request({}) to yunju jit", yunjuStockInfoList.toString());
@@ -330,12 +327,13 @@ public class StockPusherLogic {
                         shopId);
                 //成功则写入缓存
                 if (stockPusherCacheEnable && resp.isSuccess()) {
-                    yunjuStockInfoList.stream().forEach(yjStockInfo -> {
-                        WarehouseDTO warehouse = warehouseCacher.findByOutCodeAndBizId(yjStockInfo.getWarehouseCode(), yjStockInfo.getCompanyCode());
-                        stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_WARE,
-                                warehouse.getId().toString(),
-                                yjStockInfo.getBarCode(),
-                                yjStockInfo.getNum());
+                    yunjuStockInfoList.forEach(yjStockInfo -> {
+                        List<YjStockInfo> yjStockInfoList = skuCode2YjStockInfos.get(yjStockInfo.getBarCode());
+                        if (CollectionUtils.isEmpty(yjStockInfoList)) {
+                            write2Redis(yjStockInfo);
+                        } else {
+                            yjStockInfoList.forEach(this::write2Redis);
+                        }
                     });
                 }
                 //写入推送日志
@@ -347,29 +345,53 @@ public class StockPusherLogic {
                 String cause = resp.isSuccess() ? "" : resp.getError();
                 Date curDate = new Date();
 
-                yunjuStockInfoList.stream().forEach(yjStockInfo -> {
-                    WarehouseDTO warehouse = warehouseCacher.findByOutCodeAndBizId(yjStockInfo.getWarehouseCode(), yjStockInfo.getCompanyCode());
-                    StockPushLog stockPushLog =
-                            StockPushLog.builder()
-                                    .requestNo(traceId)
-                                    .lineNo(yjStockInfo.getLineNo())
-                                    .shopId(shopId)
-                                    .shopName(shopName)
-                                    .outId(shopCode)
-                                    .warehouseId(warehouse.getId())
-                                    .warehouseName(warehouse.getWarehouseName())
-                                    .warehouseOuterCode(warehouse.getOutCode())
-                                    .skuCode(yjStockInfo.getBarCode())
-                                    .quantity((long) yjStockInfo.getNum())
-                                    .status(status)
-                                    .cause(cause)
-                                    .syncAt(curDate)
-                                    .build();
-                    stockPushLogs.add(stockPushLog);
+                yunjuStockInfoList.forEach(yjStockInfo -> {
+                    List<YjStockInfo> yjStockInfoList = skuCode2YjStockInfos.get(yjStockInfo.getBarCode());
+                    if (CollectionUtils.isEmpty(yjStockInfoList)) {
+                        StockPushLog stockPushLog = genStockPushLog(
+                                yjStockInfo, traceId, shopId, shopName, shopCode, status, cause, curDate);
+                        stockPushLogs.add(stockPushLog);
+                    } else {
+                        yjStockInfoList.forEach(it -> {
+                            StockPushLog stockPushLog = genStockPushLog(
+                                    it, traceId, shopId, shopName, shopCode, status, cause, curDate);
+                            stockPushLogs.add(stockPushLog);
+                        });
+                    }
                 });
                 this.pushLogs(stockPushLogs);
             }
         },executorService);
+    }
+
+    private StockPushLog genStockPushLog(YjStockInfo yjStockInfo, String traceId, Long shopId, String shopName,
+                                         String shopCode, Integer status, String cause, Date syncAt) {
+        WarehouseDTO warehouse =
+                warehouseCacher.findByOutCodeAndBizId(yjStockInfo.getWarehouseCode(), yjStockInfo.getCompanyCode());
+        return StockPushLog.builder()
+                        .requestNo(traceId)
+                        .lineNo(yjStockInfo.getLineNo())
+                        .shopId(shopId)
+                        .shopName(shopName)
+                        .outId(shopCode)
+                        .warehouseId(warehouse.getId())
+                        .warehouseName(warehouse.getWarehouseName())
+                        .warehouseOuterCode(warehouse.getOutCode())
+                        .skuCode(yjStockInfo.getBarCode())
+                        .quantity((long) yjStockInfo.getNum())
+                        .status(status)
+                        .cause(cause)
+                        .syncAt(syncAt)
+                        .build();
+    }
+
+    private void write2Redis(YjStockInfo yjStockInfo) {
+        WarehouseDTO warehouse =
+                warehouseCacher.findByOutCodeAndBizId(yjStockInfo.getWarehouseCode(), yjStockInfo.getCompanyCode());
+        stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_WARE,
+                warehouse.getId().toString(),
+                yjStockInfo.getBarCode(),
+                yjStockInfo.getNum());
     }
 
     /**
@@ -394,7 +416,6 @@ public class StockPusherLogic {
             Integer cacheStock = stockPushCacher.getFromRedis(StockPushCacher.ORG_TYPE_WARE, warehouseId.toString(), skuCode);
 
             WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
-            String companyId = warehouse.getCompanyId();
             String outCode = warehouse.getOutCode();
 
             if (!Objects.isNull(cacheStock) && availStock.intValue() == cacheStock.intValue()) {
@@ -410,7 +431,6 @@ public class StockPusherLogic {
                     .build());
 
         }
-
     }
 
     /**
@@ -707,12 +727,12 @@ public class StockPusherLogic {
     /**
      * @param
      * @return
-     * @Description 查询云聚jit店铺
+     * @Description 根据渠道查店铺
      * @Date 2018/9/13
      */
     //todo 缓存优化
-    public List<OpenShop> getYjShop() {
-        Response<List<OpenShop>> resp = openShopReadService.findByChannel(MiddleChannel.YUNJUJIT.getValue());
+    public List<OpenShop> getShopByChannel(String channel) {
+        Response<List<OpenShop>> resp = openShopReadService.findByChannel(channel);
         if (!resp.isSuccess()) {
             log.error("can not find yunju jit shop");
         }

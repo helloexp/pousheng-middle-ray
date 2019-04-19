@@ -308,7 +308,7 @@ public class JitOpenApi {
             return response;
         }
         //组装参数
-        OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo);
+        OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo, openShop);
 
         //设置为jit时效订单类型
         openClientFullOrder.setType(MiddleOrderType.JIT_REAL_TIME.getValue());

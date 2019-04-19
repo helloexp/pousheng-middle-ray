@@ -153,7 +153,7 @@ public class JitBigOrderService implements CompensateBizService {
         Long openShopId = openClientShop.getOpenShopId();
         OpenShop openShop = openShopCacher.findById(openShopId);
         //组装参数
-        OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo);
+        OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo, openShop);
         orderExecutor.importOrder(openShop, Lists.newArrayList(openClientFullOrder));
         return openShopId;
     }

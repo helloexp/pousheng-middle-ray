@@ -123,6 +123,49 @@ public class RefundDefaultWarehouse {
         return Response.ok(paging);
     }
 
+    /**
+     * 分页查询各个店铺的退货仓 - 可帶入查詢參數「店铺名称」、「退货仓名称」
+     * @param pageNo 每页记录数
+     * @param pageSize 页码
+     * @param shopName 店铺名称
+     * @param warehouseName 退货仓名称
+     * @return
+     */
+    @ApiOperation("分页查询各个店铺的退货仓")
+    @LogMe(description = "分页查询各个店铺的退货仓",ignore = true)
+    @RequestMapping(value = "/paging/with/conditions",method =RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Paging<MiddleOpenShop>> paging(@RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                           @RequestParam(required = false, value = "pageSize") Integer pageSize,
+                                           @RequestParam(required = false, value = "shopName") String shopName,
+                                           @RequestParam(required = false, value = "warehouseName") String warehouseName){
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-DEFAULT-WAREHOUSE-PAGING-START param: pageNo [{}] pageSize [{}] ",pageNo,pageSize);
+        }
+
+        Map<String,Object> param = Maps.newHashMapWithExpectedSize(2);
+        param.put("shopName", shopName);
+        param.put("warehouseName", warehouseName);
+
+        Response<Paging<OpenShop>> pageRes= middleRefundWarehouseReadService.paginationExt(pageNo,pageSize,param);
+        if (!pageRes.isSuccess()){
+            return Response.fail("find.openShop.failed");
+        }
+        List<OpenShop> openShops = pageRes.getResult().getData();
+        List<MiddleOpenShop> middleOpenShops = Lists.newArrayList();
+        openShops.forEach(openShop -> {
+            MiddleOpenShop middleOpenShop=new MiddleOpenShop();
+            BeanUtils.copyProperties(openShop,middleOpenShop);
+            middleOpenShops.add(middleOpenShop);
+        });
+        Paging<MiddleOpenShop> paging =new Paging<>();
+        paging.setTotal(pageRes.getResult().getTotal());
+        paging.setData(middleOpenShops);
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-DEFAULT-WAREHOUSE-PAGING-START param: pageNo [{}] pageSize [{}] ,resp: [{}]",pageNo,pageSize,JsonMapper.nonEmptyMapper().toJson(paging));
+        }
+        return Response.ok(paging);
+    }
+
 
     /**
      * 根据店铺id查询默认退货仓

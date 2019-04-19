@@ -3,6 +3,8 @@ package com.pousheng.middle.open.stock;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
+import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
 import com.pousheng.middle.warehouse.dto.ShopStockRule;
@@ -16,7 +18,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -28,20 +29,18 @@ import java.util.Objects;
  */
 @Component
 @Slf4j
-public class YjJitInventoryPusher {
+public class YjInventoryPusher {
     @Autowired
     WarehouseCacher warehouseCacher;
-
-    @Autowired
-    private StockPushCacher stockPushCacher;
 
     @Autowired
     private WarehouseShopRuleClient warehouseShopRuleClient;
 
     private Map<Long, OpenShop> jitShops = Maps.newHashMap();
+    private Map<Long, OpenShop> bbcShops = Maps.newHashMap();
 
     @Autowired
-    private YjJitStockPusher yjJitStockPusher;
+    private YjStockPusher yjStockPusher;
 
     private static final JsonMapper MAPPER = JsonMapper.JSON_NON_EMPTY_MAPPER;
     @Autowired
@@ -57,22 +56,25 @@ public class YjJitInventoryPusher {
             log.warn("empty inventory change list.skip to push.");
             return;
         }
+
         //构造JIT店铺Map
-        if (jitShops.isEmpty()) {
-            List<OpenShop> shopList = Lists.newArrayList();
+        if (jitShops.isEmpty() || bbcShops.isEmpty()) {
             try {
-                shopList = stockPushLogic.getYjShop();
+                List<OpenShop> jitShopList = stockPushLogic.getShopByChannel(MiddleChannel.YUNJUJIT.getValue());
+                List<OpenShop> bbcShopList = stockPushLogic.getShopByChannel(MiddleChannel.YUNJUBBC.getValue());
+                jitShopList.forEach(openShop -> {
+                    jitShops.put(openShop.getId(), openShop);
+                });
+                bbcShopList.forEach(openShop -> {
+                    bbcShops.put(openShop.getId(), openShop);
+                });
             } catch (Exception e) {
                 log.error("failed init query all jit open shop list.", e);
                 return;
             }
-            shopList.forEach(openShop -> {
-                jitShops.put(openShop.getId(), openShop);
-            });
+
         }
-        changeDTOList.forEach(dto -> {
-            push(dto);
-        });
+        changeDTOList.forEach(this::push);
 
     }
 
@@ -111,24 +113,36 @@ public class YjJitInventoryPusher {
                 return;
             }
             response.getResult().forEach(openShopId -> {
-                if (jitShops.containsKey(openShopId)) {
+                if (jitShops.containsKey(openShopId) || bbcShops.containsKey(openShopId)) {
                     handle(openShopId, skuCodes, warehouseIds);
                 }
             });
         } else if (!Objects.isNull(dto.getShopId())) {
-            // 有shopId和SkuCode的情况
             shopId = dto.getShopId();
-            // 若不是JIT店铺 则不处理
-            if (!jitShops.containsKey(shopId)) {
-                log.warn("the shop is not jit shop.skip to handle.shopId:{}", shopId);
-                return;
+            if (jitShops.containsKey(shopId) || bbcShops.containsKey(shopId)) {
+                warehouseIds = stockPushLogic.getWarehouseIdsByShopId(shopId);
+                log.debug("yunju jit/bbc inventory push warehouseIds:{}", warehouseIds.toString());
+                handle(shopId, skuCodes, warehouseIds);
             }
-            warehouseIds = stockPushLogic.getWarehouseIdsByShopId(shopId);
-            log.debug("yunju jit inventory push warehouseIds:{}", warehouseIds.toString());
-            handle(shopId, skuCodes, warehouseIds);
         } else {
             //仓库为空且店铺为空的情况 在YjJitStockPusher里处理。外层已经条件过滤了。不会执行到这里。故此处不处理
             log.warn("skip to handle only include skuCode info.param:{}", MAPPER.toJson(dto));
+        }
+    }
+
+    private void handle(Long shopId, List<String> skuCodes, List<Long> warehouseIds) {
+        if (jitShops.containsKey(shopId)) {
+            Table<String, Long, Long> stocks = collectStocks(shopId, skuCodes, warehouseIds);
+            log.debug("yunju jit inventory push stocks:{}", stocks == null ? null : stocks.toString());
+            //调用云聚接口推送库存
+            yjStockPusher.send(shopId, stocks, null);
+        }
+        if (bbcShops.containsKey(shopId)) {
+            Table<String, Long, Long> stocks = collectStocks(shopId, skuCodes, warehouseIds);
+            log.debug("yunju bbc inventory push stocks:{}", stocks == null ? null : stocks.toString());
+            String visualWarehouseCode = bbcShops.get(shopId).getExtra().get(TradeConstants.VISUAL_WAREHOUSE_CODE);
+            //调用云聚接口推送库存
+            yjStockPusher.send(shopId, stocks, visualWarehouseCode);
         }
     }
 
@@ -139,32 +153,27 @@ public class YjJitInventoryPusher {
      * @param skuCodes
      * @param warehouseIds
      */
-    private void handle(Long shopId, List<String> skuCodes, List<Long> warehouseIds) {
+    private Table<String, Long, Long> collectStocks(Long shopId, List<String> skuCodes, List<Long> warehouseIds) {
         //店铺商品分组
         List<String> filteredSkuCodes = stockPushLogic.filterShopSkuGroup(shopId, skuCodes);
-        log.debug("yunju jit inventory push filteredSkuCodes:{}", filteredSkuCodes == null ? null : filteredSkuCodes.toString());
+        log.debug("yunju inventory push filteredSkuCodes:{}", filteredSkuCodes == null ? null : filteredSkuCodes.toString());
         //店铺库存推送规则是否启用
         ShopStockRule shopStockRule = warehouseShopRuleClient.findByShopId(shopId);
-        if(shopStockRule.getStatus().intValue()<0){
+        if(shopStockRule.getStatus() < 0){
             log.warn("there is no valid stock push rule for shop(id={}), so skip to continue", shopId);
-            return;
+            return null;
         }
         //库存推送规则
         Map<String, ShopStockRuleDto> warehouseShopStockRules = stockPushLogic.getWarehouseShopStockRules(shopId,
             filteredSkuCodes);
-        log.debug("yunju jit inventory push warehouseShopStockRules:{}",
+        log.debug("yunju inventory push warehouseShopStockRules:{}",
             warehouseShopStockRules == null ? null : warehouseShopStockRules.toString());
         //过滤仓库商品分组
         Map<String, List<Long>> skuWareshouseIds = stockPushLogic.filterWarehouseSkuGroup(shopId, filteredSkuCodes,
             warehouseIds);
-        log.debug("yunju jit inventory push skuWareshouseIds:{}",
+        log.debug("yunju inventory push skuWareshouseIds:{}",
             skuWareshouseIds == null ? null : skuWareshouseIds.toString());
         //计算可用可用库存
-        Table<String, Long, Long> stocks = yjJitStockPusher.calculate(shopId, skuWareshouseIds,
-            warehouseShopStockRules);
-        log.debug("yunju jit inventory push stocks:{}", stocks == null ? null : stocks.toString());
-        //调用云聚接口推送库存
-        yjJitStockPusher.send(shopId, stocks);
+        return yjStockPusher.calculate(shopId, skuWareshouseIds, warehouseShopStockRules);
     }
-
 }

@@ -23,6 +23,8 @@ public class SkuStockRuleImportInfo implements Serializable{
 
     private Long userId;
 
+    private Boolean delta;
+
     public String getFilePath() {
         return filePath;
     }

@@ -17,7 +17,7 @@ public class StockPusherClient {
     @Autowired
     private ShopStockPusher stockPusher;
     @Autowired
-    private YjJitStockPusher yjJitStockPusher;
+    private YjStockPusher yjStockPusher;
 
     public void submit(List<String> skuCodes){
         if (log.isDebugEnabled()) {
@@ -26,7 +26,7 @@ public class StockPusherClient {
         //按店铺推送前端店铺(官网、天猫、京东、苏宁、咕咚)
         stockPusher.push(skuCodes);
         //按仓库推送前端店铺（云聚Jit）
-        yjJitStockPusher.push(skuCodes);
+        yjStockPusher.push(skuCodes);
         if (log.isDebugEnabled()) {
             log.debug("STOCK-PUSHER-CLIENT-SUBMIT-END param: skuCodes:{},end time:{}", skuCodes, System.currentTimeMillis());
         }

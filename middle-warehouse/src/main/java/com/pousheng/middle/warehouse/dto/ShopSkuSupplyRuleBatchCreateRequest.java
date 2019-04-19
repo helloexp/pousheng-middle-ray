@@ -45,4 +45,7 @@ public class ShopSkuSupplyRuleBatchCreateRequest implements Serializable {
 
     @ApiModelProperty(value = "仓库列表", position = 8)
     private List<String> warehouses;
+
+    @ApiModelProperty(value = "增量创建", position = 9)
+    private Boolean delta;
 }

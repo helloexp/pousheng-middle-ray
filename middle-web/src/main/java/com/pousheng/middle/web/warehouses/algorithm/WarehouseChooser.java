@@ -278,7 +278,7 @@ public class WarehouseChooser {
             Long candidateWarehouseId = WarehouseChooseUtil.getWarehouseIdForRegion(warehouseWithPriorities, widskucode2stock, skuCodeAndQuantityMultimap);
             if (candidateWarehouseId == null) {
                 for (String skuCode : skuCodeAndQuantityMultimap.keySet()) {
-                    log.warn("insufficient sku(skuCode={}) stock: ", skuCode);
+                    log.warn("insufficient sku(skuCode={}) stock: {}", skuCode, skuCodeAndQuantityMultimap);
                 }
                 return Collections.emptyList();
             }
@@ -347,7 +347,7 @@ public class WarehouseChooser {
                     warehouseWithPriorities, skuCodeQuantityTable, skuCodeAndQuantityMultimap);
             if (candidateWarehouseId == null) {
                 for (String skuCode : skuCodeAndQuantityMultimap.keySet()) {
-                    log.warn("insufficient sku(skuCode={}) stock: ", skuCode);
+                    log.warn("insufficient sku(skuCode={}) stock: {}", skuCode, skuCodeAndQuantityMultimap.get(skuCode));
                 }
                 // 这里有问题啊，如果中途不匹配，result 是可能有值的（重构老功能，这里逻辑先不改了）
                 return result;

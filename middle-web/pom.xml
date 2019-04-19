@@ -5,13 +5,19 @@
     <parent>
         <artifactId>pousheng-middle</artifactId>
         <groupId>com.pousheng</groupId>
-        <version>4.4.5.RELEASE</version>
+        <version>4.5.1.RELEASE</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>middle-web</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>io.terminus</groupId>
+            <artifactId>excel-engine-spring-boot-starter</artifactId>
+            <version>${excel-engine.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>io.terminus.boot.rpc</groupId>
             <artifactId>rpc-common</artifactId>

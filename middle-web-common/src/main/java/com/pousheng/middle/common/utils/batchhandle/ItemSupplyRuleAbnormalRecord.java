@@ -18,6 +18,9 @@ public class ItemSupplyRuleAbnormalRecord {
     @ExportTitle("店铺标识(账套-外码)")
     private String shop;
 
+    @ExportTitle("货号")
+    private String materialCode;
+
     @ExportTitle("货品条码")
     private String skuCode;
 

@@ -16,3 +16,4 @@ mybatis:
 logging:
   level:
     root: INFO
+    Task: debug

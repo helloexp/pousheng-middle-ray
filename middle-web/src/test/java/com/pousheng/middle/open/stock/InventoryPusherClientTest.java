@@ -23,7 +23,7 @@ public class InventoryPusherClientTest {
     private ShopInventoryPusher shopInventoryPusher;
 
     @Mock
-    private YjJitInventoryPusher yjJitInventoryPusher;
+    private YjInventoryPusher yjInventoryPusher;
 
     @Before
     public void setUp() throws Exception {

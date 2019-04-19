@@ -67,7 +67,7 @@ public class OpenClientOrderLogic {
         //组装参数,查询店铺信息
         OpenShop openShop = openShopCacher.findById(orderInfo.getOrder().getShopId());
         //组装订单信息
-        OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(orderInfo);
+        OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(orderInfo, openShop);
         //插入订单
         orderReceiver.receiveOrder(OpenClientShop.from(openShop), Lists.newArrayList(openClientFullOrder));
         log.info("End to create middle order,outOrderId is {}",orderInfo.getOrder().getOutOrderId());
@@ -109,7 +109,7 @@ public class OpenClientOrderLogic {
             List<OpenFullOrderInfo> openFullOrderInfos = mulitMaps.get(shopId);
             List<OpenClientFullOrder> openClientFullOrders  = Lists.newArrayList();
             for (OpenFullOrderInfo openFullOrderInfo:openFullOrderInfos){
-                OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo);
+                OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo, openShop);
                 openClientFullOrders.add(openClientFullOrder);
             }
             //插入订单

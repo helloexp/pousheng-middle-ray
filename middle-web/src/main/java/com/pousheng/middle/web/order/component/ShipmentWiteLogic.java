@@ -468,6 +468,7 @@ public class ShipmentWiteLogic {
                 autoHandleAllChannelOrderByNewLogic(shopOrder);
                 return;
             }
+            // 云聚全渠道
             shipmentWiteLogic.toDispatchOrder(shopOrder);
             log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...", shopOrder.getId(), shopOrder.getOutId());
         } else {

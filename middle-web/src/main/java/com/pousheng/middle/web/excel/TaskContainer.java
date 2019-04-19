@@ -180,20 +180,41 @@ public class TaskContainer implements Runnable {
     }
 
     public boolean tryKill(Object taskKey, Long timeout, TimeUnit unit) throws InterruptedException {
-        if (currentTask == null) {
+        if (currentTask == null && Q.isEmpty()) {
             return false;
         }
 
-        if (currentTask.equalsTo(taskKey)) {
-            boolean success = currentTask.stop(timeout, unit);
-            if (!success) {
+        if (currentTask != null) {
+            if (!doKill(currentTask, taskKey, timeout, unit)) {
                 log.warn("[TASK-CONTAINER] kill task timeout, force restart executor now.");
                 shutdownNow();
                 init();
                 start();
                 log.info("[TASK-CONTAINER] force restart finished.");
+                return false;
             }
             return true;
+        }
+
+        for (AbstractSimpleTask task : Q) {
+            if (doKill(task, taskKey)) {
+                Q.remove(task);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean doKill(AbstractSimpleTask task, Object key) {
+        if (task.equalsTo(key)) {
+            return task.stop();
+        }
+        return false;
+    }
+
+    private boolean doKill(AbstractSimpleTask task, Object key, Long timeout, TimeUnit unit) throws InterruptedException {
+        if (task.equalsTo(key)) {
+            return task.stop(timeout, unit);
         }
         return false;
     }

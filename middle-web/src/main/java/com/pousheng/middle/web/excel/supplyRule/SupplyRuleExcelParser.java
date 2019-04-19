@@ -101,7 +101,9 @@ public class SupplyRuleExcelParser implements TaskBehaviour {
     @Override
     public void onStop() {
         log.info("[SUPPLY-RULE-EXCEL-PARSER] parse stopped.");
-        excelReader.stop();
+        if (excelReader != null) {
+            excelReader.stop();
+        }
         this.stopped = true;
         updateTaskStatus(TaskStatusEnum.STOPPED);
     }

@@ -1066,7 +1066,7 @@ alter table pousheng_trade_express_code add column vip_code varchar(64)  COMMENT
 alter table parana_shipments add `dispatch_type` tinyint DEFAULT NULL comment '派单类型 1为自动派单 2为手动派单' after is_occupy_shipment;
 alter table parana_shipments add `must_ship` tinyint DEFAULT 0 comment '是否必发货 0为否 1为是' after is_occupy_shipment;
 
-create table pousheng_tasks (
+create table if not exists pousheng_tasks (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `status`          varchar(32) default null comment '状态',
   `type`            varchar(32) default null comment '类型',

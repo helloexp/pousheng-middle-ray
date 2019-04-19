@@ -95,7 +95,7 @@ public class OpenClientOrderApi {
                     //业务参数校验
                     this.validateBusiParam(openFullOrderInfo);
                     //组装参数
-                    OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo);
+                    OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo, openShop);
                     biz.setBizType(PoushengCompensateBizType.OPEN_ORDER_IMPORT.toString());
                     biz.setContext(mapper.toJson(openClientFullOrder));
                 } else {

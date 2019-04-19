@@ -5,11 +5,13 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
+import com.pousheng.middle.order.constant.TradeConstants;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.constants.ParanaTradeConstants;
 import io.terminus.open.client.item.model.PushedItem;
 import io.terminus.open.client.item.service.PushedItemReadService;
@@ -17,7 +19,6 @@ import io.terminus.open.client.order.dto.*;
 import io.terminus.open.client.order.enums.OpenClientOrderPayType;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
 import io.terminus.parana.common.constants.JitConsts;
-import io.terminus.parana.common.exception.InvalidException;
 import io.terminus.parana.order.dto.fsm.OrderStatus;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
@@ -29,7 +30,6 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -67,11 +67,9 @@ public class OpenOrderConverter {
      * @param openFullOrderInfo
      * @return
      */
-    public OpenClientFullOrder transform(OpenFullOrderInfo openFullOrderInfo) {
-
+    public OpenClientFullOrder transform(OpenFullOrderInfo openFullOrderInfo, OpenShop openShop) {
 
         OpenClientFullOrder fullOrder = new OpenClientFullOrder();
-
         OpenFullOrder order = openFullOrderInfo.getOrder();
         fullOrder.setOrderId(String.valueOf(order.getOutOrderId()));
         fullOrder.setStatus(handleResultStats(order));
@@ -281,11 +279,15 @@ public class OpenOrderConverter {
             if(CollectionUtils.isEmpty(fullOrder.getExtra())){
                 extraMap = Maps.newHashMap();
             }
-            extraMap.put(ParanaTradeConstants.ASSIGN_WAREHOUSE_ID,order.getStockId());
-            extraMap.put("importOrder","false");
-
+            log.debug("stockId: {}", order.getStockId());
+            String visualWarehouseCode = openShop.getExtra().get(TradeConstants.VISUAL_WAREHOUSE_CODE);
+            // 没有虚仓才按照指定仓库寻源，如果有虚仓默认不指定仓库
+            if (StringUtils.isEmpty(visualWarehouseCode) || !Objects.equals(order.getStockId(), visualWarehouseCode)) {
+                extraMap.put(ParanaTradeConstants.ASSIGN_WAREHOUSE_ID,order.getStockId());
+                extraMap.put("importOrder","false");
+            }
+            log.debug("订单 extra 信息:{}", extra);
         }
-
         return fullOrder;
     }
 

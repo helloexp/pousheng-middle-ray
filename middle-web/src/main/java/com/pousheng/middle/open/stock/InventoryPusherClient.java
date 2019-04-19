@@ -23,7 +23,7 @@ public class InventoryPusherClient {
     private ShopInventoryPusher shopInventoryPusher;
 
     @Autowired
-    private YjJitInventoryPusher yjJitInventoryPusher;
+    private YjInventoryPusher yjInventoryPusher;
 
     private static final JsonMapper MAPPER = JsonMapper.JSON_NON_EMPTY_MAPPER;
 
@@ -42,7 +42,7 @@ public class InventoryPusherClient {
         }
         shopInventoryPusher.push(changeDTOList);
 
-        yjJitInventoryPusher.push(changeDTOList);
+        yjInventoryPusher.push(changeDTOList);
         stopwatch.stop();
         log.info("INVENTORY-PUSHER-CLIENT-SUBMIT-END,end time:{}ms",
             stopwatch.elapsed(TimeUnit.MILLISECONDS));

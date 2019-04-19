@@ -8,10 +8,10 @@ import org.mockito.InjectMocks;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class YjJitInventoryPusherTest {
+public class YjInventoryPusherTest {
 
     @InjectMocks
-    private YjJitInventoryPusher yjJitInventoryPusher;
+    private YjInventoryPusher yjInventoryPusher;
 
     @Before
     public void setUp() throws Exception {
@@ -19,7 +19,7 @@ public class YjJitInventoryPusherTest {
 
     @Test
     public void push() {
-        yjJitInventoryPusher.push(Lists.newArrayList());
+        yjInventoryPusher.push(Lists.newArrayList());
     }
 
     @Test

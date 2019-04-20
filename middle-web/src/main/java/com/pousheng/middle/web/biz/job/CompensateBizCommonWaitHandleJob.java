@@ -1,6 +1,8 @@
 package com.pousheng.middle.web.biz.job;
 
 import com.google.common.base.Stopwatch;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -45,6 +47,8 @@ public class CompensateBizCommonWaitHandleJob {
     private HostLeader hostLeader;
     @Autowired
     private ServerSwitchOnOperationLogic serverSwitchOn;
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
 
     @Scheduled(cron = "0 */7 * * * ?")
@@ -90,14 +94,15 @@ public class CompensateBizCommonWaitHandleJob {
                     log.warn("common compensate biz not right ,id {},bizType {}",compensateBiz.getId(),compensateBiz.getBizType());
                     continue;
                 }
-                //乐观锁控制更新为处理中
-                Response<Boolean> rU=  compensateBizWriteService.updateStatus(compensateBiz.getId(),compensateBiz.getStatus(),PoushengCompensateBizStatus.PROCESSING.name());
-                if (!rU.isSuccess()){
-                    continue;
-                }
-                //业务处理
-                this.process(compensateBiz);
-
+                // 调整为 mq 异步处理
+                // //乐观锁控制更新为处理中
+                // Response<Boolean> rU=  compensateBizWriteService.updateStatus(compensateBiz.getId(),compensateBiz.getStatus(),PoushengCompensateBizStatus.PROCESSING.name());
+                // if (!rU.isSuccess()){
+                //     continue;
+                // }
+                // //业务处理
+                // this.process(compensateBiz);
+                compensateBizLogic.reSendBiz(compensateBiz, MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
             }
             pageNo++;
 

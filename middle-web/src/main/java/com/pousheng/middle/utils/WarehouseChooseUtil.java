@@ -8,6 +8,7 @@ import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
 import com.pousheng.middle.warehouse.dto.*;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.shop.model.Shop;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Objects;
@@ -16,6 +17,7 @@ import java.util.Objects;
  * @author Xiongmin
  * 2019/3/19
  */
+@Slf4j
 public class WarehouseChooseUtil {
 
     /**
@@ -55,6 +57,9 @@ public class WarehouseChooseUtil {
     public static String getWarehouseIdForPackage(List<DispatchWithPriority> dispatchWithPriorities,
                                                 Table<String, String, Integer> allSkuCodeQuantityTable,
                                                ArrayListMultimap<String, SkuCodeAndQuantity> skuCodeAndQuantityMultimap) {
+        log.info("warehouseChooseUtil.dispatchWithPriorities:{}", dispatchWithPriorities);
+        log.info("warehouseChooseUtil.allSkuCodeQuantityTable:{}", allSkuCodeQuantityTable);
+        log.info("warehouseChooseUtil.skuCodeAndQuantityMultimap:{}", skuCodeAndQuantityMultimap);
         int affordCount = 0;
         String candidateWarehouseId = null;
         for (DispatchWithPriority dispatchWithPriority : dispatchWithPriorities) {
@@ -74,6 +79,7 @@ public class WarehouseChooseUtil {
                 candidateWarehouseId = warehouseOrShopId;
             }
         }
+        log.info("warehouseChooseUtil.candidateWarehouseId:{}", candidateWarehouseId);
         return candidateWarehouseId;
     }
 

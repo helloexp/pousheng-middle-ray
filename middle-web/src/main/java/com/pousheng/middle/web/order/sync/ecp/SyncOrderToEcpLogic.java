@@ -146,6 +146,7 @@ public class SyncOrderToEcpLogic {
             List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrder.getId());
             List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
                     .filter(it -> !Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(), it.getStatus()) && !Objects.equals(MiddleShipmentsStatus.REJECTED.getValue(), it.getStatus())).collect(Collectors.toList());
+            String lastFailReason = "sync.ecp.fail";
             int count = 0;//判断是否存在同步淘宝失败的发货单
             for (OrderShipment orderShipment : orderShipmentsFilter) {
                 Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(orderShipment.getShipmentId()));
@@ -208,6 +209,9 @@ public class SyncOrderToEcpLogic {
                     if (response.isSuccess()) {
                         shipmentWiteLogic.updateShipmentSyncTaobaoStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_SUCCESS.toOrderOperation());
                     } else {
+                        lastFailReason = response.getError();
+                        log.error("failed to sync Shipment(id={}) ecp cause: {}", shipment.getId(), lastFailReason);
+
                         count++;
                         shipmentWiteLogic.updateShipmentSyncTaobaoStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
                     }
@@ -226,7 +230,7 @@ public class SyncOrderToEcpLogic {
                 //同步失败
                 OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
                 orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
-                return Response.fail("sync.ecp.fail");
+                return Response.fail(lastFailReason);
             }
         } catch (Exception e) {
             log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), Throwables.getStackTraceAsString(e));

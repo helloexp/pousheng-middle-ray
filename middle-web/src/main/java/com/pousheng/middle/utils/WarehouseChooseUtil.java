@@ -1,9 +1,7 @@
 package com.pousheng.middle.utils;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Table;
+import com.google.common.collect.*;
 import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
 import com.pousheng.middle.warehouse.dto.*;
 import io.terminus.common.utils.Splitters;
@@ -103,7 +101,9 @@ public class WarehouseChooseUtil {
                 widskucode2stock.put(candidateWarehouseDTO.getId(), skuCode, stock - actual);
             }
         }
-        skuCodeAndQuantityMultimap.removeAll(matchedSkuCodes);
+        for (String matchedSkuCode : matchedSkuCodes) {
+            skuCodeAndQuantityMultimap.removeAll(matchedSkuCode);
+        }
         warehouseShipment.setSkuCodeAndQuantities(scaqs);
         result.add(warehouseShipment);
     }
@@ -116,9 +116,7 @@ public class WarehouseChooseUtil {
                                                String warehouseName,
                                                String shopName) {
         List<String> typeAndId = Splitters.COLON.splitToList(candidateWarehouseOrShopId);
-        String type = typeAndId.get(0);
         Long id = Long.valueOf(typeAndId.get(1));
-
 
         List<SkuCodeAndQuantity> scaqs = Lists.newArrayList();
         List<String> matchedSkuCodes = Lists.newArrayList();
@@ -134,7 +132,11 @@ public class WarehouseChooseUtil {
                 allSkuCodeQuantityTable.put(candidateWarehouseOrShopId, skuCode, stock - actual);
             }
         }
-        skuCodeAndQuantityMultimap.removeAll(matchedSkuCodes);
+
+        for (String matchedSkuCode : matchedSkuCodes) {
+            skuCodeAndQuantityMultimap.removeAll(matchedSkuCode);
+        }
+
         if (Objects.nonNull(warehouseName)) {
             WarehouseShipment warehouseShipment = new WarehouseShipment();
             warehouseShipment.setWarehouseId(id);

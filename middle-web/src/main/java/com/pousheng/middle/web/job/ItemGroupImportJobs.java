@@ -29,7 +29,9 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.spu.model.SkuTemplate;
+import io.terminus.parana.spu.model.SpuDetail;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
+import io.terminus.parana.spu.service.SpuReadService;
 import io.terminus.search.api.model.WithAggregations;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,6 +133,7 @@ public class ItemGroupImportJobs {
             ExcelExportHelper<AbnormalRecord> helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
             List<String[]> list = HandlerFileUtil.getInstance().handle(fileUrl);
             List<SkuTemplate> skuTemplates = Lists.newArrayList();
+
             for (int i = 1; i < list.size(); i++) {
                 String[] strs = list.get(i);
                 if (!Strings.isNullOrEmpty(strs[3]) && !"\"\"".equals(strs[3])) {
@@ -138,46 +141,50 @@ public class ItemGroupImportJobs {
                     String skuCode = strs[3].replace("\"", "");
                     try {
                         SearchSkuTemplate searchSkuTemplate = findSkuTemplate(skuCode);
-                        //不存在记录日志
-                        if (Arguments.isNull(searchSkuTemplate)) {
-                            appendErrorToExcel(helper, strs, "加入分组失败：不存在该商品");
-                            log.error("import make sku code:{} flag fail, error:{}", skuCode, "不存在该商品");
-                            continue;
-                        }
-                        if (searchSkuTemplate.getGroupIds() == null) {
-                            searchSkuTemplate.setGroupIds(Sets.newHashSet());
-                        }
-                        if (searchSkuTemplate.getExcludeGroupIds() == null) {
-                            searchSkuTemplate.setExcludeGroupIds(Sets.newHashSet());
-                        }
-                        Long skuTemplateId = searchSkuTemplate.getId();
-                        if (PsItemGroupSkuType.EXCLUDE.value().equals(type)
-                                && searchSkuTemplate.getExcludeGroupIds().contains(groupId)) {
-                            continue;
-                        }
-                        if (PsItemGroupSkuType.GROUP.value().equals(type)
-                                && searchSkuTemplate.getGroupIds().contains(groupId)) {
-                            continue;
-                        }
-                        //判断商品是否有效
-                        Response<SkuTemplate> skuTemplateRes = skuTemplateReadService.findById(skuTemplateId);
-                        if (!skuTemplateRes.isSuccess()) {
-                            log.error("find sku template by id:{} fail,error:{}", skuTemplateId, skuTemplateRes.getError());
-                            appendErrorToExcel(helper, strs, "加入分组失败：" + skuTemplateRes.getError());
+                        Response<SkuTemplate> skuTemplateRes = skuTemplateSuitableAddToGroup(searchSkuTemplate, groupId,
+                                type, helper, strs, skuCode);
+                        if (skuTemplateRes == null) {
                             continue;
                         }
                         skuTemplates.add(skuTemplateRes.getResult());
-                        //每1000条更新下mysql和search
-                        if (i % 1000 == 0) {
-                            //批量添加或删除映射关系
-                            batchHandle(skuTemplates, groupId, type);
-                            skuTemplates.clear();
-                        }
                     } catch (Exception jre) {
                         appendErrorToExcel(helper, strs, "处理失败");
                         log.error("import make item group sku code:{} flag fail, cause:{}",
                                 skuCode, Throwables.getStackTraceAsString(jre));
                     }
+                }else if(!Strings.isNullOrEmpty(strs[0]) && !"\"\"".equals(strs[0])) {
+                    // sku编码
+                    String spuCode = strs[0].replace("\"", "");
+                    try {
+                        List<SearchSkuTemplate> searchSkuTemplates = findSkuTemplateBySpuCode(spuCode);
+                        if (searchSkuTemplates == null) {
+                            appendErrorToExcel(helper, strs, "加入分组失败：不存在该商品");
+                            log.error("import make spu code:{} flag fail, error:{}", spuCode, "不存在该货号商品");
+                            continue;
+                        }
+                        for (int j = 0; j < searchSkuTemplates.size(); j++) {
+                            SearchSkuTemplate searchSkuTemplate = searchSkuTemplates.get(j);
+                            if (searchSkuTemplate == null) {
+                                continue;
+                            }
+                            Response<SkuTemplate> skuTemplateRes = skuTemplateSuitableAddToGroup(
+                                    searchSkuTemplate, groupId, type, helper, strs, searchSkuTemplate.getSkuCode());
+                            if (skuTemplateRes == null) {
+                                continue;
+                            }
+                            skuTemplates.add(skuTemplateRes.getResult());
+                        }
+                    } catch (Exception jre) {
+                        appendErrorToExcel(helper, strs, "处理失败");
+                        log.error("import make item group spu code:{} flag fail, cause:{}", spuCode,
+                                Throwables.getStackTraceAsString(jre));
+                    }
+                }
+                // 每1000条更新下mysql和search
+                if (skuTemplates.size() > 1000) {
+                    // 批量添加或删除映射关系
+                    batchHandle(skuTemplates, groupId, type);
+                    skuTemplates.clear();
                 }
             }
             //非1000条的更新下
@@ -199,6 +206,40 @@ public class ItemGroupImportJobs {
             log.error("async handle item group task error", Throwables.getStackTraceAsString(e));
         }
     }
+
+    private Response<SkuTemplate> skuTemplateSuitableAddToGroup(SearchSkuTemplate searchSkuTemplate, Long groupId,
+            Integer type,
+            ExcelExportHelper<AbnormalRecord> helper, String[] strs, String originSkuCode) {
+        // 不存在记录日志
+        if (Arguments.isNull(searchSkuTemplate)) {
+            appendErrorToExcel(helper, strs, "加入分组失败：不存在该商品");
+            log.error("import make sku code:{} flag fail, error:{}", originSkuCode, "不存在该商品");
+            return null;
+        }
+        if (searchSkuTemplate.getGroupIds() == null) {
+            searchSkuTemplate.setGroupIds(Sets.newHashSet());
+        }
+        if (searchSkuTemplate.getExcludeGroupIds() == null) {
+            searchSkuTemplate.setExcludeGroupIds(Sets.newHashSet());
+        }
+        if (PsItemGroupSkuType.EXCLUDE.value().equals(type)
+                && searchSkuTemplate.getExcludeGroupIds().contains(groupId)) {
+            return null;
+        }
+        if (PsItemGroupSkuType.GROUP.value().equals(type) && searchSkuTemplate.getGroupIds().contains(groupId)) {
+            return null;
+        }
+        Long skuTemplateId = searchSkuTemplate.getId();
+        Response<SkuTemplate> skuTemplateRes = skuTemplateReadService.findById(skuTemplateId);
+        if (!skuTemplateRes.isSuccess()) {
+            appendErrorToExcel(helper, strs, "加入分组失败：" + skuTemplateRes.getError());
+            log.error("find sku template by id:{} fail,error:{}", searchSkuTemplate.getId(), skuTemplateRes.getError());
+            return null;
+        }
+        return skuTemplateRes;
+    }
+
+
 
     private void batchHandle(List<SkuTemplate> skuTemplates, Long groupId, Integer type) {
         List<String> skuCodes = skuTemplates.stream().map(SkuTemplate::getSkuCode).collect(Collectors.toList());
@@ -243,6 +284,23 @@ public class ItemGroupImportJobs {
             return null;
         }
         return searchSkuTemplates.get(0);
+    }
+
+    private List<SearchSkuTemplate> findSkuTemplateBySpuCode(String spuCode) {
+        String templateName = "ps_search.mustache";
+        Map<String, String> params = Maps.newHashMap();
+        params.put("spuCode", spuCode);
+        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 20,
+                templateName, params, SearchSkuTemplate.class);
+        if (!response.isSuccess()) {
+            log.error("query sku template by spuCode:{} fail,error:{}", spuCode, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getData();
+        if (CollectionUtils.isEmpty(searchSkuTemplates)) {
+            return null;
+        }
+        return searchSkuTemplates;
     }
 
     private void appendErrorToExcel(ExcelExportHelper<AbnormalRecord> helper, String[] strs, String error) {

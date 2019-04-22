@@ -53,12 +53,19 @@ public class RefundReadLogic {
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
 
-    public Response<Paging<RefundPaging>> refundPaging(MiddleRefundCriteria criteria) {
-        Response<Paging<Refund>> refundsR = middleRefundReadService.paging(criteria);
-        if (!refundsR.isSuccess()) {
-            log.error("paging refund by criteria:{} fail,error:{}", criteria, refundsR.getError());
-            return Response.fail(refundsR.getError());
-        }
+	/**
+	 * XXX RAY 2019.04.19: POUS 476 新增是否完善退物流，退回快遞單號、及退貨入庫時間進行篩選
+	 * 
+	 * @param criteria
+	 * @return
+	 */
+	public Response<Paging<RefundPaging>> refundPaging(MiddleRefundCriteria criteria) {
+		// Response<Paging<Refund>> refundsR = middleRefundReadService.paging(criteria);
+		Response<Paging<Refund>> refundsR = middleRefundReadService.pagingNew(criteria);
+		if (!refundsR.isSuccess()) {
+			log.error("paging refund by criteria:{} fail,error:{}", criteria, refundsR.getError());
+			return Response.fail(refundsR.getError());
+		}
 
         Paging<Refund> refundPaging = refundsR.getResult();
         List<Refund> refunds = refundPaging.getData();
@@ -90,6 +97,7 @@ public class RefundReadLogic {
         if (CollectionUtils.isEmpty(refunds)) {
             return Response.ok(Maps.newHashMap());
         }
+        // 轉換物件
         List<Long> refundIds = Lists.transform(refunds, new Function<Refund, Long>() {
             @Nullable
             @Override

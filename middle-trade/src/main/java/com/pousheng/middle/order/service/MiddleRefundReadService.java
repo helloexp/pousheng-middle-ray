@@ -36,4 +36,11 @@ public interface MiddleRefundReadService {
      */
     Response<List<OrderRefund>> findOrderRefundsByOrderId(Long shopOrderId);
 
+	/**
+	 * XXX RAY 2019.04.19 新增是否完善退物流，退回快遞單號、及退貨入庫時間進行篩選 
+	 * 
+	 * @param criteria 逆向订单查询条件
+	 * @return 逆向订单集合
+	 */
+	Response<Paging<Refund>> pagingNew(MiddleRefundCriteria criteria);
 }

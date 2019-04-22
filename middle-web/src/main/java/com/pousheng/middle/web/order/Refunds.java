@@ -200,6 +200,7 @@ public class Refunds {
         //} else if (!currentUserCanOperateShopIds.contains(criteria.getShopId())) {
         //    throw new JsonResponseException("permission.check.query.deny");
         //}
+        
 
 
         Response<Paging<RefundPaging>> pagingRes = refundReadLogic.refundPaging(criteria);

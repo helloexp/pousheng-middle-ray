@@ -18,4 +18,145 @@
     </update>
 
 
+	<!-- RAY 2019.04.22: 增加對應SQL START -->
+    <sql id="cols_all">
+        id,
+        <include refid="cols_exclude_id"/>
+    </sql>
+
+    <sql id="cols_exclude_id">
+        `refund_code`,`after_sale_id`,`rele_order_code`,`refund_type`,`fee`,`diff_fee`,`shop_id`,`shop_name`,`buyer_id`, `buyer_name`, `out_id`,`integral`,`balance`,`status`,`refund_serial_no`,`payment_id`,
+        `trade_no`,`pay_serial_no`,`refund_account_no`, `channel`,`buyer_note`, `seller_note`, `shipment_serial_no`, `shipment_corp_code`,
+        `extra_json`,`tags_json`,`refund_at`,`created_at`,`updated_at`
+    </sql>
+    
+	<sql id="criteriaNew">
+		<if test="id!=null">AND id=#{id}</if>
+		<if test="refundCode!=null">AND refund_code=#{refundCode}</if>
+		<if test="releOrderCode!=null">AND rele_order_code=#{releOrderCode}</if>
+		<if test="shopId!=null">AND shop_id=#{shopId}</if>
+		<if test="buyerId!=null">AND buyer_id=#{buyerId}</if>
+		<if test="buyerName!=null">AND buyer_name=#{buyerName}</if>
+		<if test="channels!=null">
+			AND channel IN
+			<foreach collection="channels" open="(" separator="," close=")" item="s">
+				#{s}
+			</foreach>
+		</if>
+		<if test="shopIds != null">
+			AND shop_id IN
+			<foreach collection="shopIds" open="(" separator="," close=")" item="shopId">
+				#{shopId}
+			</foreach>
+		</if>
+		<if test="excludeRefundType!=null">AND refund_type!=#{excludeRefundType}</if>
+		<if test="sellerNote!=null">AND seller_note=#{sellerNote}</if>
+		<if test="status!=null">
+			AND status IN
+			<foreach collection="status" open="(" separator="," close=")" item="s">
+				#{s}
+			</foreach>
+		</if>
+		<if test="startAt != null">AND <![CDATA[updated_at >= #{startAt}]]></if>
+		<if test="endAt != null">AND <![CDATA[updated_at <= #{endAt}]]></if>
+		<if test="refundStartAt != null">AND <![CDATA[refund_at >= #{refundStartAt}]]></if>
+		<if test="refundEndAt != null">AND <![CDATA[refund_at <= #{refundEndAt}]]></if>
+		<if test="ids != null">
+			AND id IN
+			<foreach collection="ids" open="(" separator="," close=")" item="i">
+				#{i}
+			</foreach>
+		</if>
+		<if test="refundType != null">AND `refund_type` = #{refundType}</if>
+		<if test="shipmentSerialNo != null">AND shipment_serial_no = #{shipmentSerialNo}</if>
+		<if test="shipmentCorpCode != null">AND shipment_corp_code = #{shipmentCorpCode}</if>
+		<if test="returnSerialNo != null">
+			<![CDATA[AND jsonObj ->> '$.shipmentSerialNo' = #{returnSerialNo}]]>
+		</if>
+		<!-- 2019.04.19 POUS 476
+			退回快递单号取refunds表中Extra_json 中‘shipmentSerialNo’字段；
+			退回快递公司取refunds表中Extra_json 中‘shipmentCorpName’字段；
+			如果这两个字段只要有一个为空，暨是否完善退货物流为“否”,两个字段均有值即为“是”
+		 -->
+		<if test="completeReturn != null">
+			<choose>
+				<when test="completeReturn == '1'"> <!-- 是 -->
+					AND JSON_CONTAINS_PATH(A.jsonObj, 'all', '$.shipmentSerialNo', '$.shipmentCorpName')
+				</when>
+				<otherwise> <!-- 否 -->
+				    AND JSON_CONTAINS_PATH(A.jsonObj, 'one', '$.shipmentSerialNo', '$.shipmentCorpName')
+				</otherwise>
+			</choose>
+		</if>	
+		<!-- 退貨入庫時間，取hkReturnDoneAt屬性，資料庫為Long -->	
+		<if test="timeReturnReceiveStartAt != null">
+			<![CDATA[AND A.jsonObj ->> '$.hkReturnDoneAt' >= #{timeReturnReceiveStartAt}]]>
+		</if>
+		<if test="timeReturnReceiveEndAt != null">
+			<![CDATA[AND A.jsonObj ->> '$.hkReturnDoneAt' <= #{timeReturnReceiveEndAt}]]>
+		</if>		
+	</sql>
+	<!-- 子查詢，取出 extra_json.refundExtraInfo字段-->
+    <sql id="subQueryTable">
+        (
+        SELECT
+        <include refid="cols_all"/>, <![CDATA[extra_json ->> '$.refundExtraInfo' as jsonObj]]>
+        FROM 
+        <include refid="tb"/>
+        WHERE extra_json ->> '$.refundExtraInfo' IS NOT NULL 
+        ) AS A
+    </sql>    
+    <select id="countNew" parameterType="map" resultType="long">
+        SELECT COUNT(1)
+        FROM
+        <include refid="subQueryTable"/>
+        <where>
+            <include refid="criteriaNew"/>
+        </where>
+    </select>
+    <!-- DB欄位對應JAVA BEAN設定 -->
+	<resultMap id="RefundMap" type="Refund">
+		<id column="id" property="id" />
+		<result column="refund_code" property="refundCode" />
+		<result column="after_sale_id" property="afterSaleId" />
+		<result column="rele_order_code" property="releOrderCode" />
+		<result column="refund_type" property="refundType" />
+		<result column="fee" property="fee" />
+		<result column="diff_fee" property="diffFee" />
+		<result column="shop_id" property="shopId" />
+		<result column="shop_name" property="shopName" />
+		<result column="buyer_id" property="buyerId" />
+		<result column="buyer_name" property="buyerName" />
+		<result column="out_id" property="outId" />
+		<result column="integral" property="integral" />
+		<result column="balance" property="balance" />
+		<result column="status" property="status" />
+		<result column="refund_serial_no" property="refundSerialNo" />
+		<result column="payment_id" property="paymentId" />
+		<result column="trade_no" property="tradeNo" />
+		<result column="pay_serial_no" property="paySerialNo" />
+		<result column="refund_account_no" property="refundAccountNo" />
+		<result column="channel" property="channel" />
+		<result column="buyer_note" property="buyerNote" />
+		<result column="seller_note" property="sellerNote" />
+		<result column="shipment_serial_no" property="shipmentSerialNo" />
+		<result column="shipment_corp_code" property="shipmentCorpCode" />
+		<result column="extra_json" property="extraJson" />
+		<result column="tags_json" property="tagsJson" />
+		<result column="refund_at" property="refundAt" />
+		<result column="created_at" property="createdAt" />
+		<result column="updated_at" property="updatedAt" />
+	</resultMap>
+	<!-- 自訂回傳類別 -->
+    <select id="pagingNew" parameterType="map" resultMap="RefundMap">
+        SELECT <include refid="cols_all"/> 
+        FROM 
+        <include refid="subQueryTable"/>
+        <where>
+            <include refid="criteriaNew"/>
+        </where>
+        ORDER by id desc
+        LIMIT #{offset}, #{limit}
+    </select>    
+    <!-- 增加對應SQL END -->      
 </mapper>

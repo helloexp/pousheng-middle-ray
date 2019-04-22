@@ -38,6 +38,11 @@ public class MiddleRefundReadServiceImpl implements MiddleRefundReadService {
     private RefundDao refundDao;
     @Autowired
     private OrderRefundDao orderRefundDao;
+	/**
+	 * XXX RAY 2019.04.19: 客製化查詢
+	 */
+	@Autowired
+	private RefundExtDao refundExtDao;
 
     @Override
     public Response<Paging<Refund>> paging(MiddleRefundCriteria criteria) {
@@ -98,14 +103,24 @@ public class MiddleRefundReadServiceImpl implements MiddleRefundReadService {
         }
     }
 
-    private void handleDate(RefundCriteria refundCriteria) {
-        if (refundCriteria.getStartAt() != null) {
-            refundCriteria.setStartAt(DateUtil.withTimeAtStartOfDay(refundCriteria.getStartAt()));
-        }
-        if (refundCriteria.getEndAt() != null) {
-            refundCriteria.setEndAt(DateUtil.withTimeAtEndOfDay(refundCriteria.getEndAt()));
-        }
-    }
+    /**
+     * XXX RAY 2019.04.19: 設定日期 新增退貨入庫時間起，企
+     * @param refundCriteria
+     */
+	private void handleDate(RefundCriteria refundCriteria) {
+		if (refundCriteria.getStartAt() != null) {
+			refundCriteria.setStartAt(DateUtil.withTimeAtStartOfDay(refundCriteria.getStartAt()));
+		}
+		if (refundCriteria.getEndAt() != null) {
+			refundCriteria.setEndAt(DateUtil.withTimeAtEndOfDay(refundCriteria.getEndAt()));
+		}
+		if (refundCriteria.getRefundStartAt() != null) { // 退貨入庫時間起
+			refundCriteria.setRefundStartAt(DateUtil.withTimeAtStartOfDay(refundCriteria.getRefundStartAt()));
+		}
+		if (refundCriteria.getRefundEndAt() != null) { // 退貨入庫時間迄
+			refundCriteria.setRefundEndAt(DateUtil.withTimeAtEndOfDay(refundCriteria.getRefundEndAt()));
+		}
+	}
 
 
     private void transformOrderIdAndOrderType(MiddleRefundCriteria refundCriteria) {
@@ -124,5 +139,35 @@ public class MiddleRefundReadServiceImpl implements MiddleRefundReadService {
     private List<Long> retrieveRefundIds(List<OrderRefund> orderRefunds) {
         return Lists.transform(orderRefunds, OrderRefund::getRefundId);
     }
+
+	/**
+	 * XXX RAY 2019.04.19 新增是否完善退物流，退回快遞單號、及退貨入庫時間進行篩選
+	 * 
+	 * @param criteria 逆向订单查询条件
+	 * @return 逆向订单集合
+	 */
+	@Override
+	public Response<Paging<Refund>> pagingNew(MiddleRefundCriteria criteria) {
+		try {
+			// Copy
+			// 把订单id,订单类型转为退款单id列表
+			transformOrderIdAndOrderType(criteria);
+			if (StringUtils.isNotEmpty(criteria.getOrderCode()) && CollectionUtils.isEmpty(criteria.getIds())) {
+				return Response.ok(Paging.empty());
+			}
+			handleDate(criteria);
+			Map<String, Object> params = criteria.toMap();
+
+			// custom select
+			Paging<Refund> result = refundExtDao.pagingNew(new PageInfo(criteria.getPageNo(), criteria.getSize()), params);
+			if (Objects.equals(result.getTotal(), 0L)) {
+				return Response.ok(Paging.<Refund>empty());
+			}
+			return Response.ok(result);
+		} catch (Exception e) {
+			log.error("failed to find order refunds by {}, cause:{}", criteria, Throwables.getStackTraceAsString(e));
+			return Response.fail("order.refund.find.fail");
+		}
+	}
 
 }

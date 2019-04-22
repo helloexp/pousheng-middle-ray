@@ -36,6 +36,23 @@ public class MiddleRefundCriteria extends RefundCriteria implements Serializable
 
 
     private String orderCode;
+    
+	/**
+	 * RAY 2019.04.19 POUS-476: 退回快遞單號
+	 */
+	private String returnSerialNo;
+	/**
+	 * RAY 2019.04.19 POUS-476: 完善退货物流
+	 */
+	private String completeReturn;
+	/**
+	 * RAY 2019.04.19 POUS-476: 退貨入庫時間起
+	 */
+	private Date returnReceiveStartAt;
+	/**
+	 * RAY 2019.04.19 POUS-476: 退貨入庫時間迄
+	 */
+	private Date returnReceiveEndAt;
 
     private Integer refundFlag;
 

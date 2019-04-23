@@ -203,7 +203,7 @@ public class ItemGroupImportJobs {
         } catch (Exception e) {
             scheduleTask.setStatus(TaskStatusEnum.ERROR.value());
             scheduleTaskWriteService.update(scheduleTask);
-            log.error("async handle item group task error", Throwables.getStackTraceAsString(e));
+            log.error("async handle item group task error {}", Throwables.getStackTraceAsString(e));
         }
     }
 

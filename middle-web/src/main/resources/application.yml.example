@@ -226,6 +226,7 @@ biz.export.wait.handle.job.enable: true
 # 失败任务补偿开关
 biz.failed.job.enable: false
 
+baowei.refund.warehouse.id=24774
 
 middle.api.gateway: http://api-middle-test.pousheng.com
 

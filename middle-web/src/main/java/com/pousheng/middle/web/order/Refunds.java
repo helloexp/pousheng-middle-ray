@@ -45,6 +45,7 @@ import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -95,6 +96,8 @@ public class Refunds {
     private OpenShopReadService openShopReadService;
     @org.springframework.beans.factory.annotation.Value("${skx.open.shop.id}")
     private Long skxOpenShopId;
+    @Value("${baowei.refund.warehouse.id}")
+    private Long refundWareHouseId;
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
 
@@ -209,10 +212,18 @@ public class Refunds {
                 if(Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value()) || Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
                     String oriShipmentCode = editSubmitRefundInfo.getShipmentCode();
                     if (StringUtils.hasText(oriShipmentCode)) {
+                        Map<String,String> checkMatchCopanyCodeMap = Maps.newHashMap();
                         Shipment oriShipment = shipmentReadLogic.findShipmentByShipmentCode(oriShipmentCode);
-                        String refundCompanyIsNot325 = checkShopOrWarehouse(oriShipment, refund, editSubmitRefundInfo.getWarehouseId());
-                        if (StringUtils.hasText(refundCompanyIsNot325)) {
-                            throw new JsonResponseException("submit.refund.companyCode.not.match");
+                        checkShopOrWarehouse(oriShipment, refund, editSubmitRefundInfo.getWarehouseId(), checkMatchCopanyCodeMap);
+                        if (!checkMatchCopanyCodeMap.isEmpty()) {
+                            if(checkMatchCopanyCodeMap.containsKey("refundCompanyIsNot325")){
+                               // 该退货仓没有退到指定的仓库，更新仓库id
+                               editSubmitRefundInfo.setWarehouseId(refundWareHouseId);
+                            }
+                            if(checkMatchCopanyCodeMap.containsKey("companyCodeNotMatch")){
+                                // 退货仓与订单店铺账套不一致，提示修改。
+                                throw new JsonResponseException("submit.refund.companyCode.not.match");  
+                            }                            
                         }
                     }
                 }                
@@ -282,7 +293,7 @@ public class Refunds {
         List<String> checkFailedRefundCodes = Lists.newArrayList();
         List<String> handleFailedRefundCodes = Lists.newArrayList();
         List<String> syncFailedRefundCodes = Lists.newArrayList();
-        List<String> refundCompanyCodeIsNot325 = Lists.newArrayList(); 
+        List<String> refundCompanyCodeIsNotMatch = Lists.newArrayList();
         //判断是否存在没有完善的售后单
         refunds = refunds.stream().filter(refund -> {
             Map<String, String> refundExtraMap = refund.getExtra();
@@ -291,11 +302,19 @@ public class Refunds {
                 log.error("refund(id:{}) check fail", refund.getId());
                 return false;
             }else if(Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value()) || Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
-                String isNot325company = getisNot325CompanyCode(refund, refundExtraMap);
-                if(StringUtils.hasText(isNot325company)){ 
-                    refundCompanyCodeIsNot325.add(isNot325company);
-                    log.error("refund(id:{}) check fail companyCode is not 325", refund.getId());
-                    return false;
+                Map<String,String> checkCompanyCodesMap = getisNot325CompanyCode(refund, refundExtraMap);
+                if(!checkCompanyCodesMap.isEmpty()){
+                    // 场景1：源订单发货店仓的账套为325时，退货仓只能为此仓：WH001092。
+                    if(checkCompanyCodesMap.containsKey("refundCompanyIsNot325")){
+                        updateRefundWareHouseInfo(refundExtraMap);
+                        log.info("refund(id:{}) check fail refundWareHouse is not WH001092", refund.getId());
+                    }
+                    // 场景2：源订单发货店仓的账套非325时，校验源定单的店铺账套必须与退货仓账套一致。
+                    if(checkCompanyCodesMap.containsKey("companyCodeNotMatch")){
+                        refundCompanyCodeIsNotMatch.add(checkCompanyCodesMap.get("companyCodeNotMatch"));
+                        log.error("refund(id:{}) check fail refundCompanyCode is not match", refund.getId());
+                        return false;
+                    }
                 }
             }            
             return true;
@@ -366,12 +385,12 @@ public class Refunds {
         if(!CollectionUtils.isEmpty(checkFailedRefundCodes)
                 ||!CollectionUtils.isEmpty(handleFailedRefundCodes)
                 ||!CollectionUtils.isEmpty(syncFailedRefundCodes)
-                ||!CollectionUtils.isEmpty(refundCompanyCodeIsNot325)) {
+                ||!CollectionUtils.isEmpty(refundCompanyCodeIsNotMatch)) {
             throw new InvalidException("refund.batch.deal.fail.info(check.incomplete={0},handle.failed={1},sync.failed={2},not.match.companyCode={3})",
                     checkFailedRefundCodes.toString(),
                     handleFailedRefundCodes.toString(),
                     syncFailedRefundCodes.toString(),
-                    refundCompanyCodeIsNot325.toString());
+                    refundCompanyCodeIsNotMatch.toString());
         }
 
         if (log.isDebugEnabled()) {
@@ -1378,9 +1397,24 @@ public class Refunds {
         return warehouseRes.getResult();
 
     }
+    
+    // 修改退货仓信息
+    private void updateRefundWareHouseInfo(Map<String, String> refundExtraMap){
+        if(refundExtraMap.containsKey(TradeConstants.REFUND_EXTRA_INFO)){
+            //获取售后单扩展信息
+            String refundExtrajson = refundExtraMap.get(TradeConstants.REFUND_EXTRA_INFO);
+            RefundExtra refundExtra = JsonMapper.nonEmptyMapper().fromJson(refundExtrajson,RefundExtra.class);
+            // 修改退货仓id            
+            WarehouseDTO warehouseDto = findWarehouseById(refundWareHouseId);
+            if(warehouseDto != null){
+                refundExtra.setWarehouseId(warehouseDto.getId());
+                refundExtra.setWarehouseName(warehouseDto.getWarehouseName());    
+            }            
+        }
+    }
 
-    private String getisNot325CompanyCode(Refund refund, Map<String,String> refundExtraMap){
-        String refundCompanyIsNot325 = null;
+    private Map<String,String> getisNot325CompanyCode(Refund refund, Map<String,String> refundExtraMap){
+        Map<String,String> checkRefundCompanyCodeMap = Maps.newHashMap();
         if(refundExtraMap.containsKey(TradeConstants.REFUND_EXTRA_INFO)){
             //获取售后单扩展信息
             String refundExtrajson = refundExtraMap.get(TradeConstants.REFUND_EXTRA_INFO);
@@ -1392,48 +1426,76 @@ public class Refunds {
             // 获取该售后单对应发货单信息
             Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
             if (shipment != null){
-                refundCompanyIsNot325 = checkShopOrWarehouse(shipment,refund,warehouseid);
+                checkShopOrWarehouse(shipment,refund,warehouseid,checkRefundCompanyCodeMap);
             }
         }
-        return refundCompanyIsNot325;
+        return checkRefundCompanyCodeMap;
     }
     
-    private String checkShopOrWarehouse(Shipment shipment,Refund refund,Long warehouseid){
-            String refundCompanyIsNot325 = null;
+    private void checkShopOrWarehouse(Shipment shipment,Refund refund,Long warehouseid,Map<String,String> compCodeMap){
             String shipmentExtrajson = shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO);
             ShipmentExtra shipmentExtra = JsonMapper.nonEmptyMapper().fromJson(shipmentExtrajson,ShipmentExtra.class);
             Long oriDeliverid = shipmentExtra.getWarehouseId();
             if(Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_SHOP_DELIVER)){
                 // 校验店发账套
-                Response<OpenShop> openshopRes = openShopReadService.findById(oriDeliverid);
-                if(openshopRes.isSuccess() && openshopRes.getResult() != null){
-                    Map<String,String> shopExtraMap = openshopRes.getResult().getExtra();
-                    if(!CollectionUtils.isEmpty(shopExtraMap) && shopExtraMap.containsKey(TradeConstants.HK_COMPANY_CODE)){
-                       String companyCode = shopExtraMap.get(TradeConstants.HK_COMPANY_CODE);
-                        if(Objects.equals(companyCode,TradeConstants.BAO_WEI_COMPANY_ID.toString())){
-                            refundCompanyIsNot325 = addIsNot325Company(refund, warehouseid);
-                        }
-                    }
+                String getShipcompanyCode = getCompanyCode(oriDeliverid);
+                if(StringUtils.hasText(getShipcompanyCode)){ 
+                    if(Objects.equals(getShipcompanyCode,TradeConstants.BAO_WEI_COMPANY_ID.toString())){
+                       addIsNot325Company(refund, warehouseid,compCodeMap);
+                    }else{
+                        // 场景2：如果来源单的发货店账套不是325，则校验来源单的店铺账套与退货仓的账套是否一致
+                        String shopOrderCompanyCode1 = getCompanyCode(refund.getShopId());  
+                        companyCodeNotMatch(shopOrderCompanyCode1, refund, warehouseid,compCodeMap);
+                       } 
+                }else{
+                    //查询异常,返回
+                    compCodeMap.put("companyCodeNotMatch",refund.getRefundCode());
                 }
-                //查询失败，就过去吧 不处理
+               
             }else if(Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_WAREHOUSE_DELIVER)){
                 // 校验仓发账套
                 WarehouseDTO checkWarehousedto = findWarehouseById(oriDeliverid);
-                if(checkWarehousedto != null && Objects.equals(checkWarehousedto.getCompanyId(),TradeConstants.BAO_WEI_COMPANY_ID.toString())){
-                    refundCompanyIsNot325 = addIsNot325Company(refund, warehouseid);
+                if(checkWarehousedto != null){
+                    if(Objects.equals(checkWarehousedto.getCompanyId(),TradeConstants.BAO_WEI_COMPANY_ID.toString())){
+                        addIsNot325Company(refund, warehouseid,compCodeMap);
+                    }else{
+                        // 场景2：如果来源单的发货店账套不是325，则校验来源单的店铺账套与退货仓的账套是否一致
+                        String shopOrderCompanyCode2 = getCompanyCode(refund.getShopId());
+                        companyCodeNotMatch(shopOrderCompanyCode2,refund, warehouseid,compCodeMap); 
+                    }                   
                 }
             }
-        return refundCompanyIsNot325;
+    }
+    
+    private String getCompanyCode(Long shopId){
+        String companyCode = "";
+        Response<OpenShop> openshopRes = openShopReadService.findById(shopId);
+        if(openshopRes.isSuccess()){
+            if(openshopRes.getResult() != null){
+                Map<String,String> shopExtraMap = openshopRes.getResult().getExtra();
+                if(!CollectionUtils.isEmpty(shopExtraMap) && shopExtraMap.containsKey(TradeConstants.HK_COMPANY_CODE)) {
+                    companyCode = shopExtraMap.get(TradeConstants.HK_COMPANY_CODE);
+                }
+            }
+        }
+        return companyCode;
     }
 
-    private String addIsNot325Company(Refund refund, Long warehouseid){
-        String addrefundCompanyIsNot325 = null;
+    private void addIsNot325Company(Refund refund, Long warehouseid, Map<String,String> compCodeMap){
+        if (!Objects.equals(warehouseid,refundWareHouseId)){
+            compCodeMap.put("refundCompanyIsNot325",refund.getRefundCode());
+            log.error("warehouse of refund(id:{}) is not belong to 325账套的WH001092", refund.getId());
+        } 
+    }
+    
+    private void companyCodeNotMatch(String orderCompanyCode,Refund refund, Long warehouseid, Map<String,String> compCodeMap){
         WarehouseDTO checkWarehousedto = findWarehouseById(warehouseid);
-        if (checkWarehousedto != null && !Objects.equals(checkWarehousedto.getCompanyId(),TradeConstants.BAO_WEI_COMPANY_ID.toString())){
-            addrefundCompanyIsNot325 = refund.getRefundCode();
-            log.error("warehouse of refund(id:{}) is not belong to 325", refund.getId());
-        }        
-        return addrefundCompanyIsNot325;
+        if (checkWarehousedto != null){
+            if(!Objects.equals(checkWarehousedto.getCompanyId(),orderCompanyCode)){
+                compCodeMap.put("companyCodeNotMatch",refund.getRefundCode());
+                log.error("warehouse of refund(id:{}) companyCode is different ", refund.getId());
+            }
+        }
     }
 
     /**

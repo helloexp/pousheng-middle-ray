@@ -197,6 +197,9 @@ skx.open.shop.id: ${SKX_OPEN_SHOP_ID}
 # skx仓库id
 skx.warehouse.id: ${SKX_WAREHOUSE_ID}
 
+# 325账套的退货仓id
+baowei.refund.warehouse.id: ${BAOWEI_REFUND_WAREHOUSE_ID}
+
 # pos单仓库
 pos.stock.code: ${POS.STOCK.CODE}
 

@@ -43,6 +43,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.order.dto.OpenClientAfterSale;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleStatus;
 import io.terminus.parana.cache.ShopCacher;
@@ -82,6 +83,8 @@ public class RefundWriteLogic {
     private RefundWriteService refundWriteService;
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
     @Autowired
@@ -125,6 +128,8 @@ public class RefundWriteLogic {
     private SyncShipmentLogic syncShipmentLogic;
     @Value("${skx.open.shop.id}")
     private Long skxOpenShopId;
+    @Value("${baowei.refund.warehouse.id}")
+    private Long refundWareHouseId;
 
     @Autowired
     private CompensateBizLogic compensateBizLogic;
@@ -399,9 +404,8 @@ public class RefundWriteLogic {
             shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
         }
         shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
-    }
-
-
+    }   
+    
     /**
      * 新增仅退款，退货，售后类型的售后单
      * 支持对于换货售后单继续售后
@@ -419,6 +423,11 @@ public class RefundWriteLogic {
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         //申请数量是否有效
         List<RefundItem> refundItems = checkRefundQuantity(submitRefundInfo, shipmentItems);
+        //场景1：源订单发货店仓的账套为325时，退货仓只能为此仓：WH001092。
+        //场景2：源订单发货店仓的账套非325时，校验源定单的店铺账套必须与退货仓账套一致。
+        if(Objects.equals(submitRefundInfo.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value()) || Objects.equals(submitRefundInfo.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())){
+            checkRefundCompanyCode(shipment,shopOrder,submitRefundInfo);
+        }                
         //更新货品信息
         completeSkuAttributeInfo(refundItems);
         //更新金额
@@ -2127,6 +2136,79 @@ public class RefundWriteLogic {
             throw new JsonResponseException(r.getError());
         }
         return r.getResult();
+    }
+
+    /**
+     * 创建售后单时校验换货，退货单的退货仓账套是否一致
+     * @param shipment
+     * @param submitRefundInfo
+     * @param shopOrder
+     */
+    private void checkRefundCompanyCode(Shipment shipment,ShopOrder shopOrder,SubmitRefundInfo submitRefundInfo){
+        String shipmentExtrajson = shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO);
+        ShipmentExtra shipmentExtra = JsonMapper.nonEmptyMapper().fromJson(shipmentExtrajson,ShipmentExtra.class);
+        Long oriDeliverid = shipmentExtra.getWarehouseId();
+        if(Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_SHOP_DELIVER)){
+            // 校验店发账套
+            String getShipmentcompanyCode = findCompanyCodeByShopid(oriDeliverid);
+            if(StringUtils.hasText(getShipmentcompanyCode)){
+                if(Objects.equals(getShipmentcompanyCode,TradeConstants.BAO_WEI_COMPANY_ID.toString())){
+                    if (!Objects.equals(submitRefundInfo.getWarehouseId(), refundWareHouseId)){
+                        // 发货仓账套为325时，后台更新退货仓为WH001092。
+                        submitRefundInfo.setWarehouseId(refundWareHouseId);
+                    }
+                }else{
+                    WarehouseDTO refundWarehousedto = findWarehouseById(submitRefundInfo.getWarehouseId());
+                    // 场景2：如果来源单的发货店账套不是325，则校验来源单的店铺账套与退货仓的账套是否一致
+                    String shopOrderCompanyCode1 = findCompanyCodeByShopid(shopOrder.getShopId());
+                    if (refundWarehousedto != null){
+                        if(!Objects.equals(refundWarehousedto.getCompanyId(),shopOrderCompanyCode1)){
+                            log.error("warehouse of refund(companycode:{}) companyCode is different ", shopOrderCompanyCode1);
+                            throw new JsonResponseException("退货仓账套与订单店铺账套不一致");
+                        }
+                    }
+                }
+            }else{
+                //查询异常,返回
+                log.error("get shop deliver warehouse company code failed, shopid:{}", oriDeliverid);
+                throw new JsonResponseException("获取发货店账套失败");
+            }
+        }else if(Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_WAREHOUSE_DELIVER)){
+            // 校验仓发账套
+            WarehouseDTO shipmentWarehousedto = findWarehouseById(oriDeliverid);
+            if(shipmentWarehousedto != null){
+                if(Objects.equals(shipmentWarehousedto.getCompanyId(),TradeConstants.BAO_WEI_COMPANY_ID.toString())){
+                    if (!Objects.equals(submitRefundInfo.getWarehouseId(), refundWareHouseId)){
+                        // 发货仓账套为325时，后台更新退货仓为WH001092。
+                        submitRefundInfo.setWarehouseId(refundWareHouseId);
+                    }
+                }else{
+                    WarehouseDTO refundWarehousedto = findWarehouseById(submitRefundInfo.getWarehouseId());
+                    // 场景2：如果来源单的发货店账套不是325，则校验来源单的店铺账套与退货仓的账套是否一致
+                    String shopOrderCompanyCode2 = findCompanyCodeByShopid(shopOrder.getShopId());
+                    if (refundWarehousedto != null){
+                        if(!Objects.equals(refundWarehousedto.getCompanyId(),shopOrderCompanyCode2)){
+                            log.error("warehouse of refund(companycode:{}) companyCode is different ", shopOrderCompanyCode2);
+                            throw new JsonResponseException("退货仓账套与订单店铺账套不一致");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private String findCompanyCodeByShopid(Long shopId){
+        String companyCode = "";
+        Response<OpenShop> openshopRes = openShopReadService.findById(shopId);
+        if(openshopRes.isSuccess()){
+            if(openshopRes.getResult() != null){
+                Map<String,String> shopExtraMap = openshopRes.getResult().getExtra();
+                if(!CollectionUtils.isEmpty(shopExtraMap) && shopExtraMap.containsKey(TradeConstants.HK_COMPANY_CODE)) {
+                    companyCode = shopExtraMap.get(TradeConstants.HK_COMPANY_CODE);
+                }
+            }
+        }
+        return companyCode;
     }
 
     /**

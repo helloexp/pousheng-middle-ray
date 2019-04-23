@@ -305,10 +305,10 @@ public class ItemGroupImportJobs {
 
     private void appendErrorToExcel(ExcelExportHelper<AbnormalRecord> helper, String[] strs, String error) {
         AbnormalRecord abnormalRecord = new AbnormalRecord();
-        abnormalRecord.setCode(strs[0].replace("\"", ""));
-        abnormalRecord.setSize(strs[1].replace("\"", ""));
-        abnormalRecord.setName(strs[2].replace("\"", ""));
-        abnormalRecord.setSkuCode(strs[3].replace("\"", ""));
+        abnormalRecord.setCode(strs[0] == null ? "" : strs[0].replace("\"", ""));
+        abnormalRecord.setSize(strs[1] == null ? "" : strs[1].replace("\"", ""));
+        abnormalRecord.setName(strs[2] == null ? "" : strs[2].replace("\"", ""));
+        abnormalRecord.setSkuCode(strs[3] == null ? "" : strs[3].replace("\"", ""));
         abnormalRecord.setReason(error);
         helper.appendToExcel(abnormalRecord);
     }

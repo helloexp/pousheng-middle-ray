@@ -306,8 +306,8 @@ public class Refunds {
                 if(!checkCompanyCodesMap.isEmpty()){
                     // 场景1：源订单发货店仓的账套为325时，退货仓只能为此仓：WH001092。
                     if(checkCompanyCodesMap.containsKey("refundCompanyIsNot325")){
-                        updateRefundWareHouseInfo(refundExtraMap);
-                        log.info("refund(id:{}) check fail refundWareHouse is not WH001092", refund.getId());
+                        log.info("refund(id:{}) check refundWareHouse is not WH001092", refund.getId());
+                        return updateRefundWareHouseInfo(refund);
                     }
                     // 场景2：源订单发货店仓的账套非325时，校验源定单的店铺账套必须与退货仓账套一致。
                     if(checkCompanyCodesMap.containsKey("companyCodeNotMatch")){
@@ -1399,7 +1399,8 @@ public class Refunds {
     }
     
     // 修改退货仓信息
-    private void updateRefundWareHouseInfo(Map<String, String> refundExtraMap){
+    private Boolean updateRefundWareHouseInfo(Refund refund){
+        Map<String, String> refundExtraMap = refund.getExtra();
         if(refundExtraMap.containsKey(TradeConstants.REFUND_EXTRA_INFO)){
             //获取售后单扩展信息
             String refundExtrajson = refundExtraMap.get(TradeConstants.REFUND_EXTRA_INFO);
@@ -1408,9 +1409,16 @@ public class Refunds {
             WarehouseDTO warehouseDto = findWarehouseById(refundWareHouseId);
             if(warehouseDto != null){
                 refundExtra.setWarehouseId(warehouseDto.getId());
-                refundExtra.setWarehouseName(warehouseDto.getWarehouseName());    
-            }            
+                refundExtra.setWarehouseName(warehouseDto.getWarehouseName());
+                refundExtraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+                Response<Boolean> updateExtraRes = refundWriteLogic.update(refund);
+                if(updateExtraRes.isSuccess()){
+                    log.info("审核修改退货仓为325账套的固定仓WH001092,refund id:{}",refund.getId());
+                    return updateExtraRes.getResult();
+                }
+            }         
         }
+        return false;
     }
 
     private Map<String,String> getisNot325CompanyCode(Refund refund, Map<String,String> refundExtraMap){

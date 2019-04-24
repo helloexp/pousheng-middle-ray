@@ -7,6 +7,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.order.service.ShopOrderReadService;
@@ -30,21 +31,23 @@ public class ShopWaitHandleSkuQuantityComponent {
     @RpcConsumer
     private SkuOrderReadService skuOrderReadService;
 
-    private final List<Integer> handleStatus = Lists.newArrayList(OrderWaitHandleType.WAIT_HANDLE.value(),
-            OrderWaitHandleType.JD_PAY_ON_CASH.value(),OrderWaitHandleType.STOCK_NOT_ENOUGH.value(),
-            OrderWaitHandleType.DISPATCH_ORDER_FAIL.value(),
-            OrderWaitHandleType.WAREHOUSE_SATE_STOCK_NOT_FIND.value(),
-            OrderWaitHandleType.ADDRESS_GPS_NOT_FOUND.value(),
-            OrderWaitHandleType.FIND_ADDRESS_GPS_FAIL.value(),
-            OrderWaitHandleType.WAREHOUSE_STOCK_LOCK_FAIL.value(),
-            OrderWaitHandleType.SHOP_STOCK_LOCK_FAIL.value(),
-            OrderWaitHandleType.WAREHOUSE_RULE_NOT_FOUND.value(),
-            OrderWaitHandleType.UNKNOWN_ERROR.value(),
-            OrderWaitHandleType.SHOP_MAPPING_MISS.value(),
-            OrderWaitHandleType.ORIGIN_STATUS_SAVE.value(),
-            OrderWaitHandleType.WAIT_AUTO_CREATE_SHIPMENT.value(),
-            OrderWaitHandleType.HANDLE_DONE.value(),
-            OrderWaitHandleType.NOTE_ORDER_NO_SOTCK.value());
+    private final List<Integer> handleStatus = Lists.newArrayList(
+            OrderWaitHandleType.WAIT_HANDLE.value(),//1, "尚未尝试自动生成发货单"
+            OrderWaitHandleType.JD_PAY_ON_CASH.value(),//3, "京东货到付款"
+            OrderWaitHandleType.STOCK_NOT_ENOUGH.value(),//5, "库存不足")
+            OrderWaitHandleType.DISPATCH_ORDER_FAIL.value(),//7, "派单失败，请联系开发人员协助排查"
+            OrderWaitHandleType.WAREHOUSE_SATE_STOCK_NOT_FIND.value(),//8, "存在安全库存没有设置的仓库"
+            OrderWaitHandleType.ADDRESS_GPS_NOT_FOUND.value(),//9, "门店或仓库地址信息不存在"
+            OrderWaitHandleType.FIND_ADDRESS_GPS_FAIL.value(),//10, "门店或仓库地址信息查询失败"
+            OrderWaitHandleType.WAREHOUSE_STOCK_LOCK_FAIL.value(),//11, "mpos仓库商品库存锁定失败"
+            OrderWaitHandleType.SHOP_STOCK_LOCK_FAIL.value(),//12, "mpos门店商品库存锁定失败"
+            OrderWaitHandleType.WAREHOUSE_RULE_NOT_FOUND.value(),//13, "来源店铺没有配置对应的默认发货仓规则"
+            OrderWaitHandleType.UNKNOWN_ERROR.value(),//14, "未知错误"
+            OrderWaitHandleType.SHOP_MAPPING_MISS.value(),//15, "门店对应的店铺映射关系缺失"
+            OrderWaitHandleType.ORIGIN_STATUS_SAVE.value(),//-1, "初始状态"
+            OrderWaitHandleType.WAIT_AUTO_CREATE_SHIPMENT.value(),//0, "防止并发"
+            OrderWaitHandleType.HANDLE_DONE.value(),//6, "已经处理"
+            OrderWaitHandleType.NOTE_ORDER_NO_SOTCK.value());//17,"备注订单无库存"
 
 
     /**
@@ -108,7 +111,12 @@ public class ShopWaitHandleSkuQuantityComponent {
 
         //判断待处理状态是否符合条件
         if (isWaitHandle(shopOrder)){
-            current.add(OrderWaitHandleType.from(shopOrder.getHandleStatus()).getDesc(),skuOrder.getQuantity());
+            Integer shipping = skuOrder.getShipping();
+            if (Arguments.isNull(shipping)){
+                shipping = 0;
+            }
+
+            current.add(OrderWaitHandleType.from(shopOrder.getHandleStatus()).getDesc(),skuOrder.getQuantity() - shipping);
         }
     }
 
@@ -131,7 +139,11 @@ public class ShopWaitHandleSkuQuantityComponent {
 
         //判断待处理状态是否符合条件
         if (isWaitHandle(shopOrder)){
-            waitHandleNumber = skuOrder.getQuantity();
+            Integer shipping = skuOrder.getShipping();
+            if (Arguments.isNull(shipping)){
+                shipping = 0;
+            }
+            waitHandleNumber = skuOrder.getQuantity() - shipping;
         }
 
         return waitHandleNumber;

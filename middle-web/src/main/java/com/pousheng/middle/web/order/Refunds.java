@@ -1411,7 +1411,11 @@ public class Refunds {
                 refundExtra.setWarehouseId(warehouseDto.getId());
                 refundExtra.setWarehouseName(warehouseDto.getWarehouseName());
                 refundExtraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
-                Response<Boolean> updateExtraRes = refundWriteLogic.update(refund);
+                Refund newRefund = new Refund();
+                newRefund.setId(refund.getId());
+                newRefund.setExtra(refundExtraMap);
+                newRefund.setUpdatedAt(new Date());
+                Response<Boolean> updateExtraRes = refundWriteLogic.update(newRefund);
                 if(updateExtraRes.isSuccess()){
                     log.info("审核修改退货仓为325账套的固定仓WH001092,refund id:{}",refund.getId());
                     return updateExtraRes.getResult();

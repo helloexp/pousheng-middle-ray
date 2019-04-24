@@ -131,7 +131,7 @@ public class ItemGroupImportJobs {
             Long groupId = task.getGroupId();
             Integer type = task.getType();
             ExcelExportHelper<AbnormalRecord> helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
-            List<String[]> list = HandlerFileUtil.getInstance().handle(fileUrl);
+            List<String[]> list = HandlerFileUtil.getInstance().handleGroupRuleImportFile(fileUrl);
             List<SkuTemplate> skuTemplates = Lists.newArrayList();
 
             for (int i = 1; i < list.size(); i++) {

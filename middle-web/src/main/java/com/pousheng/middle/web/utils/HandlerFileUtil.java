@@ -10,6 +10,7 @@ import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 import com.pousheng.middle.common.utils.batchhandle.ExcelUtil;
+import com.pousheng.middle.common.utils.batchhandle.ExcelUtilSkuGroupSpuImport;
 import com.pousheng.middle.order.dto.MiddleOrderInfo;
 import com.pousheng.middle.web.utils.export.ExcelCovertCsvReader;
 import com.pousheng.middle.web.warehouses.dto.PoushengChannelImportDTO;
@@ -67,6 +68,24 @@ public class HandlerFileUtil<T> {
         }
 
 
+    }
+
+    public List<String[]> handleGroupRuleImportFile(String fileUrl) {
+        List<String[]> list;
+        try {
+            URL url = new URL(fileUrl);
+            InputStream insr = url.openConnection().getInputStream();
+            list = ExcelUtilSkuGroupSpuImport.readerExcel(insr, 5);
+            if (CollectionUtils.isEmpty(list)) {
+                log.error("import excel is empty so skip");
+                throw new JsonResponseException("excel.content.is.empty");
+            }
+            log.info("import excel size:{}", list.size());
+        } catch (Exception e) {
+            log.error("read import excel file fail,causeL:{}", Throwables.getStackTraceAsString(e));
+            throw new JsonResponseException("read.excel.fail");
+        }
+        return list;
     }
 
     public List<String[]> handle(String fileUrl) {

@@ -213,12 +213,11 @@ public class ShopStockPusher {
 
                     //判断店铺是否是官网的
                     if (Objects.equals(openShop.getChannel(), MiddleChannel.OFFICIAL.getValue())) {
-                        log.info("start to push to official shop: {}, with quantity: {}", openShop, stock);
+                        log.info("start to push to official shop: {} sku code:{} with quantity: {}", openShop,skuCode,stock);
                         paranaSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
                     } else {
-                        log.info("start to push to third part shop: {}, with quantity: {}", openShop, stock);
+                        log.info("start to push to third part shop: {} sku code:{} with origin quantity: {}", openShop, skuCode,stock);
                         //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
-                        log.info("parall update stock start");
                         // 如果只有1条，或者多条都没有设置比例，就按默认的推第一个
                     /*    List<ItemMapping> ratioItemMappings = itemMappings.stream().filter(
                             im -> Objects.nonNull(im.getRatio())).collect(Collectors.toList());

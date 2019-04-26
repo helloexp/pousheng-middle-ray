@@ -29,6 +29,8 @@ public interface PsShopReadService {
 
     Response<Optional<Shop>> findByOuterIdAndBusinessId(String outerId, Long businessId);
 
+    Response<Shop> findShopById(Long id);
+
     /**
      * 获取所有店铺信息（不包括已删除状态）
      * @return

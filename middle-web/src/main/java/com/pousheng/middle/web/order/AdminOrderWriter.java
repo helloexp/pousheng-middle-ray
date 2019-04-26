@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.pousheng.middle.constants.CacheConsts;
 import com.pousheng.middle.open.OPMessageSources;
@@ -10,6 +11,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.MiddleOrderInfo;
 import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.SkuUpdateInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
@@ -25,6 +27,7 @@ import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
 import com.pousheng.middle.web.utils.HandlerFileUtil;
+import com.pousheng.middle.web.utils.export.ExcelCovertCsvReader;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
@@ -41,6 +44,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.redis.utils.JedisTemplate;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
+import io.terminus.parana.common.exception.InvalidException;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.model.*;
@@ -51,6 +55,7 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,13 +65,17 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.xml.sax.SAXException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.ParserConfigurationException;
+
 import java.io.*;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -107,6 +116,10 @@ public class AdminOrderWriter {
     private SyncVIPLogic syncVIPLogic;
     @Autowired
     private ShopOrderReadService shopOrderReadService;
+    
+    private final Integer MAX_EXCEL_ROW_BATCH_UPDATE = 200;
+//    @Autowired
+//    private MessageSource messageSource;
 
 
     @Value("${logging.path}")

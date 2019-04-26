@@ -26,6 +26,7 @@ import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
+import io.terminus.parana.common.exception.InvalidException;
 import io.terminus.parana.order.dto.OrderCriteria;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
@@ -76,6 +77,7 @@ public class OrderReadLogic {
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private OpenShopCacher openShopCacher;
+    
 
     static final Integer BATCH_SIZE = 100;     // 批处理数量
     static final String MPOS = "mpos"; //默认发货仓规则

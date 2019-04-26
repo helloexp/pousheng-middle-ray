@@ -35,10 +35,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -81,19 +78,19 @@ public class ItemGroupJobs {
     private static final Integer BATCH_SIZE = 100;
 
     /**
-     * 每5分钟触发一次
+     * 每1分钟触发一次
      */
-    @Scheduled(cron = "0 0/5 * * * ?")
+    @Scheduled(cron = "0 0/1 * * * ?")
     public void synchronizeSpu() {
         log.info("START JOB ItemGroupJobs.synchronizeSpu");
         ScheduleTask scheduleTask = findInitTask();
         while (scheduleTask != null) {
-            Response<Boolean> updateResp = scheduleTaskWriteService.updateStatus(scheduleTask,TaskStatusEnum.EXECUTING.value());
+            Response<Boolean> updateResp = scheduleTaskWriteService.updateStatus(scheduleTask, TaskStatusEnum.EXECUTING.value());
             if (!updateResp.isSuccess()) {
                 log.error("JOB -- finish to auto item group sku error, cause :{} ", updateResp.getError());
                 throw new JsonResponseException(updateResp.getError());
             }
-            if(updateResp.getResult()){
+            if (updateResp.getResult()) {
                 onBatchHandleGroup(scheduleTask);
             }
             scheduleTask = findInitTask();
@@ -128,11 +125,11 @@ public class ItemGroupJobs {
             Boolean mark = task.getMark();
             Integer type = task.getType();
             Long groupId = task.getGroupId();
-            Integer  markType;
+            Integer markType;
             if (task.getUserId() == 0) {
-                markType=PsItemGroupSkuMark.AUTO.value();
-            }else{
-                markType=PsItemGroupSkuMark.ARTIFICIAL.value();
+                markType = PsItemGroupSkuMark.AUTO.value();
+            } else {
+                markType = PsItemGroupSkuMark.ARTIFICIAL.value();
             }
             if (mark) {
                 params.put("mustNot_groupId", groupId.toString());
@@ -163,7 +160,9 @@ public class ItemGroupJobs {
                     batchMakeGroup(skuCodes, mark, type, groupId, markType);
                     skuTemplateDumpService.batchGroupDump(listRes.getResult());
                     //通知恒康关注商品库存
-                    batchNoticeHk(materialIds, mark, type);
+                    if (mark) {
+                        batchNoticeHk(materialIds, mark, type);
+                    }
                     skuTemplateIds.clear();
                     skuCodes.clear();
                     materialIds.clear();
@@ -231,7 +230,7 @@ public class ItemGroupJobs {
 
     private void batchNoticeHk(Set<String> materialIds, Boolean mark, Integer type) {
         try {
-            if (mark&&PsItemGroupSkuType.GROUP.value().equals(type)) {
+            if (mark && PsItemGroupSkuType.GROUP.value().equals(type)) {
                 materialPusher.addMaterialIds(Lists.newArrayList(materialIds));
             }
             if (!mark) {

@@ -829,10 +829,13 @@ public class SkuTemplates {
         if(!PsItemGroupSkuType.EXCLUDE.value().equals(type) && !PsItemGroupSkuType.GROUP.value().equals(type)){
             throw new JsonResponseException("请求参数type值错误！");
         }
-        //1为组内商品，0为排除商品
-        boolean hasNext = doForRemoveGroup(1,1000,groupId,type);
-        while(hasNext){
-            hasNext = doForRemoveGroup(1,1000,groupId,type);
+        List<ScheduleTask> list = Lists.newArrayList();
+        Map<String, String> params = Maps.newHashMap();
+        list.add(ScheduleTaskUtil.transItemGroupTask(new ItemGroupTask().params(params)
+                .type(type).groupId(groupId).mark(false).userId(UserUtil.getUserId())));
+        Response<Integer> cResp = scheduleTaskWriteService.creates(list);
+        if (!cResp.isSuccess()) {
+            throw new JsonResponseException(cResp.getError());
         }
     }
 

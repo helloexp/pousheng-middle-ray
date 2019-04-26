@@ -17,6 +17,10 @@ public class ShopExtDao extends MyBatisDao<Shop> {
     public Shop findByOuterIdAndBusinessId(String outerId,Long businessId){
         return getSqlSession().selectOne(sqlId("findByOuterIdAndBusinessId"), ImmutableMap.of("outerId",outerId,"businessId",businessId));
     }
+
+    public Shop findShopById(Long id){
+        return getSqlSession().selectOne(sqlId("findShopById"), ImmutableMap.of("id",id));
+    }
     
     public List<Shop> findAllShopsOn(){
         return getSqlSession().selectList(sqlId("findAllShopsOn"));

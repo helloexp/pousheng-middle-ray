@@ -65,6 +65,16 @@ public class PsShopReadServiceImpl implements PsShopReadService{
     }
 
     @Override
+    public Response<Shop> findShopById(Long id) {
+        try {
+            return Response.ok(shopExtDao.findShopById(id));
+        } catch (Exception e){
+            log.error("find shop by id:{},cause:{}",id);
+            return Response.fail("shop.find.fail");
+        }
+    }
+
+    @Override
     public Response<List<Shop>> findAllShopsOn() {
         try {
             return Response.ok(shopExtDao.findAllShopsOn());

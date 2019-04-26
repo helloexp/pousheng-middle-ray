@@ -25,6 +25,7 @@ import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.RefundAmountWriteService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
@@ -84,7 +85,7 @@ public class RefundWriteLogic {
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
     @RpcConsumer
-    private OpenShopReadService openShopReadService;
+    private PsShopReadService shopReadService;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
     @Autowired
@@ -2199,13 +2200,10 @@ public class RefundWriteLogic {
 
     private String findCompanyCodeByShopid(Long shopId){
         String companyCode = "";
-        Response<OpenShop> openshopRes = openShopReadService.findById(shopId);
-        if(openshopRes.isSuccess()){
-            if(openshopRes.getResult() != null){
-                Map<String,String> shopExtraMap = openshopRes.getResult().getExtra();
-                if(!CollectionUtils.isEmpty(shopExtraMap) && shopExtraMap.containsKey(TradeConstants.HK_COMPANY_CODE)) {
-                    companyCode = shopExtraMap.get(TradeConstants.HK_COMPANY_CODE);
-                }
+        Response<Shop> shopRes = shopReadService.findShopById(shopId);
+        if(shopRes.isSuccess()){
+            if(shopRes.getResult() != null){
+                companyCode = shopRes.getResult().getBusinessId().toString();
             }
         }
         return companyCode;

@@ -9,6 +9,7 @@ import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
+import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.*;
@@ -42,6 +43,7 @@ import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,7 +95,7 @@ public class Refunds {
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
     @RpcConsumer
-    private OpenShopReadService openShopReadService;
+    private PsShopReadService shopReadService;
     @org.springframework.beans.factory.annotation.Value("${skx.open.shop.id}")
     private Long skxOpenShopId;
     @Value("${baowei.refund.warehouse.id}")
@@ -1481,13 +1483,10 @@ public class Refunds {
     
     private String getCompanyCode(Long shopId){
         String companyCode = "";
-        Response<OpenShop> openshopRes = openShopReadService.findById(shopId);
-        if(openshopRes.isSuccess()){
-            if(openshopRes.getResult() != null){
-                Map<String,String> shopExtraMap = openshopRes.getResult().getExtra();
-                if(!CollectionUtils.isEmpty(shopExtraMap) && shopExtraMap.containsKey(TradeConstants.HK_COMPANY_CODE)) {
-                    companyCode = shopExtraMap.get(TradeConstants.HK_COMPANY_CODE);
-                }
+        Response<Shop> shopRes = shopReadService.findShopById(shopId);
+        if(shopRes.isSuccess()){
+            if(shopRes.getResult() != null){
+                companyCode = shopRes.getResult().getBusinessId().toString();
             }
         }
         return companyCode;

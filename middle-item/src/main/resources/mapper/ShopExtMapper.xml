@@ -19,5 +19,11 @@
         <include refid="tb"/>
         WHERE status=1 OR status =-2
     </select>
+    
+    <select id="findShopById" parameterType="map" resultMap="ShopMap">
+        SELECT * FROM
+        <include refid="tb"/>
+        WHERE id=#{id}
+    </select>
 
 </mapper>

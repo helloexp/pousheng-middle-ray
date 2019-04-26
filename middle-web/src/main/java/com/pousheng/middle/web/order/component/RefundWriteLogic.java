@@ -86,6 +86,8 @@ public class RefundWriteLogic {
     private SkuTemplateReadService skuTemplateReadService;
     @RpcConsumer
     private PsShopReadService shopReadService;
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
     @Autowired
@@ -2151,7 +2153,7 @@ public class RefundWriteLogic {
         Long oriDeliverid = shipmentExtra.getWarehouseId();
         if(Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_SHOP_DELIVER)){
             // 校验店发账套
-            String getShipmentcompanyCode = findCompanyCodeByShopid(oriDeliverid);
+            String getShipmentcompanyCode = getCompanyCodeShopDeliver(oriDeliverid);
             if(StringUtils.hasText(getShipmentcompanyCode)){
                 if(Objects.equals(getShipmentcompanyCode,TradeConstants.BAO_WEI_COMPANY_ID.toString())){
                     if (!Objects.equals(submitRefundInfo.getWarehouseId(), refundWareHouseId)){
@@ -2161,7 +2163,7 @@ public class RefundWriteLogic {
                 }else{
                     WarehouseDTO refundWarehousedto = findWarehouseById(submitRefundInfo.getWarehouseId());
                     // 场景2：如果来源单的发货店账套不是325，则校验来源单的店铺账套与退货仓的账套是否一致
-                    String shopOrderCompanyCode1 = findCompanyCodeByShopid(shopOrder.getShopId());
+                    String shopOrderCompanyCode1 = getCompanyCodeOrderShop(shopOrder.getShopId());
                     if (refundWarehousedto != null){
                         if(!Objects.equals(refundWarehousedto.getCompanyId(),shopOrderCompanyCode1)){
                             log.error("warehouse of refund(companycode:{}) companyCode is different ", shopOrderCompanyCode1);
@@ -2186,7 +2188,7 @@ public class RefundWriteLogic {
                 }else{
                     WarehouseDTO refundWarehousedto = findWarehouseById(submitRefundInfo.getWarehouseId());
                     // 场景2：如果来源单的发货店账套不是325，则校验来源单的店铺账套与退货仓的账套是否一致
-                    String shopOrderCompanyCode2 = findCompanyCodeByShopid(shopOrder.getShopId());
+                    String shopOrderCompanyCode2 = getCompanyCodeOrderShop(shopOrder.getShopId());
                     if (refundWarehousedto != null){
                         if(!Objects.equals(refundWarehousedto.getCompanyId(),shopOrderCompanyCode2)){
                             log.error("warehouse of refund(companycode:{}) companyCode is different ", shopOrderCompanyCode2);
@@ -2198,12 +2200,28 @@ public class RefundWriteLogic {
         }
     }
 
-    private String findCompanyCodeByShopid(Long shopId){
+    // 查询店发的仓库账套
+    private String getCompanyCodeShopDeliver(Long shopId){
         String companyCode = "";
         Response<Shop> shopRes = shopReadService.findShopById(shopId);
         if(shopRes.isSuccess()){
             if(shopRes.getResult() != null){
                 companyCode = shopRes.getResult().getBusinessId().toString();
+            }
+        }
+        return companyCode;
+    }
+
+    // 查询下单店铺的账套
+    private String getCompanyCodeOrderShop(Long shopId){
+        String companyCode = "";
+        Response<OpenShop> openshopRes = openShopReadService.findById(shopId);
+        if(openshopRes.isSuccess()){
+            if(openshopRes.getResult() != null){
+                Map<String,String> shopExtraMap = openshopRes.getResult().getExtra();
+                if(!CollectionUtils.isEmpty(shopExtraMap) && shopExtraMap.containsKey(TradeConstants.HK_COMPANY_CODE)) {
+                    companyCode = shopExtraMap.get(TradeConstants.HK_COMPANY_CODE);
+                }
             }
         }
         return companyCode;

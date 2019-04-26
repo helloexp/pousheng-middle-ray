@@ -96,6 +96,8 @@ public class Refunds {
     private MposSkuStockLogic mposSkuStockLogic;
     @RpcConsumer
     private PsShopReadService shopReadService;
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
     @org.springframework.beans.factory.annotation.Value("${skx.open.shop.id}")
     private Long skxOpenShopId;
     @Value("${baowei.refund.warehouse.id}")
@@ -1452,13 +1454,13 @@ public class Refunds {
             Long oriDeliverid = shipmentExtra.getWarehouseId();
             if(Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_SHOP_DELIVER)){
                 // 校验店发账套
-                String getShipcompanyCode = getCompanyCode(oriDeliverid);
+                String getShipcompanyCode = getCompanyCodeShopDeliver(oriDeliverid);
                 if(StringUtils.hasText(getShipcompanyCode)){ 
                     if(Objects.equals(getShipcompanyCode,TradeConstants.BAO_WEI_COMPANY_ID.toString())){
                        addIsNot325Company(refund, warehouseid,compCodeMap);
                     }else{
                         // 场景2：如果来源单的发货店账套不是325，则校验来源单的店铺账套与退货仓的账套是否一致
-                        String shopOrderCompanyCode1 = getCompanyCode(refund.getShopId());  
+                        String shopOrderCompanyCode1 = getCompanyCodeOrderShop(refund.getShopId());  
                         companyCodeNotMatch(shopOrderCompanyCode1, refund, warehouseid,compCodeMap);
                        } 
                 }else{
@@ -1474,19 +1476,35 @@ public class Refunds {
                         addIsNot325Company(refund, warehouseid,compCodeMap);
                     }else{
                         // 场景2：如果来源单的发货店账套不是325，则校验来源单的店铺账套与退货仓的账套是否一致
-                        String shopOrderCompanyCode2 = getCompanyCode(refund.getShopId());
+                        String shopOrderCompanyCode2 = getCompanyCodeOrderShop(refund.getShopId());
                         companyCodeNotMatch(shopOrderCompanyCode2,refund, warehouseid,compCodeMap); 
                     }                   
                 }
             }
     }
     
-    private String getCompanyCode(Long shopId){
+    // 查询店发的仓库账套
+    private String getCompanyCodeShopDeliver(Long shopId){
         String companyCode = "";
         Response<Shop> shopRes = shopReadService.findShopById(shopId);
         if(shopRes.isSuccess()){
             if(shopRes.getResult() != null){
                 companyCode = shopRes.getResult().getBusinessId().toString();
+            }
+        }
+        return companyCode;
+    }
+    
+    // 查询下单店铺的账套
+    private String getCompanyCodeOrderShop(Long shopId){
+        String companyCode = "";
+        Response<OpenShop> openshopRes = openShopReadService.findById(shopId);
+        if(openshopRes.isSuccess()){
+            if(openshopRes.getResult() != null){
+                Map<String,String> shopExtraMap = openshopRes.getResult().getExtra();
+                if(!CollectionUtils.isEmpty(shopExtraMap) && shopExtraMap.containsKey(TradeConstants.HK_COMPANY_CODE)) {
+                    companyCode = shopExtraMap.get(TradeConstants.HK_COMPANY_CODE);
+                }
             }
         }
         return companyCode;

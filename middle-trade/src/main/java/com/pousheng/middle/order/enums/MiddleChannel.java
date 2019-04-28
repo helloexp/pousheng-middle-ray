@@ -20,7 +20,9 @@ public enum MiddleChannel {
     YUNJUJIT("yunjujit", "云聚JIT"),
     YUNJURT("yunjurt", "云聚rt"),
     VIPOXO("vipoxo", "唯品会"),
-    KAOLA("kaola", "网易考拉");
+    KAOLA("kaola", "网易考拉"),
+    XHS("xhs", "小红书"),
+    PDD("pdd", "拼多多");
 
     private final String value;
 

@@ -55,7 +55,7 @@ public class CalculateRatioComponent {
         }
 
         List<ItemMapping> itemMappings = response.getResult();*/
-        List<ItemMapping> validItemMappings = itemMappings.stream().filter(itemMapping1 -> itemMapping.getStatus().equals(1)).collect(Collectors.toList());
+        List<ItemMapping> validItemMappings = itemMappings.stream().filter(itemMapping1 -> itemMapping1.getStatus().equals(1)).collect(Collectors.toList());
 
         //店铺库存推送规则是否启用
         //店铺推送比例是否存
@@ -96,7 +96,7 @@ public class CalculateRatioComponent {
 
         Map<Long,Integer> idRatioMaps = Maps.newHashMap();
         //过滤出设置过比例的
-        List<ItemMapping> settingRatioItemMappings = validItemMappings.stream().filter(itemMapping1 -> Arguments.notNull(itemMapping.getRatio())).collect(Collectors.toList());
+        List<ItemMapping> settingRatioItemMappings = validItemMappings.stream().filter(itemMapping1 -> Arguments.notNull(itemMapping1.getRatio())).collect(Collectors.toList());
 
         //为空则说明没有设置过,第一个推送100，其他的为0
         if (CollectionUtils.isEmpty(settingRatioItemMappings)){

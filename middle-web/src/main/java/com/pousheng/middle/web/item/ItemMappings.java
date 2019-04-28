@@ -23,6 +23,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.common.mappings.service.MappingWriteService;
@@ -234,6 +235,9 @@ public class ItemMappings {
             if (null == shopStockRule){
                 log.error("not find shop rule by shop id:{}",itemMapping.getOpenShopId());
                 info.setIsAverageRatio(Boolean.FALSE);//如果没有设置店铺规则则默认为false，正常情况下都会设置
+                if (Arguments.isNull(itemMapping.getRatio())){
+                    info.setRatio(100);
+                }
             } else {
 
                 info.setRatio(calculateRatioComponent.getRatio(itemMapping,shopStockRule));

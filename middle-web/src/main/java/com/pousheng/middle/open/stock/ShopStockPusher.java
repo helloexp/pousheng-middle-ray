@@ -16,6 +16,7 @@ import com.pousheng.middle.web.item.component.CalculateRatioComponent;
 import com.pousheng.middle.web.order.component.ShopMaxOrderLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.common.shop.model.OpenShop;
@@ -233,7 +234,12 @@ public class ShopStockPusher {
 
                         for (ItemMapping im : itemMappings) {
                             Integer ratio = calculateRatioComponent.getRatio(im,shopStockRule);
-                            stockPushLogic.prallelUpdateStock(im, stock * ratio / HUNDRED,openShop);
+                            if (Arguments.notNull(ratio)){
+                                stockPushLogic.prallelUpdateStock(im, stock * ratio / HUNDRED,openShop);
+                            } else {
+                                log.warn("skip to push to third part shop: {} sku code:{} with origin quantity: {},because ratio is null", openShop, skuCode,stock);
+                            }
+
                         }
                         log.info("parall update stock return");
                     }

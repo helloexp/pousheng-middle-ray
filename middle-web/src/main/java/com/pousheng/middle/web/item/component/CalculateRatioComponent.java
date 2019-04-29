@@ -68,6 +68,10 @@ public class CalculateRatioComponent {
         }
 
         Boolean isNotPush = shopStockRule.getIsNotPush();
+        if (Arguments.isNull(isNotPush)){
+            log.error(" shop id:{} isNotPush is null",shopStockRule.getShopId());
+            isNotPush = Boolean.FALSE;
+        }
 
 
         //未开启平均比例分配

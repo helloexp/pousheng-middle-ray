@@ -1,5 +1,14 @@
 package com.pousheng.middle.web.export;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
@@ -10,23 +19,21 @@ import com.pousheng.middle.order.dto.OrderShipmentCriteria;
 import com.pousheng.middle.order.dto.PoushengSettlementPosCriteria;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.impl.service.ShipmentReadExtraServiceImpl;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.web.events.trade.ExportTradeBillEvent;
 import com.pousheng.middle.web.utils.export.FileRecord;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
+
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.utils.UserUtil;
+import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.service.ShipmentReadService;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.DateTime;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 /**
  * Created by sunbo@terminus.io on 2017/7/20.
@@ -48,8 +55,16 @@ public class ExportController {
     private static final JsonMapper MAPPER = JsonMapper.JSON_NON_EMPTY_MAPPER;
     @Autowired
     private CompensateBizLogic compensateBizLogic;
+    @Autowired
+    private ShipmentReadExtraServiceImpl shipmentReadExtraServiceImpl;
+    @RpcConsumer
+    private ShipmentReadService shipmentReadService;
 
-
+    /**
+     * 快递单号
+     */
+    private static final Integer MIN_LENGTH = 8;
+    
     /**
      * 导出订单
      *
@@ -140,6 +155,62 @@ public class ExportController {
         if (criteria.getEndAt() != null) {
             criteria.setEndAt(new DateTime(criteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
+        //补充 过滤条件 start
+        if (criteria.getShipmentSerialNo() != null || criteria.getDispatchType() != null) {
+        	if (criteria.getShipmentSerialNo() != null && criteria.getDispatchType() != null) {
+        		if (criteria.getShipmentSerialNo().length() < MIN_LENGTH) {
+        			throw new JsonResponseException("shipment.serial.no.too.short");
+        		}
+        		Response<List<Shipment>> response = shipmentReadExtraServiceImpl.findBySerialNoAndDispatchType(
+        				criteria.getShipmentSerialNo(), criteria.getDispatchType());
+        		if (!response.isSuccess()) {
+        			throw new JsonResponseException(response.getError());
+        		}
+        		List<Shipment> list = response.getResult();
+        		if (!list.isEmpty()) {
+        			criteria.setShipmentIds(list.stream().map(Shipment::getId).collect(Collectors.toList()));
+        		}
+        	}else if (criteria.getShipmentSerialNo() != null) {
+        		if (criteria.getShipmentSerialNo().length() < MIN_LENGTH) {
+                    throw new JsonResponseException("shipment.serial.no.too.short");
+                }
+                Response<List<Shipment>> response = shipmentReadService.findBySerialNo(criteria.getShipmentSerialNo());
+                if (!response.isSuccess()) {
+                    throw new JsonResponseException(response.getError());
+                }
+                List<Shipment> list = response.getResult();
+                if (!list.isEmpty()) {
+                	criteria.setShipmentIds(list.stream().map(Shipment::getId).collect(Collectors.toList()));
+                }
+        	}else if (criteria.getDispatchType() != null) {
+        		Response<List<Shipment>> response = shipmentReadExtraServiceImpl.findByDispatchType(criteria.getDispatchType());
+            	if (!response.isSuccess()) {
+            		throw new JsonResponseException(response.getError());
+            	}
+            	List<Shipment> list = response.getResult();
+            	if (!list.isEmpty()) {
+            		criteria.setShipmentIds(list.stream().map(Shipment::getId).collect(Collectors.toList()));
+            	}
+        	}
+        }
+        if (criteria.getWarehouseNameOrOutCode() != null) {
+        	Response<List<Shipment>> response;
+            if (criteria.getShipmentSerialNo() != null || criteria.getDispatchType() != null) {
+            	response = shipmentReadExtraServiceImpl.findByWHNameAndWHOutCodeWithShipmentIds(
+            			criteria.getWarehouseNameOrOutCode(), criteria.getShipmentIds());
+            }else {
+            	response = shipmentReadExtraServiceImpl.findByWHNameAndWHOutCodeWithShipmentIds(
+            			criteria.getWarehouseNameOrOutCode());
+            }
+            if (!response.isSuccess()) {
+            	throw new JsonResponseException(response.getError());
+            }
+            List<Shipment> list = response.getResult();
+            if (!list.isEmpty()) {
+            	criteria.setShipmentIds(list.stream().map(Shipment::getId).collect(Collectors.toList()));
+            }
+        }
+        //补充 过滤条件 end
         //获取当前用户负责的商铺id
         List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
         if (criteria.getShopId() == null) {

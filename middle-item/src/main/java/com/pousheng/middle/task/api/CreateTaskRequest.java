@@ -13,6 +13,7 @@ import java.util.Map;
 public class CreateTaskRequest implements Serializable {
     private static final long serialVersionUID = -2203911494956097305L;
 
+    private Map<String, Object> detail;
     private Map<String, Object> content;
     private String status;
     private String type;

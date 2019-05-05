@@ -1075,3 +1075,5 @@ create table if not exists pousheng_tasks (
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
 ) COMMENT='异步任务表';
+
+alter table pousheng_tasks add detail_json text default null comment '任务描述，只读';

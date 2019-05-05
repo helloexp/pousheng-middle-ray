@@ -26,6 +26,7 @@ public class TaskDaoTest extends BaseDaoTest {
         Task t = new Task();
         t.setType("type");
         t.setStatus("status");
+        t.setDetailJson("{}");
         t.setContextJson("{}");
         return t;
     }

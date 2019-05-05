@@ -30,7 +30,12 @@ public class Task implements Serializable {
     private String type;
 
     /**
-     * 任务描述，应当精炼简介，尽量保存外部信息主键
+     * 任务描述，只读
+     */
+    private String detailJson;
+
+    /**
+     * 任务上下文，应当精炼简介，尽量保存外部信息主键
      */
     private String contextJson;
 

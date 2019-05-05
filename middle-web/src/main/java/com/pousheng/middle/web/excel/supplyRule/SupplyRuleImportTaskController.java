@@ -25,10 +25,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author <a href="mailto:d@terminus.io">张成栋</a> at 2019
@@ -71,10 +68,11 @@ public class SupplyRuleImportTaskController {
         taskDTO.setDelta(Objects.equals(info.getDelta(), Boolean.TRUE));
         taskDTO.setStatus(request.getStatus());
         try {
-            request.setContent(BeanMapper.convertObjectToMap(taskDTO));
+            request.setDetail(BeanMapper.convertObjectToMap(taskDTO));
         } catch (Exception e) {
             // ignore
         }
+        request.setContent(Collections.emptyMap());
         Response<Long> r = taskWriteFacade.createTask(request);
         if (!r.isSuccess()) {
             log.error("failed to create import task {}, cause: {}", request, r.getError());
@@ -122,8 +120,8 @@ public class SupplyRuleImportTaskController {
         d.setStatus(taskDTO.getStatus());
         d.setCreatedAt(taskDTO.getCreatedAt());
         d.setUpdatedAt(taskDTO.getCreatedAt());
-        d.setFileName((String) taskDTO.getContent().get("fileName"));
-        d.setFilePath((String) taskDTO.getContent().get("filePath"));
+        d.setFileName((String) taskDTO.getDetail().get("fileName"));
+        d.setFilePath((String) taskDTO.getDetail().get("filePath"));
         d.setMessage((String) taskDTO.getContent().get("message"));
         d.setProcessDetails(
                 CommonConverter.batchConvert(

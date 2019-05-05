@@ -182,7 +182,7 @@ public class ExportController {
                 if (!list.isEmpty()) {
                 	criteria.setShipmentIds(list.stream().map(Shipment::getId).collect(Collectors.toList()));
                 }
-        	}else if (criteria.getDispatchType() != null) {
+        	}else {
         		Response<List<Shipment>> response = shipmentReadExtraServiceImpl.findByDispatchType(criteria.getDispatchType());
             	if (!response.isSuccess()) {
             		throw new JsonResponseException(response.getError());

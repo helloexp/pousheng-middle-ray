@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -156,8 +157,8 @@ public class ExportController {
             criteria.setEndAt(new DateTime(criteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
         //补充 过滤条件 start
-        if (criteria.getShipmentSerialNo() != null || criteria.getDispatchType() != null) {
-        	if (criteria.getShipmentSerialNo() != null && criteria.getDispatchType() != null) {
+        if (!StringUtils.isEmpty(criteria.getShipmentSerialNo()) || criteria.getDispatchType() != null) {
+        	if (!StringUtils.isEmpty(criteria.getShipmentSerialNo()) && criteria.getDispatchType() != null) {
         		if (criteria.getShipmentSerialNo().length() < MIN_LENGTH) {
         			throw new JsonResponseException("shipment.serial.no.too.short");
         		}
@@ -170,7 +171,7 @@ public class ExportController {
         		if (!list.isEmpty()) {
         			criteria.setShipmentIds(list.stream().map(Shipment::getId).collect(Collectors.toList()));
         		}
-        	}else if (criteria.getShipmentSerialNo() != null) {
+        	}else if (!StringUtils.isEmpty(criteria.getShipmentSerialNo())) {
         		if (criteria.getShipmentSerialNo().length() < MIN_LENGTH) {
                     throw new JsonResponseException("shipment.serial.no.too.short");
                 }
@@ -193,9 +194,9 @@ public class ExportController {
             	}
         	}
         }
-        if (criteria.getWarehouseNameOrOutCode() != null) {
+        if (!StringUtils.isEmpty(criteria.getWarehouseNameOrOutCode())) {
         	Response<List<Shipment>> response;
-            if (criteria.getShipmentSerialNo() != null || criteria.getDispatchType() != null) {
+            if (!StringUtils.isEmpty(criteria.getShipmentSerialNo()) || criteria.getDispatchType() != null) {
             	response = shipmentReadExtraServiceImpl.findByWHNameAndWHOutCodeWithShipmentIds(
             			criteria.getWarehouseNameOrOutCode(), criteria.getShipmentIds());
             }else {

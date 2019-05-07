@@ -606,6 +606,12 @@ public class TradeConstants {
      */
     public static final String VISUAL_WAREHOUSE_CODE = "visualWarehouseCode";
 
+	/**
+	 * XXX RAY 2019.05.07: 如果第三方有傳入SkuCode但是
+	 * 1.parana_item_mappings沒有對應
+	 * 2.parana_sku_templates沒有對應的。在extra_json中的KEY
+	 */
+	public static final String THIRD_PARTY_SKU_CODE = "originSkuCode";
     public static  final  String PULL_REFUND_EXCHANGE_FLAG_KEY="checkStatusWhenPullRefundAndExchange";
     public static  final  String PULL_REFUND_EXCHANGE_FLAG_VALUE="1";
 

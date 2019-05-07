@@ -50,4 +50,16 @@ public class SkuOrderExtDao extends MyBatisDao<SkuOrderExt> {
         return  getSqlSession().selectList(sqlId("findSkuCodesByOrderIds"),
             ImmutableMap.of("orderIds",orderIds));
     }
+    
+	/**
+	 * XXX RAY 2019.04.25: 用訂單ID和第三方傳入的SKU代碼，查詢
+	 * 
+	 * @param orderId       訂單代碼
+	 * @param originSkuCode 第三方傳入的SKU代碼
+	 * @return
+	 */
+	public List<SkuOrder> findSkuOrderByOrderIdAndOriginSkuCode(String orderId, String originSkuCode) {
+		return getSqlSession().selectList(sqlId("findSkuCodesByOrderIdAndOriginSkuCode"),
+				ImmutableMap.of("orderId", orderId, "originSkuCode", originSkuCode));
+	}
 }

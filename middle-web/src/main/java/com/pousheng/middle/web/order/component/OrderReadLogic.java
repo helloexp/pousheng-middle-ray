@@ -777,5 +777,29 @@ public class OrderReadLogic {
         return false;
     }
 
-
+    
+	/**
+	 * XXX RAY 2019.04.25: 用訂單ID和第三方傳入的SKU代碼，查詢skuOrder
+	 * 
+	 * @param orderId       訂單代碼
+	 * @param originSkuCode 第三方傳入的SKU代碼
+	 * @return SkuOrder
+	 */
+	public SkuOrder findSkuOrderByOderIdAndOriginSkuCode(final String orderId, final String originSkuCode) {
+		Response<List<SkuOrder>> resp = middleOrderReadService.findSkuOrderByOrderIdAndOriginSkuCode(orderId, originSkuCode);
+		if (!resp.isSuccess()) {
+			log.error("failed to findSkuOrderByOderIdAndOutSkuId SkuOrder with orderId:{}, outSkuId:{}, error code:{}",
+					orderId, originSkuCode, resp.getError());
+			throw new JsonResponseException(resp.getError());
+		}
+		if (resp.getResult().size() == 0) {
+			log.error("there is not any SkuOrder info by orderId:{}, outSkuId:{}", orderId, originSkuCode);
+			throw new InvalidException("sku.order.notfound(orderId={0},outSkuId={1})", orderId, originSkuCode);
+		}
+		if (resp.getResult().size() > 1) { // 查到多筆
+			log.error("there is more than one SkuOrder info by orderId:{}, outSkuId:{}", orderId, originSkuCode);
+			throw new InvalidException("sku.order.morethanone(orderId={0},outSkuId={1})", orderId, originSkuCode);
+		}
+		return resp.getResult().get(0);
+	}
 }

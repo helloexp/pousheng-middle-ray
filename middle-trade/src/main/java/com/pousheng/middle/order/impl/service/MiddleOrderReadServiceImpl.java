@@ -136,6 +136,23 @@ public class MiddleOrderReadServiceImpl implements MiddleOrderReadService {
 
     }
 
+	/**
+	 * XXX RAY 2019.04.25: 用訂單ID和第三方傳入的SKU代碼，查詢
+	 * 
+	 * @param orderId       訂單代碼
+	 * @param originSkuCode 第三方傳入的SKU代碼
+	 * @return
+	 */
+	@Override
+	public Response<List<SkuOrder>> findSkuOrderByOrderIdAndOriginSkuCode(String orderId, String originSkuCode) {
+		try {
+			return Response.ok(skuOrderExtDao.findSkuOrderByOrderIdAndOriginSkuCode(orderId, originSkuCode));
+		} catch (Exception ex) {
+			log.error("failed to find sku orders by orderId:{},outSkuId:{}, cause:{}", orderId, originSkuCode,
+					Throwables.getStackTraceAsString(ex));
+			return Response.fail("failed.to.find.occupy.quantity.list");
+		}
+	}
     /**
      * 根据 id 查询
      *

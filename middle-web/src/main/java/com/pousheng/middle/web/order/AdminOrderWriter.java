@@ -1136,4 +1136,68 @@ public class AdminOrderWriter {
         });
         return Objects.equals(result, Boolean.TRUE);
     }
+    
+	/**
+	 * XXX RAY 2019.04.24: POUS-923 批量修改待處理的商品條碼
+	 * 
+	 * @param file
+	 * @param request
+	 * @return 更新結果
+	 */
+	@ApiOperation("批量修改待處理的商品條碼")
+	@RequestMapping(value = "/api/sku/order/batchUpdate/sku/file", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	public Response<Map<String, Object>> batchUpdateSkuCode(MultipartFile file, HttpServletRequest request) {
+		if (file == null) {
+			throw new JsonResponseException("import.file.path.empty");
+		}
+		String fileType = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".") + 1);
+		if (!"XLSX".equalsIgnoreCase(fileType)) {
+			throw new JsonResponseException("import.file.type.not.xlsx");
+		}
+		try {
+			BufferedInputStream inputStream = new BufferedInputStream(file.getInputStream());
+			List<String[]> dataList = ExcelCovertCsvReader.readerExcelAt(inputStream, 4, MAX_EXCEL_ROW_BATCH_UPDATE);
+			dataList.remove(0); // 移除EXCEL表頭
+			if (MAX_EXCEL_ROW_BATCH_UPDATE < dataList.size()) { // 超過上傳最大值
+				throw new JsonResponseException("order.import.excel.more.max.size");
+			}
+
+			// 轉物件
+			List<SkuUpdateInfo> skuUpdateInfo = dataList.stream().map(strArr -> {
+				SkuUpdateInfo bean = new SkuUpdateInfo();
+				bean.setOrderSouce(strArr[0]);
+				bean.setOrderId(strArr[1]);
+				bean.setOldSkuId(strArr[2]);
+				bean.setNewSkuId(strArr[3]);
+				return bean;
+			}).collect(Collectors.toList());
+			// 回傳值
+			AtomicInteger successCnt = new AtomicInteger(); // 成功筆數
+			List<String> failList = com.google.common.collect.Lists.newArrayListWithExpectedSize(dataList.size());
+			// 紀錄foreach的INDEX
+			AtomicInteger index = new AtomicInteger();
+			// 成功的資料
+			List<Integer> succesLine = com.google.common.collect.Lists.newArrayListWithExpectedSize(dataList.size());
+			skuUpdateInfo.stream().forEach(item -> {
+				try {
+					SkuOrder skuOrder = orderReadLogic.findSkuOrderByOderIdAndOriginSkuCode(item.getOrderId(),
+							item.getOldSkuId());
+					updateSkuOrderCodeAndSkuId(skuOrder.getId(), item.getNewSkuId());
+					successCnt.getAndIncrement();
+					succesLine.add(index.get() + 1);
+				} catch (JsonResponseException ex) {
+					failList.add("第" + (index.get() + 1) + "條單據修改失敗，原因：" + opMessageSources.get(ex.getMessage()));
+				} catch (InvalidException ex) {
+					failList.add("第" + (index.get() + 1) + "條單據修改失敗，原因："
+							+ opMessageSources.get(ex.getError(), ex.getParams()));
+				}
+				index.getAndIncrement();
+			});
+			inputStream.close(); // 關閉串流
+			return Response.ok(
+					ImmutableMap.of("successCnt", successCnt.get(), "failList", failList, "succesLine", succesLine));
+		} catch (IOException | OpenXML4JException | ParserConfigurationException | SAXException e) {
+			return Response.fail("export.excel.fail");
+		}
+	}
 }

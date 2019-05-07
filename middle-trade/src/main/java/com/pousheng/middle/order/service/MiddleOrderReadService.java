@@ -84,6 +84,14 @@ public interface MiddleOrderReadService {
     public Response<List<SkuOrderLockStock>> findOccupyQuantityList(List<Long> shopIds,
                                                            List<Long> warehouseIds, List<String> skuCodes);
 
+	/**
+	 * XXX RAY 2019.04.25: 用訂單ID和第三方傳入的SKU代碼，查詢
+	 * 
+	 * @param orderId       訂單代碼
+	 * @param originSkuCode 第三方傳入的SKU代碼
+	 * @return
+	 */
+	public Response<List<SkuOrder>> findSkuOrderByOrderIdAndOriginSkuCode(String orderId, String originSkuCode);
     /**
      * 根据 id 查询
      * @param ids

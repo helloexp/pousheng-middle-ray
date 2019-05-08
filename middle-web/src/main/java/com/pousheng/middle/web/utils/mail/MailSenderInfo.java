@@ -21,7 +21,7 @@ public class MailSenderInfo
     /**
      * @FieldName mailServerPort 发送邮件的服务器的端口
      */
-    private String mailServerPort = "25";
+    private String mailServerPort = "994";
 
     /**
      * @FieldName fromAddress 邮件发送者的地址
@@ -74,6 +74,11 @@ public class MailSenderInfo
     private String[] attachFileNames;
 
     /**
+     * @FieldName SSL_FACTORY 替换默认的socketFactory为SSLSocketFactory
+     */
+    private String SSL_FACTORY = "javax.net.ssl.SSLSocketFactory";
+    
+    /**
      * 获得邮件会话属性
      */
     public Properties getProperties()
@@ -82,6 +87,9 @@ public class MailSenderInfo
         p.put("mail.smtp.host", this.mailServerHost);
         p.put("mail.smtp.port", this.mailServerPort);
         p.put("mail.smtp.auth", validate ? "true" : "false");
+        p.put("mail.smtp.socketFactory.fallback", "false");
+	    p.put("mail.smtp.socketFactory.class", SSL_FACTORY);
+	    p.put("mail.smtp.socketFactory.port", this.mailServerPort);
         return p;
     }
 

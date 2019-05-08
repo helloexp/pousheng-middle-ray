@@ -118,12 +118,12 @@ public class Refunds {
         }
         criteria.setExcludeRefundType(MiddleRefundType.ON_SALES_REFUND.value());
 
-        List<Long> currentUserCanOperateShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
-        if (criteria.getShopId() == null) {
-            criteria.setShopIds(currentUserCanOperateShopIds);
-        } else if (!currentUserCanOperateShopIds.contains(criteria.getShopId())) {
-            throw new JsonResponseException("permission.check.query.deny");
-        }
+        //List<Long> currentUserCanOperateShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
+        //if (criteria.getShopId() == null) {
+        //    criteria.setShopIds(currentUserCanOperateShopIds);
+        //} else if (!currentUserCanOperateShopIds.contains(criteria.getShopId())) {
+        //    throw new JsonResponseException("permission.check.query.deny");
+        //}
 
 
         Response<Paging<RefundPaging>> pagingRes = refundReadLogic.refundPaging(criteria);

@@ -601,4 +601,7 @@ public class TradeConstants {
      * 虚仓编码
      */
     public static final String VISUAL_WAREHOUSE_CODE = "visualWarehouseCode";
+
+
+    public static final int MAX_REFUND_FLAG=127;
 }

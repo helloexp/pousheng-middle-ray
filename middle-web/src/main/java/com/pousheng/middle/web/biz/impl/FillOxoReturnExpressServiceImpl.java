@@ -212,11 +212,14 @@ public class FillOxoReturnExpressServiceImpl implements CompensateBizService {
         refundExtra.setShipmentSerialNo(shipmentSerialNo);
         refundExtra.setShipmentCorpCode(shipmentCode);
 
-        ReceiverInfo receiverInfo = new ReceiverInfo();
-        receiverInfo.setReceiveUserName(oxoReturnOrder.getBuyer());
-        receiverInfo.setMobile(oxoReturnOrder.getMobile());
-        receiverInfo.setPhone(oxoReturnOrder.getTel());
-        refundExtra.setSenderInfo(receiverInfo);
+        if (!StringUtils.isEmpty(oxoReturnOrder.getBuyer()) || !StringUtils.isEmpty(oxoReturnOrder.getMobile())
+            || !StringUtils.isEmpty(oxoReturnOrder.getTel())) {
+            ReceiverInfo receiverInfo = new ReceiverInfo();
+            receiverInfo.setReceiveUserName(oxoReturnOrder.getBuyer());
+            receiverInfo.setMobile(oxoReturnOrder.getMobile());
+            receiverInfo.setPhone(oxoReturnOrder.getTel());
+            refundExtra.setSenderInfo(receiverInfo);
+        }
         //更新售后单信息
         Refund updateRefund = new Refund();
         updateRefund.setId(refund.getId());

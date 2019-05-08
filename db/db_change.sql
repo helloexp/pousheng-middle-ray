@@ -1075,3 +1075,9 @@ create table if not exists pousheng_tasks (
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
 ) COMMENT='异步任务表';
+
+/**
+  *2019-05-08 author:bernie
+  * 退款单增加标识字段,用二进制位标识；1:代表待退款（同步电商失败 唯品会独有）
+ */
+ALTER TABLE parana_refunds ADD COLUMN `refund_flag` int DEFAULT 0 COMMENT '标记位' AFTER `trade_no`;

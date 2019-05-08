@@ -2,6 +2,7 @@ package com.pousheng.middle.item.impl.dao;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
+import io.terminus.common.model.PageInfo;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import io.terminus.parana.spu.model.SkuTemplate;
 import org.springframework.stereotype.Repository;
@@ -91,6 +92,15 @@ public class SkuTemplateExtDao extends MyBatisDao<SkuTemplate> {
     }
 
 
+    public Paging<SkuTemplate> pagingBySpuIds(Integer pageNo, Integer pageSize, Map<String, Object> criteria) {
+        PageInfo pageInfo = new PageInfo(pageNo, pageSize);
+        criteria.put("offset", pageInfo.getOffset());
+        criteria.put("limit", pageInfo.getLimit());
+        Long total = sqlSession.selectOne(sqlId("pagingBySpuIdsCount"), criteria);
+        if (total <= 0){
+            return Paging.empty();
+        }
 
-
+        return new Paging<>(total, getSqlSession().selectList(sqlId("pagingBySpuIds"), criteria));
+    }
 }

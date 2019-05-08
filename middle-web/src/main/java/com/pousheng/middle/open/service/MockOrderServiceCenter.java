@@ -20,10 +20,12 @@ import java.util.List;
  * 2019/4/29
  */
 @Primary
-@Profile("prepub")
+@Profile("development")
 @Component
-@ConditionalOnProperty(name = "mock.order.fetch.enable", havingValue = "true")
+@ConditionalOnProperty(name = "mock.order.common.fetch.enable", havingValue = "true")
 public class MockOrderServiceCenter extends OrderServiceCenterImpl {
+
+    private static final Long TOTAL = 5000L;
 
     public MockOrderServiceCenter(OpenShopCacher openShopCacher, OrderServiceRegistryCenter orderServiceRegistryCenter) {
         super(openShopCacher, orderServiceRegistryCenter);
@@ -34,7 +36,7 @@ public class MockOrderServiceCenter extends OrderServiceCenterImpl {
                                                                  Date startAt, Date endAt, Integer pageNo,
                                                                  Integer pageSize) {
         Pagination<OpenClientFullOrder> pagination = new Pagination<>();
-        pagination.setTotal(5000L);
+        pagination.setTotal(TOTAL);
         pagination.setHasNext(true);
         pagination.setData(getMockOpenClientFullOrders(status, pageNo, pageSize));
         return Response.ok(pagination);
@@ -44,7 +46,7 @@ public class MockOrderServiceCenter extends OrderServiceCenterImpl {
     public Response<Pagination<OpenClientFullOrder>> searchPresale(Long shopId, Date startAt, Date endAt,
                                                                    Integer pageNo, Integer pageSize) {
         Pagination<OpenClientFullOrder> pagination = new Pagination<>();
-        pagination.setTotal(5000L);
+        pagination.setTotal(TOTAL);
         pagination.setHasNext(true);
         pagination.setData(getMockOpenClientFullOrders(OpenClientOrderStatus.NOT_PAID, pageNo, pageSize));
         return Response.ok(pagination);
@@ -55,6 +57,7 @@ public class MockOrderServiceCenter extends OrderServiceCenterImpl {
         List<OpenClientFullOrder> list = new ArrayList<>();
         Integer startIndex = (pageNo - 1) * pageSize + 1;
         Integer endIndex = startIndex + pageSize;
+        endIndex = endIndex <= TOTAL.intValue() ? endIndex : TOTAL.intValue();
         Date now = new Date();
         for (; startIndex < endIndex; startIndex++) {
             OpenClientFullOrder openClientFullOrder = mockOpenClientFullOrder(orderStatus, now, startIndex);

@@ -139,6 +139,7 @@
         <foreach collection="spuIds" open="(" separator="," close=")" item="id">
             #{id}
         </foreach>
+        ORDER BY id DESC
         LIMIT #{offset}, #{limit}
     </select>
 

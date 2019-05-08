@@ -59,7 +59,8 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
 
     private JedisTemplate jedisTemplate;
 
-    public SkuSupplyRuleDisableParser(Long shopId,
+    public SkuSupplyRuleDisableParser(Long taskId,
+                                      Long shopId,
                                       Long brandId,
                                       TaskWriteFacade taskWriteFacade,
                                       TaskReadFacade taskReadFacade,
@@ -67,6 +68,7 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
                                       ShopSkuSupplyRuleComponent shopSkuSupplyRuleComponent,
                                       JedisTemplate jedisTemplate,
                                       SkuTemplateSearchReadService skuTemplateSearchReadService) {
+        this.taskId = taskId;
         this.shopId = shopId;
         this.brandId = brandId;
         this.taskWriteFacade = taskWriteFacade;
@@ -76,6 +78,7 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
         this.jedisTemplate = jedisTemplate;
         this.skuTemplateSearchReadService = skuTemplateSearchReadService;
     }
+
 
     /**
      * 初始
@@ -134,10 +137,10 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
         int skuPageNo = 1;
         int skuPageSize = 2000;
         List<Spu> spuList = spuPaging.getResult().getData();
-        List<Long> spuIds = spuList.stream().map(Spu::getId).collect(Collectors.toList());
         SkuSupplyRuleDisableHandle handle = new SkuSupplyRuleDisableHandle(shopId, ruleResp.getResult(), shopSkuSupplyRuleComponent);
 
         while (!spuList.isEmpty()) {
+            List<Long> spuIds = spuList.stream().map(Spu::getId).collect(Collectors.toList());
             if (getCurrentTaskId() <= 0) {
                 //不会中断已执行部分
                 throw new ServiceException("sku.supply.rule.disable.stopped");
@@ -151,6 +154,7 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
                     if (handle.isFull()) {//每个线程最大2000个sku
                         log.info("[sku-supply-rule-disable-handle-start] CORE:{}", CORE);
                         CORE.submit(handle);
+                        updateTaskCount();
                         handle = new SkuSupplyRuleDisableHandle(shopId, ruleResp.getResult(), shopSkuSupplyRuleComponent);
                     }
 
@@ -211,27 +215,28 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
      */
     @Override
     public void manualStop() {
-        setCurrentTaskId(0L);
         updateTaskStatus(TaskStatusEnum.STOPPED);
     }
 
     @Override
     public TaskResponse getLastStatus() {
-        Long currentTaskId = getCurrentTaskId();
         TaskDTO taskDTO = null;
-        if (currentTaskId > 0) {
-            QuerySingleTaskByIdRequest request = new QuerySingleTaskByIdRequest();
-            request.setTaskId(currentTaskId);
-            taskDTO = taskReadFacade.querySingleTaskById(request).getResult();
+        if (taskId != null) {
+            taskDTO = getTaskDTO(taskId);//当前task对象状态
         } else {
-            PagingTaskRequest request = new PagingTaskRequest();
-            request.setType(TaskTypeEnum.SUPPLY_RULE_BATCH_DISABLE.name());
-            request.setPageSize(1);
-            Paging<TaskDTO> result = taskReadFacade.pagingTasks(request).getResult();
-            if (result.isEmpty()) {
-                return TaskResponse.empty();
+            Long currentTaskId = getCurrentTaskId();
+            if (currentTaskId > 0) {
+                taskDTO = getTaskDTO(currentTaskId);//最新正在执行中task状态
+            } else {//最后执行task状态
+                PagingTaskRequest request = new PagingTaskRequest();
+                request.setType(TaskTypeEnum.SUPPLY_RULE_BATCH_DISABLE.name());
+                request.setPageSize(1);
+                Paging<TaskDTO> result = taskReadFacade.pagingTasks(request).getResult();
+                if (result.isEmpty()) {
+                    return TaskResponse.empty();
+                }
+                taskDTO = result.getData().get(0);
             }
-            taskDTO = result.getData().get(0);
         }
 
         TaskResponse response = new TaskResponse();
@@ -240,6 +245,14 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
         response.setType(TaskTypeEnum.SUPPLY_RULE_BATCH_DISABLE.name());
         response.setContent(taskDTO.getContent());
         return response;
+    }
+
+    private TaskDTO getTaskDTO(Long currentTaskId) {
+        TaskDTO taskDTO;
+        QuerySingleTaskByIdRequest request = new QuerySingleTaskByIdRequest();
+        request.setTaskId(currentTaskId);
+        taskDTO = taskReadFacade.querySingleTaskById(request).getResult();
+        return taskDTO;
     }
 
     private Long createTask() {
@@ -272,6 +285,20 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
         Response<Boolean> r = taskWriteFacade.updateTask(request);
         if (!r.isSuccess()) {
             log.error("failed to update task({}) status to {}, cause: {}", taskId, statusEnum, r.getError());
+            throw new ServiceException(r.getError());
+        }
+    }
+
+    private void updateTaskCount() {
+        log.info("[SKU-SUPPLY-RULE-DISABLE-PARSER] update task {} count  {}", taskId, count);
+        UpdateTaskRequest request = new UpdateTaskRequest();
+        request.setTaskId(taskId);
+        Map<String, Object> content = Maps.newHashMap();
+        content.put("count", count);
+        request.setContent(content);
+        Response<Boolean> r = taskWriteFacade.updateTask(request);
+        if (!r.isSuccess()) {
+            log.error("failed to update task({}) status to {}, cause: {}", taskId, r.getError());
             throw new ServiceException(r.getError());
         }
     }

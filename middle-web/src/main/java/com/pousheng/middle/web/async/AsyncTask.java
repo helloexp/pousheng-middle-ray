@@ -28,11 +28,6 @@ public interface AsyncTask {
      */
     String getTaskType();
 
-    /**
-     * 执行状态
-     */
-    TaskResponse getLastStatus(String taskType);
-
     ThreadPoolExecutor getTaskExecutor();
 
     Response<Long> init();

@@ -43,8 +43,7 @@ public class SupplyRuleParserFactory {
         SupplyRuleParserFactory.skuTemplateSearchReadService = skuTemplateSearchReadService;
     }
 
-    public static SkuSupplyRuleDisableParser get(Long shopId, Long brandId) {
-        return new SkuSupplyRuleDisableParser(shopId, brandId, taskWriteFacade, taskReadFacade, poushengMiddleSpuService, shopSkuSupplyRuleComponent, jedisTemplate, skuTemplateSearchReadService);
+    public static SkuSupplyRuleDisableParser get(Long taskId, Long shopId, Long brandId) {
+        return new SkuSupplyRuleDisableParser(taskId, shopId, brandId, taskWriteFacade, taskReadFacade, poushengMiddleSpuService, shopSkuSupplyRuleComponent, jedisTemplate, skuTemplateSearchReadService);
     }
-
 }

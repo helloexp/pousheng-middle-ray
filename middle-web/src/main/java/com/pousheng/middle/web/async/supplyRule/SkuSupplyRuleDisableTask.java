@@ -10,6 +10,7 @@ import com.pousheng.middle.web.async.TaskResponse;
 import io.terminus.common.model.Response;
 import lombok.Setter;
 import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -27,6 +28,8 @@ public class SkuSupplyRuleDisableTask implements AsyncTask, TaskBehaviour {
 
     private Long taskId;
 
+    private Integer timeout = 30;
+
     private SkuSupplyRuleDisableParser skuSupplyRuleDisableParser;
 
     public static SkuSupplyRuleDisableTask newInstance(Long shopId, Long brandId) {
@@ -41,7 +44,7 @@ public class SkuSupplyRuleDisableTask implements AsyncTask, TaskBehaviour {
      */
     @Override
     public Response<Long> init() {
-        skuSupplyRuleDisableParser = SupplyRuleParserFactory.get(shopId, brandId);
+        skuSupplyRuleDisableParser = SupplyRuleParserFactory.get(taskId, shopId, brandId);
         Response<Long> init = skuSupplyRuleDisableParser.init();
         taskId = init.getResult();
         return init;
@@ -53,7 +56,7 @@ public class SkuSupplyRuleDisableTask implements AsyncTask, TaskBehaviour {
     @Override
     public Boolean needStop() {
         TaskResponse lastStatus = skuSupplyRuleDisableParser.getLastStatus();
-        return TaskStatusEnum.EXECUTING.name().equals(lastStatus.getStatus()) && new DateTime(lastStatus.getInitDate()).plusHours(1).isBeforeNow();
+        return TaskStatusEnum.EXECUTING.name().equals(lastStatus.getStatus()) && new DateTime(lastStatus.getInitDate()).plusMinutes(timeout).isBeforeNow();
     }
 
     /**
@@ -72,15 +75,6 @@ public class SkuSupplyRuleDisableTask implements AsyncTask, TaskBehaviour {
     @Override
     public String getTaskType() {
         return TaskTypeEnum.SUPPLY_RULE_BATCH_DISABLE.name();
-    }
-
-    /**
-     * 执行状态 todo 删除
-     */
-    @Override
-    public TaskResponse getLastStatus(String taskType) {
-
-        return skuSupplyRuleDisableParser.getLastStatus();
     }
 
     @Override
@@ -134,10 +128,10 @@ public class SkuSupplyRuleDisableTask implements AsyncTask, TaskBehaviour {
 
     @Override
     public AsyncTask getTask(TaskDTO task) {
-        shopId = (Long) task.getContent().get("shopId");
-        brandId = (Long) task.getContent().get("brandId");
+        shopId = task.getContent().get("shopId") != null ? Long.valueOf(String.valueOf(task.getContent().get("shopId"))) : 0L;
+        brandId = task.getContent().get("brandId") != null ? Long.valueOf(String.valueOf(task.getContent().get("brandId"))) : 0L;
         taskId = task.getId();
-        skuSupplyRuleDisableParser = SupplyRuleParserFactory.get(shopId, brandId);
+        skuSupplyRuleDisableParser = SupplyRuleParserFactory.get(taskId, shopId, brandId);
         return this;
     }
 

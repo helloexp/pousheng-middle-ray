@@ -36,5 +36,8 @@ public class MiddleRefundCriteria extends RefundCriteria implements Serializable
 
     private String orderCode;
 
+    private Integer refundFlag;
+
+
 
 }

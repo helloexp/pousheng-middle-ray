@@ -11,6 +11,7 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.MiddleRefundFlagEnum;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
@@ -162,20 +163,24 @@ public class SyncVIPLogic {
                 warehouseId = shipment.getShipId();
             } else {
                 Shop shop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
-                warehouseId = warehouseCacher.findByOutCodeAndBizId(shop.getOuterId(), shop.getBusinessId().toString()).getId();
+                warehouseId = warehouseCacher.findByOutCodeAndBizId(shop.getOuterId(), shop.getBusinessId().toString())
+                    .getId();
             }
             Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
             OrderShipment orderShipment = orderShipmentResponse.getResult();
             Response<ShopOrder> orderResp = shopOrderReadService.findById(orderShipment.getOrderId());
             ShopOrder shopOrder = orderResp.getResult();
-            Response<Boolean> response = vipOrderStoreService.responseOrderStore(shipment.getShopId(), shopOrder.getOutId(), vipWarehouseMappingProxy.findByWarehouseId(warehouseId));
+            Response<Boolean> response = vipOrderStoreService.responseOrderStore(shipment.getShopId(),
+                shopOrder.getOutId(), vipWarehouseMappingProxy.findByWarehouseId(warehouseId));
             if (!response.isSuccess()) {
                 log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(), response.getError());
                 return Response.fail(response.getError());
             }
-            Response<Boolean> deliveryResp = vipOrderStoreService.confirmStoreDelivery(shipment.getShopId(), shopOrder.getOutId(), vipWarehouseMappingProxy.findByWarehouseId(warehouseId), mailNo, null);
+            Response<Boolean> deliveryResp = vipOrderStoreService.confirmStoreDelivery(shipment.getShopId(),
+                shopOrder.getOutId(), vipWarehouseMappingProxy.findByWarehouseId(warehouseId), mailNo, null);
             if (!deliveryResp.isSuccess()) {
-                log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(), deliveryResp.getError());
+                log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(),
+                    deliveryResp.getError());
                 return Response.fail(deliveryResp.getError());
             }
             //如果是仓发，呼叫成功更新为同步成功
@@ -184,7 +189,8 @@ public class SyncVIPLogic {
                 orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
             }
         } catch (Exception e) {
-            log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(), Throwables.getStackTraceAsString(e));
+            log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(),
+                Throwables.getStackTraceAsString(e));
             return Response.fail("sync.order.store.to.vip.fail");
         }
         return Response.ok(Boolean.TRUE);
@@ -208,27 +214,29 @@ public class SyncVIPLogic {
                 warehouseId = shipment.getShipId();
             } else {
                 Shop shop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
-                warehouseId = warehouseCacher.findByOutCodeAndBizId(shop.getOuterId(), shop.getBusinessId().toString()).getId();
+                warehouseId = warehouseCacher.findByOutCodeAndBizId(shop.getOuterId(), shop.getBusinessId().toString())
+                    .getId();
             }
             WarehouseDTO warehouseDTO = warehouseCacher.findById(warehouseId);
             Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
             OrderShipment orderShipment = orderShipmentResponse.getResult();
             Response<ShopOrder> orderResp = shopOrderReadService.findById(orderShipment.getOrderId());
             ShopOrder shopOrder = orderResp.getResult();
-            Response<Boolean> deliveryResp = vipOrderStoreService.confirmStoreDelivery(shipment.getShopId(), shopOrder.getOutId(), vipWarehouseMappingProxy.findByWarehouseId(warehouseDTO.getId()), mailNo, null);
+            Response<Boolean> deliveryResp = vipOrderStoreService.confirmStoreDelivery(shipment.getShopId(),
+                shopOrder.getOutId(), vipWarehouseMappingProxy.findByWarehouseId(warehouseDTO.getId()), mailNo, null);
             if (!deliveryResp.isSuccess()) {
-                log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(), deliveryResp.getError());
+                log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(),
+                    deliveryResp.getError());
                 return Response.fail(deliveryResp.getError());
             }
         } catch (Exception e) {
-            log.error("fail to order store , shipmentId:{} fail,error:{}", shipmentId, Throwables.getStackTraceAsString(e));
+            log.error("fail to order store , shipmentId:{} fail,error:{}", shipmentId,
+                Throwables.getStackTraceAsString(e));
             return Response.fail("sync.order.store.to.vip.fail");
         }
         return Response.ok(Boolean.TRUE);
 
-
     }
-
 
     /**
      * 呼叫vip快递
@@ -240,18 +248,19 @@ public class SyncVIPLogic {
     public Response<Boolean> confirmUndercarriage(Long shopId, String outId) {
         log.debug("VIP-OXO-confirmUndercarriage,params:shopId={},outId={}", shopId, outId);
         try {
-            Response<Boolean> deliveryResp = vipOrderStoreService.confirmStoreDelivery(shopId, outId, UNDERCARRIAGE_CODE, null, null);
+            Response<Boolean> deliveryResp = vipOrderStoreService.confirmStoreDelivery(shopId, outId,
+                UNDERCARRIAGE_CODE, null, null);
             if (!deliveryResp.isSuccess()) {
                 log.error("fail to notice under store , outId:{} fail,error:{}", outId, deliveryResp.getError());
                 return Response.fail(deliveryResp.getError());
             }
         } catch (Exception e) {
-            log.error("fail to notice under store , outId:{} fail,error:{}", outId, Throwables.getStackTraceAsString(e));
+            log.error("fail to notice under store , outId:{} fail,error:{}", outId,
+                Throwables.getStackTraceAsString(e));
             return Response.fail("sync.undercarriage.to.vip.fail");
         }
         return Response.ok(Boolean.TRUE);
     }
-
 
     public Response<Boolean> confirmReturnResult(Refund refund) {
         log.debug("VIP-OXO-confirmReturnResult,params:{}", refund.toString());
@@ -266,7 +275,7 @@ public class SyncVIPLogic {
 
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
             List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
-            ExpressCode expressCode=makeExpressNameByName(refundExtra.getShipmentCorpName());
+            ExpressCode expressCode = makeExpressNameByName(refundExtra.getShipmentCorpName());
             if (refund.getRefundType().equals(MiddleRefundType.AFTER_SALES_RETURN.value())) {
                 List<ReturnGoods> goodsList = Lists.newArrayList();
                 for (RefundItem refundItem : refundItems) {
@@ -276,7 +285,9 @@ public class SyncVIPLogic {
                     goods.setBarcode(refundItem.getSkuCode());
                     goodsList.add(goods);
                 }
-                response= vipOrderReturnService.confirmReturnResult(refund.getShopId(), shopOrder.getOutId(), expressCode.getVipCode(), refundExtra.getShipmentCorpName(), refundExtra.getShipmentSerialNo(), refund.getBuyerNote(), goodsList);
+                response = vipOrderReturnService.confirmReturnResult(refund.getShopId(), shopOrder.getOutId(),
+                    expressCode.getVipCode(), refundExtra.getShipmentCorpName(), refundExtra.getShipmentSerialNo(),
+                    refund.getBuyerNote(), goodsList);
             }
             if (refund.getRefundType().equals(MiddleRefundType.REJECT_GOODS.value())) {
                 List<RefuseGoods> goodsList = Lists.newArrayList();
@@ -286,12 +297,23 @@ public class SyncVIPLogic {
                     goods.setBarcode(refundItem.getSkuCode());
                     goodsList.add(goods);
                 }
-                response= vipOrderReturnService.confirmRefuseResult(refund.getShopId(), shopOrder.getOutId(), expressCode.getVipCode(), refundExtra.getShipmentCorpName(), refundExtra.getShipmentSerialNo(), refund.getBuyerNote(), goodsList);
+                response = vipOrderReturnService.confirmRefuseResult(refund.getShopId(), shopOrder.getOutId(),
+                    expressCode.getVipCode(), refundExtra.getShipmentCorpName(), refundExtra.getShipmentSerialNo(),
+                    refund.getBuyerNote(), goodsList);
             }
             Refund update = new Refund();
             update.setId(refund.getId());
             Map<String, String> extraMap = refund.getExtra();
-            extraMap.put(TradeConstants.VIP_REFUND_SYNC_FLAG, response.isSuccess() ? "1" : "0");
+            if (response.isSuccess()) {
+
+                extraMap.put(TradeConstants.VIP_REFUND_SYNC_FLAG, "1");
+                if (Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
+                    update.setRefundFlag(refund.getRefundFlag() & (TradeConstants.MAX_REFUND_FLAG- MiddleRefundFlagEnum.REFUND_SYN_THIRD_PLANT.getValue()));
+                }
+            } else {
+                extraMap.put(TradeConstants.VIP_REFUND_SYNC_FLAG, "0");
+                update.setRefundFlag(refund.getRefundFlag() | TradeConstants.MAX_REFUND_FLAG);
+            }
             update.setExtra(extraMap);
             Response<Boolean> updateRefundRes = refundWriteLogic.update(update);
             if (!updateRefundRes.isSuccess()) {
@@ -299,7 +321,8 @@ public class SyncVIPLogic {
                 throw new JsonResponseException("update.refund.error");
             }
         } catch (Exception e) {
-            log.error("fail to confirm refund , refundId:{} fail,error:{}", refund.getId(), Throwables.getStackTraceAsString(e));
+            log.error("fail to confirm refund , refundId:{} fail,error:{}", refund.getId(),
+                Throwables.getStackTraceAsString(e));
             return Response.fail("sync.order.store.to.vip.fail");
         }
 
@@ -311,7 +334,8 @@ public class SyncVIPLogic {
         criteria.setName(name);
         Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);
         if (!response.isSuccess()) {
-            log.error("failed to pagination expressCode with criteria:{}, error code:{}", criteria, response.getError());
+            log.error("failed to pagination expressCode with criteria:{}, error code:{}", criteria,
+                response.getError());
             throw new JsonResponseException(response.getError());
         }
         if (response.getResult().getData().size() == 0) {
@@ -321,15 +345,16 @@ public class SyncVIPLogic {
         return response.getResult().getData().get(0);
     }
 
-
     public Response<Boolean> getOrderLogisticsTrack(Long shopId, List<ShopOrder> shopOrders) {
         log.debug("VIP-OXO-getOrderLogisticsTrack,params:shopId={},shopOrders={}", shopId, shopOrders);
         List<String> orderIds = shopOrders.stream().map(e -> e.getOutId()).collect(Collectors.toList());
         try {
-            Map<String, Long> orderMap = shopOrders.stream().collect(Collectors.toMap(ShopOrder::getOutId, ShopOrder::getId));
+            Map<String, Long> orderMap = shopOrders.stream().collect(
+                Collectors.toMap(ShopOrder::getOutId, ShopOrder::getId));
             Response<LogisticsTrackResponse> trackResp = vipOrderStoreService.getOrderLogisticsTrack(shopId, orderIds);
             if (!trackResp.isSuccess()) {
-                log.error("fail to query order logistic track , shopId:{} ,orderIds:{} fail,error:{}", shopId, orderIds, trackResp.getError());
+                log.error("fail to query order logistic track , shopId:{} ,orderIds:{} fail,error:{}", shopId, orderIds,
+                    trackResp.getError());
                 return Response.fail(trackResp.getError());
             }
             log.debug("VIP-OXO-getOrderLogisticsTrack,resp:{}", trackResp.toString());
@@ -338,13 +363,16 @@ public class SyncVIPLogic {
                 if (CollectionUtils.isEmpty(order.getPackages())) {
                     continue;
                 }
-                List<Shipment> list = shipmentReadLogic.findByShopOrderId(orderMap.get(order.getOrder_id())).stream().filter(e->e.getStatus().equals(MiddleShipmentsStatus.SHIPPED.getValue())).collect(Collectors.toList());
-                if(CollectionUtils.isEmpty(list)){
+                List<Shipment> list = shipmentReadLogic.findByShopOrderId(orderMap.get(order.getOrder_id())).stream()
+                    .filter(e -> e.getStatus().equals(MiddleShipmentsStatus.SHIPPED.getValue())).collect(
+                        Collectors.toList());
+                if (CollectionUtils.isEmpty(list)) {
                     continue;
                 }
                 Package aPackage = order.getPackages().get(0);
                 Shipment shipment = list.get(0);
-                Response<ShipmentExpress> shipmentExpressRes = shipmentReadService.findShipmentExpress(shipment.getShipmentCode(), aPackage.getTransport_no());
+                Response<ShipmentExpress> shipmentExpressRes = shipmentReadService.findShipmentExpress(
+                    shipment.getShipmentCode(), aPackage.getTransport_no());
                 if (!shipmentExpressRes.isSuccess()) {
                     continue;
                 }
@@ -353,7 +381,9 @@ public class SyncVIPLogic {
                 try {
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     //若最新的物流信息更新时间小于当前时间 则忽略此次拉取结果
-                    if (shipmentExpressRes.getResult() != null && sdf.parse(aPackage.getTraceInfos().get(0).getTransport_time()).before(shipmentExpressRes.getResult().getUpdatedAt())) {
+                    if (shipmentExpressRes.getResult() != null && sdf.parse(
+                        aPackage.getTraceInfos().get(0).getTransport_time()).before(
+                        shipmentExpressRes.getResult().getUpdatedAt())) {
                         continue;
                     }
                 } catch (Exception e) {
@@ -371,7 +401,8 @@ public class SyncVIPLogic {
                 extraMap.put(TradeConstants.SHIPMENT_EXPRESS_NODE_DETAILS, JSON_MAPPER.toJson(expressDetails));
                 //若物流信息不存在 则创建 同时更新物流单号
                 if (shipmentExpressRes.getResult() != null) {
-                    log.info("start to update express info for shipment code:{} by data:{}", shipment.getShipmentCode(), aPackage);
+                    log.info("start to update express info for shipment code:{} by data:{}", shipment.getShipmentCode(),
+                        aPackage);
                     ShipmentExpress shipmentExpress = shipmentExpressRes.getResult();
                     shipmentExpress.setExpressStatus(transToShipmentExpressStatus(status));
                     shipmentExpress.setExtra(extraMap);
@@ -387,10 +418,12 @@ public class SyncVIPLogic {
                     update.setExtra(extra);
                     Response<Boolean> updateShipmentRes = shipmentWriteService.update(update);
                     if (!updateShipmentRes.isSuccess()) {
-                        log.error("fail to update shipment express to :{},error:{}", aPackage.getTransport_no(), updateShipmentRes.getError());
+                        log.error("fail to update shipment express to :{},error:{}", aPackage.getTransport_no(),
+                            updateShipmentRes.getError());
                         continue;
                     }
-                    log.info("start to create express info for shipment code:{} by data:{}", shipment.getShipmentCode(), aPackage);
+                    log.info("start to create express info for shipment code:{} by data:{}", shipment.getShipmentCode(),
+                        aPackage);
                     ShipmentExpress shipmentExpress = new ShipmentExpress();
                     shipmentExpress.setShipmentCode(shipment.getShipmentCode());
                     shipmentExpress.setExpressNo(aPackage.getTransport_no());
@@ -401,32 +434,37 @@ public class SyncVIPLogic {
                     shipmentWriteService.createExpressInfo(shipmentExpress);
                 }
                 //若状态为已收货 或 拒收 则要更新并通知
-                if (status.equals(TransportCodeEnum.SIGN_FOR.value()) || status.equals(TransportCodeEnum.REFUSED.value())) {
-                    confirmOrder(orderMap.get(order.getOrder_id()),status.equals(TransportCodeEnum.REFUSED.value())?true:false);
+                if (status.equals(TransportCodeEnum.SIGN_FOR.value()) || status.equals(
+                    TransportCodeEnum.REFUSED.value())) {
+                    confirmOrder(orderMap.get(order.getOrder_id()),
+                        status.equals(TransportCodeEnum.REFUSED.value()) ? true : false);
                 }
             }
 
         } catch (Exception e) {
-            log.error("fail to query order logistic track , shopId:{} ,orderIds:{} fail,error:{}", shopId, orderIds, Throwables.getStackTraceAsString(e));
+            log.error("fail to query order logistic track , shopId:{} ,orderIds:{} fail,error:{}", shopId, orderIds,
+                Throwables.getStackTraceAsString(e));
             return Response.fail("sync.order.logistic.track.fail");
         }
         return Response.ok(Boolean.TRUE);
     }
 
-
-    private void confirmOrder(Long orderId,boolean isRefused) {
-        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(orderId, MiddleOrderStatus.SHIPPED.getValue());
+    private void confirmOrder(Long orderId, boolean isRefused) {
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(orderId,
+            MiddleOrderStatus.SHIPPED.getValue());
         if (skuOrders.size() == 0) {
             return;
         }
         for (SkuOrder skuOrder : skuOrders) {
-            Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.SHIPPED.getValue(), MiddleOrderStatus.CONFIRMED.getValue());
+            Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(),
+                MiddleOrderStatus.SHIPPED.getValue(), MiddleOrderStatus.CONFIRMED.getValue());
             if (!updateRlt.getResult()) {
-                log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(),
+                    skuOrder.getStatus());
             }
         }
         //判断订单的状态是否是已完成,如果是拒收则不处理
-        if(!isRefused) {
+        if (!isRefused) {
             orderReceiver.noticeConfirm(orderId);
         }
     }
@@ -447,18 +485,19 @@ public class SyncVIPLogic {
         return null;
     }
 
-
     public void syncWarehouseMapping(Long shopId) {
         try {
             Response<List<Long>> rWarehouseIds = warehouseRulesClient.findWarehouseIdsByShopId(shopId);
             if (!rWarehouseIds.isSuccess()) {
-                log.error("find warehouse list by shopId fail: shopId: {}, caused: {}", shopId, rWarehouseIds.getError());
+                log.error("find warehouse list by shopId fail: shopId: {}, caused: {}", shopId,
+                    rWarehouseIds.getError());
             }
             Response<List<VipWarehouseMapping>> response = vipWarehouseMappingReadService.findAll();
             if (!response.isSuccess()) {
                 throw new JsonResponseException(response.getError());
             }
-            Map<Long, VipWarehouseMapping> warehouseMap = response.getResult().stream().collect(Collectors.toMap(VipWarehouseMapping::getWarehouseId, vipWarehouseMapping -> vipWarehouseMapping));
+            Map<Long, VipWarehouseMapping> warehouseMap = response.getResult().stream().collect(
+                Collectors.toMap(VipWarehouseMapping::getWarehouseId, vipWarehouseMapping -> vipWarehouseMapping));
             List<Long> storeList = Lists.newArrayList();
             List<StoreMapping> queryList = vipStoreService.queryStroe(shopId);
             //如果唯品会查询接口异常结果集为null,则退出
@@ -469,15 +508,18 @@ public class SyncVIPLogic {
             //新的映射则创建
             for (StoreMapping storeMapping : queryList) {
                 try {
-                    WarehouseDTO warehouseDTO = warehouseCacher.findByOutCodeAndBizId(storeMapping.getOuterCode(), storeMapping.getCompanyId());
+                    WarehouseDTO warehouseDTO = warehouseCacher.findByOutCodeAndBizId(storeMapping.getOuterCode(),
+                        storeMapping.getCompanyId());
                     storeList.add(warehouseDTO.getId());
                     if (warehouseMap.get(warehouseDTO.getId()) == null) {
-                        VipWarehouseMapping vipWarehouseMapping = new VipWarehouseMapping().vipStoreSn(storeMapping.getStoreSn()).warehouseId(warehouseDTO.getId());
+                        VipWarehouseMapping vipWarehouseMapping = new VipWarehouseMapping().vipStoreSn(
+                            storeMapping.getStoreSn()).warehouseId(warehouseDTO.getId());
                         Response<Long> createResp = vipWarehouseMappingWriteService.create(vipWarehouseMapping);
                         if (!createResp.isSuccess()) {
                             log.error("fail to create vip warehouse mapping,cause by {}", createResp.getError());
                         }
-                    } else if (!Objects.equals(warehouseMap.get(warehouseDTO.getId()).getVipStoreSn(), storeMapping.getStoreSn())) {
+                    } else if (!Objects.equals(warehouseMap.get(warehouseDTO.getId()).getVipStoreSn(),
+                        storeMapping.getStoreSn())) {
                         VipWarehouseMapping update = warehouseMap.get(warehouseDTO.getId());
                         update.setVipStoreSn(storeMapping.getStoreSn());
                         Response<Boolean> updateResp = vipWarehouseMappingWriteService.update(update);
@@ -487,7 +529,8 @@ public class SyncVIPLogic {
                         needRefresh = Boolean.TRUE;
                     }
                 } catch (Exception e) {
-                    log.error("fail to handle vip store(storeSn:{}) ,cause by {}", storeMapping.getStoreSn(), Throwables.getStackTraceAsString(e));
+                    log.error("fail to handle vip store(storeSn:{}) ,cause by {}", storeMapping.getStoreSn(),
+                        Throwables.getStackTraceAsString(e));
                 }
             }
 
@@ -518,8 +561,9 @@ public class SyncVIPLogic {
                 log.info("start to refresh vipMapping");
                 vipWarehouseMappingProxy.refreshAll();
             }
-        }catch (Exception e){
-            log.error("fail to handle VIP OXO shop(shopId:{}) mapping ,cause by {}", shopId, Throwables.getStackTraceAsString(e));
+        } catch (Exception e) {
+            log.error("fail to handle VIP OXO shop(shopId:{}) mapping ,cause by {}", shopId,
+                Throwables.getStackTraceAsString(e));
         }
     }
 }

@@ -32,7 +32,7 @@ import java.util.Objects;
 @ConditionalOnProperty(name = "mock.after.sale.common.fetch.enable", havingValue = "true")
 public class MockAfterSaleService extends VipAfterSaleService {
 
-    private static final int TOTAL = 5000;
+    private static final int TOTAL = 50;
 
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -86,7 +86,7 @@ public class MockAfterSaleService extends VipAfterSaleService {
         String orderReturnId = now.getTime() + "" + currentIndex;
         OrderReturn orderReturn = new OrderReturn();
         orderReturn.setCarrier("中国邮政速递物流");
-        orderReturn.setOrder_id(now.getTime() + "");
+        orderReturn.setOrder_id("19050938993622");
         orderReturn.setOrder_return_id(orderReturnId);
         orderReturn.setReturn_reason("不想要了");
         orderReturn.setReturn_time(SIMPLE_DATE_FORMAT.format(now));

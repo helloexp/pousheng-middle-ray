@@ -400,4 +400,4 @@ order.fetch.mq.queue.size: ${ORDER_FETCH_MQ_QUEUE_SIZE:0}
 pousheng.supply-rule.import.enable: ${SUPPLY_RULE_IMPORT_ENABLE:false}
 pousheng.supply-rule.import.hosts: ${SUPPLY_RULE_IMPORT_HOSTS:}
 
-# mock.order.fetch.enable: true
+mock.after.sale.common.fetch.enable: true

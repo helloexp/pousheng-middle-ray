@@ -101,11 +101,13 @@ public class SupplyRuleImportTaskController {
 
     @ApiOperation("分页查询")
     @GetMapping("/paging")
-    public Paging<SupplyRuleImportTaskDTO> paging(@RequestParam(required = false, value = "pageNo", defaultValue = "1") Integer pageNo,
+    public Paging<SupplyRuleImportTaskDTO> paging(@RequestParam(required = false, defaultValue = "SUPPLY_RULE_IMPORT") String type,
+                                                  @RequestParam(required = false, value = "pageNo", defaultValue = "1") Integer pageNo,
                                                   @RequestParam(required = false, value = "pageSize", defaultValue = "20") Integer pageSize) {
         PagingTaskRequest request = new PagingTaskRequest();
         request.setPageSize(pageSize);
         request.setPageNo(pageNo);
+        request.setType(type);
         Response<Paging<TaskDTO>> r = taskReadFacade.pagingTasks(request);
         if (!r.isSuccess()) {
             log.error("failed to paging task, cause: {}", r.getResult());

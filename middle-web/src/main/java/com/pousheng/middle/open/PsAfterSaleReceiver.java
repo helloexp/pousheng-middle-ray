@@ -21,7 +21,6 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.job.aftersale.component.DefaultAfterSaleReceiver;
 import io.terminus.open.client.center.job.aftersale.dto.SkuOfRefund;
@@ -182,11 +181,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                     skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
                 }
                 //查询需要售后的发货单
-                //Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefund.getSkuCode(), skuOrder.getQuantity());
-                Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), Joiners.COLON.join(null == skuOrder.getId() ? "" : skuOrder.getId(),
-                        StringUtils.isEmpty(skuOrder.getSkuCode()) ? "" : skuOrder.getSkuCode(),
-                        StringUtils.isEmpty(skuOrder.getOutSkuId()) ? "" : skuOrder.getOutSkuId()),
-                        skuOrder.getQuantity());
+                Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), SkuCodeUtil.getCombineCode(skuOrder), skuOrder.getQuantity());
 
                 if (!Objects.isNull(shipment)) {
                     refundExtra.setShipmentId(shipment.getShipmentCode());
@@ -292,7 +287,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
             }
             //查询需要售后的发货单
-            List<Shipment> shipments = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefund.getSkuCode());
+            List<Shipment> shipments = this.findShipmentByOrderInfo(shopOrder.getId(), SkuCodeUtil.getCombineCode(skuOrder));
 
             if (!CollectionUtils.isEmpty(shipments)) {
                 for (Shipment shipment : shipments) {
@@ -620,7 +615,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         for (Shipment shipment : shipments) {
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
             List<ShipmentItem> shipmentItemFilters = shipmentItems.stream().
-                    filter(Objects::nonNull).filter(shipmentItem -> Objects.equals(shipmentItem.getSkuCode(), skuCode)).collect(Collectors.toList());
+                    filter(Objects::nonNull).filter(shipmentItem -> Objects.equals(SkuCodeUtil.getCombineCode(shipmentItem), skuCode)).collect(Collectors.toList());
             if (shipmentItemFilters.size() > 0) {
                 availShipments.add(shipment);
             }

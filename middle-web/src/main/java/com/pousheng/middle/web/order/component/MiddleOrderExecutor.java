@@ -7,12 +7,17 @@ import com.pousheng.middle.web.order.dto.OrderFetchDTO;
 import com.pousheng.middle.web.order.dto.OrderFetchTypeConstants;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.OrderServiceRegistryCenter;
 import io.terminus.open.client.center.job.order.component.OrderExecutor;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
+import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.Pagination;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
+import io.terminus.open.client.order.service.OpenClientOrderService;
+import io.terminus.open.client.suning.order.SuningOrderService;
+import io.terminus.open.client.vip.order.VipOrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -37,6 +42,10 @@ public class MiddleOrderExecutor extends OrderExecutor {
     private OrderServiceCenter orderServiceCenter;
     @Autowired
     private RocketMqProducerService rocketMqProducerService;
+    @Autowired
+    private OrderServiceRegistryCenter orderServiceRegistryCenter;
+    @Autowired
+    private OpenShopCacher openShopCacher;
 
     private static final DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -56,6 +65,11 @@ public class MiddleOrderExecutor extends OrderExecutor {
                           OpenClientOrderStatus orderStatus,
                           Date startAt,
                           Date endAt) {
+        OpenClientOrderService openClientOrderService = getService(openShop.getId());
+        // 唯品会的没有总页码，因此走
+        if (openClientOrderService instanceof VipOrderService) {
+            super.syncOrder(openShop, orderStatus, startAt, endAt);
+        }
         if (openShop.getShopName().startsWith("yj")){
             return;
         }
@@ -129,5 +143,9 @@ public class MiddleOrderExecutor extends OrderExecutor {
             String message = JsonMapper.nonEmptyMapper().toJson(orderFetchDTO);
             rocketMqProducerService.asyncSendOrderly(MqConstants.POUSHENG_MIDDLE_ORDER_FETCH_TOPIC, message, messageKey, orderFetchMqQueueSize);
         }
+    }
+
+    private OpenClientOrderService getService(Long shopId) {
+        return orderServiceRegistryCenter.getOrderService(openShopCacher.findById(shopId).getChannel());
     }
 }

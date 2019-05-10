@@ -31,11 +31,13 @@ import com.pousheng.middle.web.order.sync.mpos.MiddleParanaClient;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.component.ShopBusinessLogic;
+import com.pousheng.middle.web.shop.component.SyncOpenShopLogic;
 import com.pousheng.middle.web.shop.dto.Channel;
 import com.pousheng.middle.web.shop.dto.OrderExpireInfo;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import com.pousheng.middle.web.shop.event.UpdateShopEvent;
 import com.pousheng.middle.web.shop.event.listener.CreateOpenShopRelationListener;
+import com.pousheng.middle.web.shop.event.listener.ShopCreationOrUpdateListener;
 import com.pousheng.middle.web.user.component.ParanaUserOperationLogic;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import com.pousheng.middle.web.utils.export.ExportClientUtil;
@@ -144,6 +146,8 @@ public class AdminShops {
     @Autowired
     private CreateOpenShopRelationListener createOpenShopRelationListener;
     @Autowired
+    private ShopCreationOrUpdateListener shopCreationOrUpdateListener;
+    @Autowired
     private ZoneContractReadService zoneContractReadService;
     @Value("${pousheng.order.email.remind.group}")
     private String[] mposEmailGroup;
@@ -161,6 +165,8 @@ public class AdminShops {
     private MiddleParanaClient paranaClient;
     @Autowired
     private ShopMaxOrderLogic shopMaxOrderLogic;
+    @Autowired
+    private SyncOpenShopLogic syncOpenShopLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -412,7 +418,7 @@ public class AdminShops {
         Shop recoverShop = checkOuterId(shop.getOuterId(),shop.getCompanyId());
 
         // TODO 判断对应仓库是否存在，目前使用OUTCODE，后面调整
-        checkWarehouse(shop.getOuterId(), shop.getCompanyId());
+        Long warehouseid = checkWarehouse(shop.getOuterId(), shop.getCompanyId());
 
         //创建门店
         shop.setBusinessId(shop.getCompanyId());//这里把公司id塞入到businessId字段中
@@ -445,8 +451,10 @@ public class AdminShops {
             //创建门店信息
             id = createShop(shop, userInfoRes.getResult().getUserId(), userNmae);
 
+            //同步创建open shop信息，因为后面要更新open shop的虚拟店及退货仓信息。
+            syncOpenShopLogic.createOpenShopRelations(id);
             CreateShopEvent addressEvent = new CreateShopEvent(id,shop.getCompanyId(),shop.getOuterId(),shop.getOuterId());
-            eventBus.post(addressEvent);
+            shopCreationOrUpdateListener.onCreated(addressEvent);
         }else {
             //更新门店用户
             String userNmae = shop.getCompanyId()+"-"+shop.getOuterId();
@@ -468,6 +476,20 @@ public class AdminShops {
 
             //同步电商
             syncParanaShop(recoverShop);
+        }
+        // 更新创建门店的服务信息：虚拟店及退货仓
+        try {
+            ShopServerInfo shopserverinfo = new ShopServerInfo();
+            shopserverinfo.setCompanyId(shop.getCompanyId().toString());
+            shopserverinfo.setVirtualShopInnerCode(shop.getStoreId());
+            shopserverinfo.setVirtualShopCode(shop.getOuterId());
+            shopserverinfo.setVirtualShopName(shop.getName());
+            shopserverinfo.setReturnWarehouseId(warehouseid);
+            shopserverinfo.setReturnWarehouseCode(shop.getOuterId());
+            shopserverinfo.setReturnWarehouseName(shop.getName());
+            this.updateShopServerInfo(id, shopserverinfo);
+        }catch (Exception e){
+            log.error("update shop(id:{}) virtualshop fail,cause:{}",id,Throwables.getStackTraceAsString(e));
         }
 
         return Collections.singletonMap("id", id);
@@ -515,7 +537,7 @@ public class AdminShops {
 
     }
 
-    private void checkWarehouse(String outerId,Long companyId){
+    private Long checkWarehouse(String outerId,Long companyId){
         if(Strings.isNullOrEmpty(outerId)){
             log.error("shop outer id is null");
             throw new JsonResponseException("shop.outer.in.invalid");
@@ -525,6 +547,7 @@ public class AdminShops {
             log.error("no warehouse found by outer id:{} and business id:{} fail,error:{}",outerId,companyId, warehouseRes);
             throw new JsonResponseException("warehouse.not.found");
         }
+        return warehouseRes.getResult().getId();
     }
 
     //直接恢复状态

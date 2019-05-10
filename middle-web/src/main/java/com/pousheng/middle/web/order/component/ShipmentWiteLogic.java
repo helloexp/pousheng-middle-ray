@@ -1824,7 +1824,8 @@ public class ShipmentWiteLogic {
         log.info("MPOS DISPATCH ORDER:{} SUCCESS result:{}",shopOrder.getOrderCode(), dispatchOrderItemInfo);
 
         List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
-
+        //首次寻源拆单后（在任务没扫到拆出来的单子时），可能出现部分发货的情况，订单未记录拆单的原因（整单库存不足）
+        boolean needSpiltOrder = !CollectionUtils.isEmpty(dispatchOrderItemInfo.getSkuCodeAndQuantities());
         int orderNoteCount = 0;
         for (WarehouseShipment warehouseShipment : dispatchOrderItemInfo.getWarehouseShipments()) {
             try {
@@ -1949,7 +1950,11 @@ public class ShipmentWiteLogic {
                 if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUJIT.getValue())) {
                     return;
                 }
-                this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
+                if(needSpiltOrder){
+                    this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());
+                }else{
+                    this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
+                }
             }
         }
         //释放mpos拒单的库存

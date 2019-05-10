@@ -6,7 +6,15 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.pousheng.middle.warehouse.dto.*;
+import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
+import com.pousheng.middle.warehouse.dto.AvailableInventoryRequest;
+import com.pousheng.middle.warehouse.dto.InventoryDTO;
+import com.pousheng.middle.warehouse.dto.InventoryTradeDTO;
+import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRule;
+import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRuleBatchCreateRequest;
+import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRuleBatchUpdateDisableRequest;
+import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRuleCreateRequest;
+import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRuleQueryOneRequest;
 import com.pousheng.middle.warehouse.model.SkuInventory;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -381,6 +389,38 @@ public class InventoryClient {
             return Response.ok(availableInvList);
         } catch (Exception e) {
             log.error("query available inventory fail, cause:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * 批量更新发货规则禁用状态
+     * @param request
+     * @return
+     */
+    public Response<Boolean> batchUpdateDisable(ShopSkuSupplyRuleBatchUpdateDisableRequest request) {
+
+        try {
+            String path = "api/inventory/shop/sku/supply/rule/batch/disable";
+            Boolean result = (Boolean) inventoryBaseClient.postJson(path, JsonMapper.nonEmptyMapper().toJson(request), Boolean.class);
+            return Response.ok(result);
+        } catch (Exception e) {
+            log.error("fail to batch update disable request:{}, cause:{}", request, e);
+            return Response.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取发货规则最新id
+     * @return
+     */
+    public Response<Long> queryTopSupplyRuleId() {
+        try {
+            String path = "api/inventory/shop/sku/supply/rule/topId";
+            Long id = (Long) inventoryBaseClient.get(path, null, null, Maps.newHashMap(), Long.class, false);
+            return Response.ok(id);
+        } catch (Exception e) {
+            log.error("query sku supply rule id fail, cause:{}", e);
             return Response.fail(e.getMessage());
         }
     }

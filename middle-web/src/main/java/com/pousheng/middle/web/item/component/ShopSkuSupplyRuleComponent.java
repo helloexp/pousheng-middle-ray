@@ -9,6 +9,7 @@ import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRule;
 import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRuleBatchCreateRequest;
+import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRuleBatchUpdateDisableRequest;
 import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRuleCreateRequest;
 import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRuleQueryOneRequest;
 import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
@@ -128,4 +129,16 @@ public class ShopSkuSupplyRuleComponent {
         return false;
     }
 
+    public Response<Boolean> batchUpdateDisable(Long shopId, List<String> skuCodes, Long upperLimitId) {
+        if (CollectionUtils.isEmpty(skuCodes)) {
+            return Response.fail("skuCodes.is.empty");
+        }
+        return inventoryClient.batchUpdateDisable(ShopSkuSupplyRuleBatchUpdateDisableRequest.builder()
+                .shopId(shopId).skuCodes(skuCodes).upperLimitId(upperLimitId).build());
+
+    }
+
+    public Response<Long> queryTopSupplyRuleId() {
+        return inventoryClient.queryTopSupplyRuleId();
+    }
 }

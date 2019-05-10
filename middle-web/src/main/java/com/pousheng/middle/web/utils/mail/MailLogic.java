@@ -35,7 +35,7 @@ public class MailLogic {
     public void sendMail (String receives, String content) {
         MailSenderInfo mailInfo = new MailSenderInfo();
         mailInfo.setMailServerHost(mailServer);
-        mailInfo.setMailServerPort("25");
+        mailInfo.setMailServerPort("994");
         mailInfo.setValidate(true);
         mailInfo.setUserName(username);
         mailInfo.setPassword(password);
@@ -51,7 +51,7 @@ public class MailLogic {
     public void sendMail (String receives, String title,String content) {
         MailSenderInfo mailInfo = new MailSenderInfo();
         mailInfo.setMailServerHost(mailServer);
-        mailInfo.setMailServerPort("25");
+        mailInfo.setMailServerPort("994");
         mailInfo.setValidate(true);
         mailInfo.setUserName(username);
         mailInfo.setPassword(password);

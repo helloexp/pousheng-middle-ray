@@ -12,6 +12,7 @@ import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.*;
+import com.pousheng.middle.order.impl.service.ShipmentReadExtraServiceImpl;
 import com.pousheng.middle.order.service.*;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
@@ -160,6 +161,9 @@ public class Shipments {
     @Autowired
     private JitRealtimeOrderStockManager jitRealtimeOrderStockManager;
 
+    @Autowired
+    private ShipmentReadExtraServiceImpl shipmentReadExtraServiceImpl;
+    
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     /**
@@ -201,21 +205,70 @@ public class Shipments {
             }
             shipmentCriteria.setOrderIds(list.stream().map(ShopOrder::getId).collect(Collectors.toList()));
         }
-        if (shipmentCriteria.getShipmentSerialNo() != null) {
-            if (shipmentCriteria.getShipmentSerialNo().length() < MIN_LENGTH) {
-                throw new JsonResponseException("shipment.serial.no.too.short");
+        //修改 过滤条件 start
+        if (shipmentCriteria.getShipmentSerialNo() != null || shipmentCriteria.getDispatchType() != null) {
+        	if (shipmentCriteria.getShipmentSerialNo() != null && shipmentCriteria.getDispatchType() != null) {
+        		if (shipmentCriteria.getShipmentSerialNo().length() < MIN_LENGTH) {
+        			throw new JsonResponseException("shipment.serial.no.too.short");
+        		}
+        		Response<List<Shipment>> response = shipmentReadExtraServiceImpl.findBySerialNoAndDispatchType(
+        				shipmentCriteria.getShipmentSerialNo(), shipmentCriteria.getDispatchType());
+        		if (!response.isSuccess()) {
+        			throw new JsonResponseException(response.getError());
+        		}
+        		List<Shipment> list = response.getResult();
+        		if (list.isEmpty()) {
+        			Paging<ShipmentPagingInfo> paging = new Paging<>();
+        			return paging;
+        		}
+        		shipmentCriteria.setShipmentIds(list.stream().map(Shipment::getId).collect(Collectors.toList()));
+        	}else if (shipmentCriteria.getShipmentSerialNo() != null) {
+        		if (shipmentCriteria.getShipmentSerialNo().length() < MIN_LENGTH) {
+                    throw new JsonResponseException("shipment.serial.no.too.short");
+                }
+                Response<List<Shipment>> response = shipmentReadService.findBySerialNo(shipmentCriteria.getShipmentSerialNo());
+                if (!response.isSuccess()) {
+                    throw new JsonResponseException(response.getError());
+                }
+                List<Shipment> list = response.getResult();
+                if (list.isEmpty()) {
+                    Paging<ShipmentPagingInfo> paging = new Paging<>();
+                    return paging;
+                }
+                shipmentCriteria.setShipmentIds(list.stream().map(Shipment::getId).collect(Collectors.toList()));
+        	}else if (shipmentCriteria.getDispatchType() != null) {
+        		Response<List<Shipment>> response = shipmentReadExtraServiceImpl.findByDispatchType(shipmentCriteria.getDispatchType());
+            	if (!response.isSuccess()) {
+            		throw new JsonResponseException(response.getError());
+            	}
+            	List<Shipment> list = response.getResult();
+            	if (list.isEmpty()) {
+            		Paging<ShipmentPagingInfo> paging = new Paging<>();
+            		return paging;
+            	}
+            	shipmentCriteria.setShipmentIds(list.stream().map(Shipment::getId).collect(Collectors.toList()));
+        	}
+        }
+        if (shipmentCriteria.getWarehouseNameOrOutCode() != null) {
+        	Response<List<Shipment>> response;
+            if (shipmentCriteria.getShipmentSerialNo() != null || shipmentCriteria.getDispatchType() != null) {
+            	response = shipmentReadExtraServiceImpl.findByWHNameAndWHOutCodeWithShipmentIds(
+            			shipmentCriteria.getWarehouseNameOrOutCode(), shipmentCriteria.getShipmentIds());
+            }else {
+            	response = shipmentReadExtraServiceImpl.findByWHNameAndWHOutCodeWithShipmentIds(
+            			shipmentCriteria.getWarehouseNameOrOutCode());
             }
-            Response<List<Shipment>> response = shipmentReadService.findBySerialNo(shipmentCriteria.getShipmentSerialNo());
             if (!response.isSuccess()) {
-                throw new JsonResponseException(response.getError());
+            	throw new JsonResponseException(response.getError());
             }
             List<Shipment> list = response.getResult();
             if (list.isEmpty()) {
-                Paging<ShipmentPagingInfo> paging = new Paging<>();
-                return paging;
+            	Paging<ShipmentPagingInfo> paging = new Paging<>();
+            	return paging;
             }
             shipmentCriteria.setShipmentIds(list.stream().map(Shipment::getId).collect(Collectors.toList()));
         }
+        //修改 过滤条件 end
         List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
         if (shipmentCriteria.getShopId() == null) {
             shipmentCriteria.setShopIds(currentUserCanOperatShopIds);

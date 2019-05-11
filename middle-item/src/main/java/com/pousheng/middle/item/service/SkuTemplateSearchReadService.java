@@ -10,6 +10,8 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.search.api.model.Pagination;
 import io.terminus.search.api.model.WithAggregations;
 import io.terminus.common.model.Paging;
+
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,5 +72,7 @@ public interface SkuTemplateSearchReadService {
      */
     Response<Paging<SkuTemplate>> findByMaterial(Integer offset, Integer limit, Map<String, Object> params);
 
+
+    Response<Paging<SkuTemplate>> pagingSkuBySpuIds(Integer pageNo, Integer pageSize, List<Long> spuIds);
 }
 

@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.sync.yjerp;
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.kevinsawicki.http.HttpRequest;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.open.ReceiverInfoCompleter;
@@ -97,7 +98,8 @@ public class SyncYJErpShipmentLogic {
             shipment.setStatus(targetStatus);
 
             List<YJErpShipmentInfo> list = getSycYJErpShipmentInfo(shipment);
-            String response = sycYYEdiShipmentOrderApi.doSyncYJErpShipmentOrder(list);
+            HttpRequest request = sycYYEdiShipmentOrderApi.syncYJErpShipmentOrder(list);
+            String response = request.body();
             JSONObject responseObj = JSONObject.parseObject(response);
             if (Objects.equals(responseObj.get("error"), 0)) {
                 JSONObject data = JSONObject.parseObject(responseObj.getString("data"));
@@ -129,6 +131,9 @@ public class SyncYJErpShipmentLogic {
                 }
             }
             else {
+                String responseHeader = request.contentType();
+                // 如果有 ESB 异常，打标到 shipment 冗余字段
+                markIfHasEsbError(responseHeader, shipment);
                 //整体失败
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
@@ -136,7 +141,7 @@ public class SyncYJErpShipmentLogic {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 }
                 // 失败原因
-                log.error("订单派发中心返回信息:{}", response);
+                log.error("订单派发中心返回报文头:{}, 报文体: {}", responseHeader, response);
                 return Response.fail(responseObj.getString("error_info"));
             }
 
@@ -148,6 +153,30 @@ public class SyncYJErpShipmentLogic {
         }
         return Response.ok(Boolean.TRUE);
 
+    }
+
+    /**
+     * 如果有 ESB 异常，打标到 shipment 冗余字段
+     * @param responseHeader
+     * @param shipment
+     */
+    private void markIfHasEsbError(String responseHeader, Shipment shipment) {
+        boolean hasEsbError = !responseHeader.contains("ESB00000");
+        if (hasEsbError) {
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+            shipmentExtra.setEsb2WMSError(true);
+            //封装更新信息
+            Shipment update = new Shipment();
+            update.setId(shipment.getId());
+            Map<String, String> extraMap = shipment.getExtra();
+            extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
+            update.setExtra(extraMap);
+            //更新基本信息
+            Response<Boolean> updateRes = shipmentWriteService.update(update);
+            if (!updateRes.isSuccess()) {
+                log.error("fail to update shipment for esb error, cause: {}", updateRes.getError());
+            }
+        }
     }
 
 

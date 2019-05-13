@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.order.component;
 
-import com.alibaba.dubbo.common.utils.StringUtils;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -34,6 +33,7 @@ import io.terminus.parana.order.service.RefundWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.Date;
 import java.util.List;
@@ -201,8 +201,10 @@ public class HKShipmentDoneLogic {
                         ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
                         String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
                         OpenClientOrderShipment openOrderShipment = new OpenClientOrderShipment();
-                        openOrderShipment.setOuterOrderId(refund.getOutId().substring(refund.getOutId().indexOf("_") + 1));
-                        openOrderShipment.setLogisticsType("200");//100表示平邮，200表示快递
+                        if (StringUtils.hasText(refund.getOutId())) {
+                            openOrderShipment.setOuterOrderId(refund.getOutId().substring(refund.getOutId().indexOf("_") + 1));
+                        }
+                        openOrderShipment.setLogisticsType("200"); //100表示平邮，200表示快递
                         openOrderShipment.setLogisticsCompany(expressCompanyCode);
                         openOrderShipment.setWaybill(shipmentSerialNo);
                         List<String> outerItemOrderIds = Lists.newArrayList();

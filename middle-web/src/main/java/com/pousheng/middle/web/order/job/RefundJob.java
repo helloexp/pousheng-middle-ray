@@ -184,7 +184,7 @@ public class RefundJob {
             return;
         }
 
-        log.info("START JOB RefundJob.doneRefund");
+        log.info("START JOB RefundJob.synVipReturnExpress");
 
 
         MiddleRefundCriteria criteria = new MiddleRefundCriteria();
@@ -236,6 +236,13 @@ public class RefundJob {
      */
     @Scheduled(cron = "0 0/5 * * * ? ")
     public void vipReturnOrderAutoCancel() {
+
+        if (!hostLeader.isLeader()) {
+            log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
+            return;
+        }
+
+        log.info("START JOB RefundJob.vipReturnOrderAutoCancel");
 
         int pageNo = 1;
         MiddleRefundCriteria criteria = new MiddleRefundCriteria();

@@ -633,6 +633,7 @@ public class ShipmentWiteLogic {
         }
         //遍历不同的发货仓生成相应的发货单
         int orderNoteCount = 0;
+        boolean needSpiltOrder = false;
         for (WarehouseShipment warehouseShipment : warehouseShipments) {
             Long shipmentId = null;
             try {
@@ -652,7 +653,7 @@ public class ShipmentWiteLogic {
                 log.error("shopOrder [{}] failed to gen shipment order error {} ", shopOrder.getId(), Throwables.getStackTraceAsString(e));
             }
             if (null == shipmentId) {
-
+                needSpiltOrder = true;
                 continue;
             }
             //修改子单和总单的状态,待处理数量,并同步恒康
@@ -712,7 +713,11 @@ public class ShipmentWiteLogic {
             if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUJIT.getValue())) {
                 return true;
             }
-            this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
+            if(needSpiltOrder){
+                this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());
+            }else{
+                this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
+            }
         }
         return true;
     }

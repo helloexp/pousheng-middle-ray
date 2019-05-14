@@ -12,6 +12,7 @@ import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.utils.SkuCodeUtil;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
@@ -61,8 +62,10 @@ public class RefundShipmentListener {
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
 
+        //Map<String, Integer> skuCodeAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
+        //        .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getQuantity));
         Map<String, Integer> skuCodeAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getQuantity));
+                .collect(Collectors.toMap(it -> SkuCodeUtil.getCombineCode(it),ShipmentItem::getQuantity));
         Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
         if (!Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
             refundWriteLogic.updateSkuHandleNumber(orderShipment.getAfterSaleOrderId(),skuCodeAndQuantityMap);

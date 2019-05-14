@@ -7,6 +7,8 @@ import com.pousheng.middle.task.enums.TaskTypeEnum;
 import com.pousheng.middle.web.async.AsyncTask;
 import com.pousheng.middle.web.async.TaskBehaviour;
 import com.pousheng.middle.web.async.TaskResponse;
+import io.terminus.common.model.BaseUser;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import lombok.Setter;
 import org.joda.time.DateTime;
@@ -15,27 +17,26 @@ import org.springframework.beans.factory.annotation.Value;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * AUTHOR: zhangbin
  * ON: 2019/5/5
  */
 public class SkuSupplyRuleDisableTask implements AsyncTask, TaskBehaviour {
-    @Setter
-    private Long shopId;
-    @Setter
-    private Long brandId;
+
 
     private Long taskId;
+    @Setter
+    private SkuSupplyRuleTaskDto param;
 
     private Integer timeout = 30;
 
     private SkuSupplyRuleDisableParser skuSupplyRuleDisableParser;
 
-    public static SkuSupplyRuleDisableTask newInstance(Long shopId, Long brandId) {
+    public static SkuSupplyRuleDisableTask newInstance(SkuSupplyRuleTaskDto param) {
         SkuSupplyRuleDisableTask instance = new SkuSupplyRuleDisableTask();
-        instance.setShopId(shopId);
-        instance.setBrandId(brandId);
+        instance.setParam(param);
         return instance;
     }
 
@@ -44,7 +45,7 @@ public class SkuSupplyRuleDisableTask implements AsyncTask, TaskBehaviour {
      */
     @Override
     public Response<Long> init() {
-        skuSupplyRuleDisableParser = SupplyRuleParserFactory.get(taskId, shopId, brandId);
+        skuSupplyRuleDisableParser = SupplyRuleParserFactory.get(taskId, param);
         Response<Long> init = skuSupplyRuleDisableParser.init();
         taskId = init.getResult();
         return init;
@@ -128,15 +129,38 @@ public class SkuSupplyRuleDisableTask implements AsyncTask, TaskBehaviour {
 
     @Override
     public AsyncTask getTask(TaskDTO task) {
-        shopId = task.getContent().get("shopId") != null ? Long.valueOf(String.valueOf(task.getContent().get("shopId"))) : 0L;
-        brandId = task.getContent().get("brandId") != null ? Long.valueOf(String.valueOf(task.getContent().get("brandId"))) : 0L;
+        param.setShopId(getLong(task, "shopId"));
+        param.setBrandId(getLong(task, "brandId"));
         taskId = task.getId();
-        skuSupplyRuleDisableParser = SupplyRuleParserFactory.get(taskId, shopId, brandId);
+        skuSupplyRuleDisableParser = SupplyRuleParserFactory.get(taskId, param);
         return this;
     }
 
     @Override
     public TaskResponse getLastStatus() {
         return skuSupplyRuleDisableParser.getLastStatus();
+    }
+
+    public Paging<SkuSupplyRuleLog> pagingLog(Integer pageNo, Integer pageSize) {
+        Paging<TaskDTO> paging = SupplyRuleParserFactory.get(taskId, param).pagingLong(pageNo, pageSize);
+        return new Paging<>(paging.getTotal(), paging.getData().stream().map(taskDTO -> {
+            SkuSupplyRuleLog ruleLog = new SkuSupplyRuleLog();
+            ruleLog.setBrandId(getLong(taskDTO, "brandId"));
+            ruleLog.setShopId(getLong(taskDTO, "shopId"));
+            ruleLog.setBrandName(getString(taskDTO, "brandName"));
+            ruleLog.setShopName(getString(taskDTO, "shopName"));
+            ruleLog.setOperator(getString(taskDTO, "operator"));
+            ruleLog.setCreatedAt(taskDTO.getCreatedAt());
+            ruleLog.setCount(getLong(taskDTO, "count"));
+            return ruleLog;
+        }).collect(Collectors.toList()));
+    }
+
+    private long getLong(TaskDTO task, String key) {
+        return task.getContent().get(key) != null ? Long.valueOf(String.valueOf(task.getContent().get(key))) : 0L;
+    }
+
+    private String getString(TaskDTO task, String key) {
+        return task.getContent().get(key) != null ?String.valueOf(task.getContent().get(key)) : "";
     }
 }

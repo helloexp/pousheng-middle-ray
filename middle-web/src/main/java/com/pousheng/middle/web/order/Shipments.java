@@ -628,7 +628,7 @@ public class Shipments {
 
             Shipment shipment = makeShipment(shopOrderId, warehouseId, shipmentItemFee, shipmentDiscountFee, shipmentTotalFee
                     , shipmentShipFee, ShipmentType.SALES_SHIP.value(), shipmentShipDiscountFee, shipmentTotalPrice,
-                shopOrder.getShopId(),mustShip);
+                    shopOrder.getShopId(),mustShip);
             shipment.setSkuInfos(skuOrderIdAndQuantity);
             shipment.setShopId(shopOrder.getShopId());
             shipment.setShopName(shopOrder.getShopName());
@@ -1514,7 +1514,7 @@ public class Shipments {
             if(!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
                 if (!StringUtils.isEmpty(stepOrderStatus)
                         && (Objects.equals(stepOrderStatus, String.valueOf(OpenClientStepOrderStatus.NOT_PAID.getValue()))
-                                || Objects.equals(stepOrderStatus, String.valueOf(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue())))) {
+                        || Objects.equals(stepOrderStatus, String.valueOf(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue())))) {
                     throw new JsonResponseException("jd.order.not.paid");
                 }
             }
@@ -1615,7 +1615,7 @@ public class Shipments {
     private void validateIsCreateOrderImportOrder(List<Long> warehouseIds, Long shopOrderId) {
         //ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //if (orderReadLogic.isCreateOrderImportOrder(shopOrder)) {
-            validateOrderAllChannelWarehouse(warehouseIds, shopOrderId);
+        validateOrderAllChannelWarehouse(warehouseIds, shopOrderId);
         //}
 
     }
@@ -2140,7 +2140,7 @@ public class Shipments {
     @ApiOperation("更新实际发货数量")
     @RequestMapping(value = "api/shipment/{id}/update/ship/qty", method = RequestMethod.PUT)
     public Response<Boolean> updateShipQty(@PathVariable(value = "id") @LogMeId Long shipmentId,
-                                      @RequestParam(value = "dataList") @LogMeContext String dataList) {
+                                           @RequestParam(value = "dataList") @LogMeContext String dataList) {
         try {
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);

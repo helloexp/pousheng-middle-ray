@@ -666,7 +666,6 @@ public class ShipmentWiteLogic {
                 log.error("shopOrder [{}] failed to gen shipment order error {} ", shopOrder.getId(), Throwables.getStackTraceAsString(e));
             }
             if (null == shipmentId) {
-                needSpiltOrder = true;
                 continue;
             }
             //修改子单和总单的状态,待处理数量,并同步恒康
@@ -836,7 +835,6 @@ public class ShipmentWiteLogic {
                 log.error("shopOrder [{}] failed to gen shipment order error {} ", shopOrder.getId(), Throwables.getStackTraceAsString(e));
             }
             if (null == shipmentId) {
-                needSpiltOrder = true;
                 continue;
             }
             //修改子单和总单的状态,待处理数量,并同步恒康

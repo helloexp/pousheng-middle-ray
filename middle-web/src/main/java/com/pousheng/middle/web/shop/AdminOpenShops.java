@@ -256,6 +256,9 @@ public class AdminOpenShops {
             jsonMap.put("isCareStock","0");
             jsonMap.put("isOrderInsertMiddle","true");
         }
+        if(jsonMap.containsKey(TradeConstants.PULL_REFUND_EXCHANGE_FLAG_KEY)){
+            map.put(TradeConstants.PULL_REFUND_EXCHANGE_FLAG_KEY, jsonMap.get(TradeConstants.PULL_REFUND_EXCHANGE_FLAG_KEY));
+        }
         openShop.setExtra(map);
     }
 }

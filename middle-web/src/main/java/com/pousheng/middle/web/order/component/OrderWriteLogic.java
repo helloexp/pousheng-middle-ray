@@ -795,6 +795,7 @@ public class OrderWriteLogic {
         CHANNEL.put("网易考拉", "kaola");
         CHANNEL.put("小红书", "xhs");
         CHANNEL.put("拼多多", "pdd");
+        CHANNEL.put("有赞", "youzan");
     }
 
     private static final Map<String, Integer> PAY_TYPE = Maps.newHashMap();

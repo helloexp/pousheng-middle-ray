@@ -9,8 +9,10 @@ import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +49,10 @@ public class MaterialFetcher {
             String result = this.erpClient.get("common/erp/base/gethkmaterial",
                     start, end, pageNo, pageSize, Maps.newHashMap());
             log.info("got material response:{}", result);
+            //如果返回空，直接返回空list，不抛出exption，会打断任务
+            if (StringUtils.isEmpty(result)) {
+                return Collections.emptyList();
+            }
             return JsonMapper.nonEmptyMapper().getMapper().readValue(result,
                     LIST_OF_MATERIAL);
         } catch (IOException e) {
@@ -70,6 +76,10 @@ public class MaterialFetcher {
             String result = this.erpClient.get("common/erp/base/gethkmaterial",
                     null, null, null, null, params);
             log.info("got material response:{}", result);
+            //如果返回空，直接返回空list，不抛出exption，会打断任务
+            if (StringUtils.isEmpty(result)) {
+                return Collections.emptyList();
+            }
             return JsonMapper.nonEmptyMapper().getMapper().readValue(result,
                     LIST_OF_MATERIAL);
         } catch (IOException e) {

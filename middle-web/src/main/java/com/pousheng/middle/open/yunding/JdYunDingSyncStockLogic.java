@@ -138,7 +138,7 @@ public class JdYunDingSyncStockLogic {
     }
 
     public String post(String url, Map<String, Object> params) {
-        HttpRequest request = HttpRequest.post(url).connectTimeout(1000000).readTimeout(1000000).form(params);
+        HttpRequest request = HttpRequest.post(url).connectTimeout(10000).readTimeout(10000).form(params);
         if (!request.ok()) {
             log.error("post request url:{} params:{} fail,response result:{}", new Object[]{url, params, request.body()});
             throw new ServiceException("request.fail");

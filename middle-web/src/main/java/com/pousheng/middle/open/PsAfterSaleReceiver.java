@@ -182,7 +182,8 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                         skuOfRefund.getChannelSkuId());
                     skuOfRefund.setSkuCode(skuOrder.getSkuCode());
                 } else if (StringUtils.hasText(skuOfRefund.getChannelSkuOrderId())) {
-                    skuOrder = orderReadLogic.findSkuOrderByShopOrderIfAndIOutSkuOrderId(shopOrder.getId(), skuOfRefund.getChannelSkuOrderId());
+                    skuOrder = orderReadLogic.findSkuOrderByShopOrderIfAndIOutSkuOrderId(shopOrder.getId(),
+                        skuOfRefund.getChannelSkuOrderId());
                     skuOfRefund.setSkuCode(skuOrder.getSkuCode());
                 } else {
                     skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(),
@@ -191,6 +192,8 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 //查询需要售后的发货单
                 //Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefund.getSkuCode(), skuOrder.getQuantity());
                 Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOrder);
+
+
 
                 if (!Objects.isNull(shipment)) {
                     refundExtra.setShipmentId(shipment.getShipmentCode());
@@ -222,6 +225,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                     //                Objects.equals(shipmentItem1.getSkuCode(), skuOfRefund.getSkuCode())).collect(Collectors.toList()).get(0);
                     ShipmentItem shipmentItem = shipmentItems.stream().filter(si -> SkuCodeUtil.compareCombineCode(si, skuOrder))
                             .findFirst().get();
+
                     if ((shipmentItem.getRefundQuantity() == null ? 0 : shipmentItem.getRefundQuantity()) > 0) {
                         log.warn("this refund item has been applied,refundSkuCode is {}", skuOfRefund.getSkuCode());
                         refund.setStatus(MiddleRefundStatus.DELETED.getValue());
@@ -244,6 +248,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                             !Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())) {
                         //updateShipmentItemRefundQuantity(skuOfRefund.getSkuCode(), shipmentItem.getQuantity(), shipmentItems);
                         updateShipmentItemRefundQuantity(refundItem, shipmentItem.getQuantity(), shipmentItems);
+
                     }
                     //更新发货单商品中的已退货数量
                     //Map<String, String> shipmentExtraMap = shipment.getExtra();
@@ -299,6 +304,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 skuOfRefund.setSkuCode(skuOrder.getSkuCode());
             } else if (StringUtils.hasText(skuOfRefund.getChannelSkuOrderId())) {
                 skuOrder = orderReadLogic.findSkuOrderByShopOrderIfAndIOutSkuOrderId(shopOrder.getId(), skuOfRefund.getChannelSkuOrderId());
+
                 skuOfRefund.setSkuCode(skuOrder.getSkuCode());
             } else {
                 skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(),
@@ -397,6 +403,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                     //VIP OXO售后单不提供金额，从发货单取
                     if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIPOXO.getValue())
                             && (Objects.isNull(refund.getFee()) || refund.getFee().equals(0L))) {
+
                         refund.setFee(shipmentItem.getCleanPrice() * refundItem.getApplyQuantity().longValue());
                     } else {
                         if (shipmentItem.getQuantity() < skuOrder.getQuantity()) {
@@ -419,7 +426,96 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     @Override
     protected void fillLogisticsInfo(Refund refund, String shipmentSerialNo, String shipmentCorpCode,
                                      String shipmentCorpName) {
+<<<<<<< HEAD
         psAfterSaleReceiverHelper.fillLogisticsInfo(refund,shipmentSerialNo,shipmentCorpCode,shipmentCorpName);
+=======
+        log.info("fill address {} ,size{}", refund.toString());
+        if (Strings.isNullOrEmpty(shipmentSerialNo)) {
+            return;
+        }
+
+        Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
+        RefundExtra refundExtra = null;
+        try {
+            refundExtra = refundReadLogic.findRefundExtra(refund);
+        } catch (JsonResponseException e) {
+            log.error("refund(id:{}) extra map not contain key:{}", refund.getId(), TradeConstants.REFUND_EXTRA_INFO);
+            return;
+        }
+        refundExtra.setShipmentSerialNo(shipmentSerialNo);
+        //转换为中台的物流信息
+        ExpressCodeCriteria criteria = new ExpressCodeCriteria();
+        if (!Objects.isNull(shipmentCorpCode) && !Objects.equals(shipmentCorpCode, "")) {
+            MiddleChannel channel = MiddleChannel.from(refund.getChannel());
+            switch (channel) {
+                case JD:
+                    criteria.setJdCode(shipmentCorpCode);
+                    break;
+                case TAOBAO:
+                case TFENXIAO:
+                    criteria.setTaobaoCode(shipmentCorpCode);
+                    break;
+                case FENQILE:
+                    criteria.setFenqileCode(shipmentCorpCode);
+                    break;
+                case SUNING:
+                case SUNINGSALE:
+                    criteria.setSuningCode(shipmentCorpCode);
+                    break;
+                case OFFICIAL:
+                    criteria.setPoushengCode(shipmentCorpCode);
+                    break;
+                case YUNJUBBC:
+                    criteria.setOfficalCode(shipmentCorpCode);
+                    break;
+                case YUNJUJIT:
+                    criteria.setOfficalCode(shipmentCorpCode);
+                    break;
+                case CODOON:
+                    criteria.setCodoonCode(shipmentCorpCode);
+                    break;
+                case KAOLA:
+                    criteria.setKaolaCode(shipmentCorpCode);
+                    break;
+                case VIPOXO:
+                    criteria.setVipCode(shipmentCorpCode);
+                    break;
+                default:
+                    log.error("there is not any express info by channel:{} and poushengCode:{}", channel.getValue(),
+                        shipmentCorpCode);
+                    throw new JsonResponseException("find.expressCode.failed");
+            }
+        } else if (!Objects.isNull(shipmentCorpName) && !Objects.equals(shipmentCorpName, "")) {
+            criteria.setName(shipmentCorpName);
+        }
+
+        Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);
+        if (!response.isSuccess()) {
+            log.error("failed to pagination expressCode with criteria:{}, error code:{}", criteria,
+                response.getError());
+            return;
+        }
+        if (response.getResult().getData().size() == 0) {
+            //唯品会找不到物流公司映射时默认品骏
+            if (Objects.equals(refund.getChannel(), MiddleChannel.VIPOXO.getValue())) {
+                refundExtra.setShipmentCorpName("品骏");
+                refundExtra.setShipmentCorpCode("PINJUN");
+            } else {
+                log.error("there is not any express info by poushengCode:{}", shipmentCorpCode);
+                return;
+            }
+        } else {
+            ExpressCode expressCode = response.getResult().getData().get(0);
+            refundExtra.setShipmentCorpName(expressCode.getName());
+            refundExtra.setShipmentCorpCode(expressCode.getOfficalCode());
+        }
+
+        extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+        refund.setShipmentSerialNo(refundExtra.getShipmentSerialNo());
+        refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
+        refund.setExtra(extraMap);
+
+>>>>>>> 苏宁天猫售后单改造
     }
 
     @Override
@@ -692,7 +788,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         //换货单 未取消 未删除 未关闭
         List<Refund> exchanges = response.getResult().stream().filter(Objects::nonNull).
                 filter(t -> Objects.equals(t.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value()) && !Objects.equals(t.getStatus(), MiddleRefundStatus.CANCELED.getValue()) && !Objects.equals(t.getStatus(), MiddleRefundStatus.DELETED.getValue()) && !Objects.equals(t.getStatus(), MiddleRefundStatus.EXCHANGE_CLOSED.getValue())).collect(Collectors.toList());
-
         //新拉的售后单商品
         List<String> refundOutSkuCodes = Lists.newArrayList();
         afterSaleItems.stream().forEach(afterSaleItem -> {
@@ -715,14 +810,20 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         return false;
     }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 苏宁天猫售后单改造
     @Override
     protected boolean isExpectedStatus(OpenClientAfterSale openClientAfterSale) {
 
         if (Arguments.isNull(openClientAfterSale.getStatus()) || Arguments.isNull(openClientAfterSale.getType())) {
             return false;
         }
+<<<<<<< HEAD
         log.info("check refund order status,outOrderId={},currentStatus={},type={},shopId={}",new Object[]{openClientAfterSale.getOpenOrderId(),openClientAfterSale.getStatus(),openClientAfterSale.getType(),openClientAfterSale.getOpenShopId()});
+=======
+>>>>>>> 苏宁天猫售后单改造
 
         String openClientAfterSaleType = openClientAfterSale.getType().name();
 

@@ -16,7 +16,6 @@ import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
 import io.terminus.open.client.order.service.OpenClientOrderService;
-import io.terminus.open.client.suning.order.SuningOrderService;
 import io.terminus.open.client.vip.order.VipOrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -97,6 +96,7 @@ public class MiddleOrderExecutor extends OrderExecutor {
             orderFetchDTO.setStartTime(startAt);
             orderFetchDTO.setEndTime(endAt);
             orderFetchDTO.setOrderFetchType(OrderFetchTypeConstants.PAID);
+            orderFetchDTO.setOpenClientOrderStatus(orderStatus);
             String message = JsonMapper.nonEmptyMapper().toJson(orderFetchDTO);
             rocketMqProducerService.asyncSendOrderly(MqConstants.POUSHENG_MIDDLE_ORDER_FETCH_TOPIC, message, messageKey, orderFetchMqQueueSize);
         }

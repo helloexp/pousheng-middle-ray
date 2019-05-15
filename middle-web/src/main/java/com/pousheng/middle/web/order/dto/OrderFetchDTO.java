@@ -1,5 +1,7 @@
 package com.pousheng.middle.web.order.dto;
 
+import io.terminus.open.client.order.enums.OpenClientAfterSaleStatus;
+import io.terminus.open.client.order.enums.OpenClientOrderStatus;
 import lombok.Data;
 import java.io.Serializable;
 import java.util.Date;
@@ -23,4 +25,8 @@ public class OrderFetchDTO implements Serializable {
     private Date endTime;
 
     private String orderFetchType;
+
+    private OpenClientOrderStatus openClientOrderStatus;
+
+    private OpenClientAfterSaleStatus afterSaleStatus;
 }

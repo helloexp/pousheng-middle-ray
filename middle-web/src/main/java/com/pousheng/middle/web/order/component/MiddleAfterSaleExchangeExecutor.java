@@ -69,6 +69,7 @@ public class MiddleAfterSaleExchangeExecutor extends AfterSaleExchangeExecutor {
             orderFetchDTO.setStartTime(startAt);
             orderFetchDTO.setEndTime(endAt);
             orderFetchDTO.setOrderFetchType(OrderFetchTypeConstants.AFTER_SALE_EXCHANGE);
+            orderFetchDTO.setAfterSaleStatus(afterSaleStatus);
             String message = JsonMapper.nonEmptyMapper().toJson(orderFetchDTO);
             rocketMqProducerService.asyncSendOrderly(MqConstants.POUSHENG_MIDDLE_ORDER_FETCH_TOPIC, message, messageKey, 15);
         }

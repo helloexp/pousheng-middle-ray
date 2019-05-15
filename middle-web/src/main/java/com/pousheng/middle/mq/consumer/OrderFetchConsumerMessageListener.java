@@ -21,7 +21,6 @@ import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.dto.OpenClientAfterSale;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
-import io.terminus.open.client.order.enums.OpenClientOrderStatus;
 import io.terminus.open.client.order.service.OpenClientAfterSaleExchangeService;
 import io.terminus.open.client.order.service.OpenClientAfterSaleService;
 import lombok.extern.slf4j.Slf4j;
@@ -98,7 +97,7 @@ public class OrderFetchConsumerMessageListener {
 
     private void syncPaid(OrderFetchDTO orderFetchDTO, OpenShop openShop) {
         Response<Pagination<OpenClientFullOrder>> findResp = orderServiceCenter.searchOrder(
-                orderFetchDTO.getOpenShopId(), OpenClientOrderStatus.PAID, orderFetchDTO.getStartTime(),
+                orderFetchDTO.getOpenShopId(), orderFetchDTO.getOpenClientOrderStatus(), orderFetchDTO.getStartTime(),
                 orderFetchDTO.getEndTime(), orderFetchDTO.getPageNo(), orderFetchDTO.getPageSize());
         if (!findResp.isSuccess()) {
             log.error("fail to fetch paid order for open shop(id={}) with fetchType={}, pageNo={}, pageSize={}, cause:{}",
@@ -134,7 +133,7 @@ public class OrderFetchConsumerMessageListener {
     private void syncAfterSaleCommon(OrderFetchDTO orderFetchDTO, OpenShop openShop) {
         OpenClientAfterSaleService afterSaleService =
                 afterSaleServiceRegistryCenter.getAfterSaleService(openShop.getChannel());
-        Response<Pagination<OpenClientAfterSale>> findResp = afterSaleService.searchAfterSale(openShop.getId(), null,
+        Response<Pagination<OpenClientAfterSale>> findResp = afterSaleService.searchAfterSale(openShop.getId(), orderFetchDTO.getAfterSaleStatus(),
                 orderFetchDTO.getStartTime(), orderFetchDTO.getEndTime(), orderFetchDTO.getPageNo(), orderFetchDTO.getPageSize());
         if (!findResp.isSuccess()) {
             log.error("fail to fetch after-sale-common order for open shop(id={}) with pageNo={},pageSize={},cause:{}",
@@ -153,7 +152,7 @@ public class OrderFetchConsumerMessageListener {
     private void syncAfterSaleExchange(OrderFetchDTO orderFetchDTO, OpenShop openShop) {
         OpenClientAfterSaleExchangeService afterSaleExchangeService =
                 afterSaleExchangeServiceRegistryCenter.getAfterSaleExchangeService(openShop.getChannel());
-        Response<Pagination<OpenClientAfterSale>> findResp = afterSaleExchangeService.searchAfterSaleExchange(openShop.getId(), null,
+        Response<Pagination<OpenClientAfterSale>> findResp = afterSaleExchangeService.searchAfterSaleExchange(openShop.getId(), orderFetchDTO.getAfterSaleStatus(),
                 orderFetchDTO.getStartTime(), orderFetchDTO.getEndTime(), orderFetchDTO.getPageNo(), orderFetchDTO.getPageSize());
         if (!findResp.isSuccess()) {
             log.error("fail to fetch after-sale-exchange order for open shop(id={}) with pageNo={}, pageSize={},cause:{}",

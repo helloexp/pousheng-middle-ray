@@ -18,6 +18,4 @@ public class HkShipmentPosItem implements Serializable{
     private Integer qty; //数量
     private String balaprice; //结算价
     private String couponprice;//平台优惠
-    private String dischargeintegral;
-    private String surplusamount;
 }

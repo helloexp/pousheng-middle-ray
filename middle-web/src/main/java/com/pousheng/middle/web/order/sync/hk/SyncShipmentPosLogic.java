@@ -334,15 +334,12 @@ public class SyncShipmentPosLogic {
             } else {
                 hkShipmentPosItem.setQty(shipmentItem.getShipQuantity());
             }
-            hkShipmentPosItem.setBalaprice(
-                    new BigDecimal(shipmentItem.getCleanPrice() == null ? 0 : shipmentItem.getCleanPrice())
-                            .divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN).toString());
             Integer integral = shipmentItem.getIntegral() == null ? 0 : shipmentItem.getIntegral();
-            Integer balapriceOfIntegralPart = Math.multiplyExact(integral, 2); // 积分商品因恒康月结原因，需要将积分商品的积分和金额单独传递，处返回金额需要乘以100，按默认积分兑换比率0.02，所以此处只做乘以2
-            hkShipmentPosItem.setDischargeintegral(String.valueOf(integral));
-            DecimalFormat df = new DecimalFormat("0.##");
-            hkShipmentPosItem.setSurplusamount(df.format(BigDecimal.valueOf(balapriceOfIntegralPart)
-                    .divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN)));
+            Integer balapriceOfIntegralPart = Math.multiplyExact(integral, 2); // 积分商品因恒康月结原因，需要将积分商品的积分换算成金额添加到实付金额中，因此处返回金额需要乘以100，按默认积分兑换比率0.02，所以此处只做乘以2
+            hkShipmentPosItem
+                    .setBalaprice(new BigDecimal(shipmentItem.getCleanPrice() == null ? 0 + balapriceOfIntegralPart
+                            : shipmentItem.getCleanPrice() + balapriceOfIntegralPart)
+                                    .divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN).toString());
             posItems.add(hkShipmentPosItem);
         }
         return posItems;

@@ -68,6 +68,7 @@ public class MiddleOrderExecutor extends OrderExecutor {
         // 唯品会的没有总页码，因此走
         if (openClientOrderService instanceof VipOrderService) {
             super.syncOrder(openShop, orderStatus, startAt, endAt);
+            return;
         }
         if (openShop.getShopName().startsWith("yj")){
             return;

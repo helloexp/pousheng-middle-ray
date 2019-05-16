@@ -35,9 +35,15 @@
         <log.version>1.2.3.SUPPORT-MIDDLE-SNAPSHOT</log.version>
         <powermock.version>1.7.0</powermock.version>
         <excel-engine.version>1.1.2-SNAPSHOT</excel-engine.version>
+        <terminus-dingtalk.version>1.0.0.RELEASE</terminus-dingtalk.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>io.terminus.dingtalk</groupId>
+            <artifactId>terminus-dingtalk</artifactId>
+            <version>${terminus-dingtalk.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>

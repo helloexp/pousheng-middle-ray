@@ -243,3 +243,8 @@ common.biz.mq.queue.size: ${COMMON_BIZ_MQ_QUEUE_SIZE:0}
 
 ### 供货导入队列index
 item.supply.import.mq.queue.index: ${ITEM_SUPPLY_IMPORT_MQ_QUEUE_INDEX:0}
+
+# 钉钉通知开关，默认是关闭的，需要配置开启
+dingtalk.robot.flag: true
+# 钉钉机器人 webhook
+dingtalk.robot.webhook: https://oapi.dingtalk.com/robot/send?access_token=4804cb399541e684fcf95353fbd572f29d1ea5a57c1844975a40f65191273797

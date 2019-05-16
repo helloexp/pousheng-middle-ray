@@ -1,9 +1,8 @@
 package com.pousheng.middle.item.service;
 
-import io.terminus.search.api.query.Criterias;
-import io.terminus.search.api.query.CriteriasBuilder;
-import io.terminus.search.api.query.Range;
-import io.terminus.search.api.query.Terms;
+import io.terminus.search.api.query.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
@@ -24,6 +23,19 @@ public class CriteriasWithShould extends Criterias {
     private boolean hasShouldRange;
 
     private List<Range> shouldRanges;
+
+    @Getter
+    @Setter
+    private List<Term> wildcard;
+    @Getter
+    @Setter
+    private List<Term> notTerm;
+    @Getter
+    @Setter
+    private List<Terms> notTerms;
+    @Getter
+    @Setter
+    private boolean hasMustNotTerm;
 
     public CriteriasWithShould(CriteriasBuilder cb) {
         super(cb);

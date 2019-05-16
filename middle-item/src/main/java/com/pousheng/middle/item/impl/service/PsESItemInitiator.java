@@ -29,7 +29,8 @@ public class PsESItemInitiator extends BaseESInitiator {
     private final SearchStockLogProperties searchStockLogProperties;
 
     @Autowired
-    public PsESItemInitiator(ESClient esClient, SearchSkuTemplateProperties searchSkuTemplateProperties,
+    public PsESItemInitiator(ESClient esClient,
+                             SearchSkuTemplateProperties searchSkuTemplateProperties,
                              SearchStockLogProperties searchStockLogProperties) {
         super(esClient);
         this.searchSkuTemplateProperties = searchSkuTemplateProperties;

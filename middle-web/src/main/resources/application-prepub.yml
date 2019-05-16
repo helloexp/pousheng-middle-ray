@@ -94,10 +94,16 @@ redis:
   max-idle: 8
   test-on-borrow: true
 
-rpc.mode: false
-rpc.dubbo:
-  module: pousheng-middle
-  registryAddress: ${POUSHENG_ZK_HOST}:${POUSHENG_ZK_PORT}
+rpc.mode: ${RPC_MODE:false}
+rpc:
+  dubbo:
+    port: 20880
+    exportHost: ${TERMINUS_HOST:127.0.0.1}
+    exportPort: ${TERMINUS_PORT_20880:2181}
+    module: pousheng-middle
+    registry-address: ${POUSHENG_ZK_HOST:127.0.0.1}:${POUSHENG_ZK_PORT:2181}
+    timeout: 30000
+    version: middle.1.0.0
 
 gateway:
   erp:

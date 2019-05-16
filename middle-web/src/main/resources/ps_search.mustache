@@ -95,7 +95,22 @@
         {{/hasShould}}
         "filter": {
           "bool": {
+            {{#hasMustNotTerm}}
+            "must_not": [
+            {{#notTerm}}
+                {"term": {"{{field}}":"{{value}}"}} {{^last}},{{/last}}
+            {{/notTerm}}
+            {{#notTerms}}
+                {"terms":
+                  { "{{field}}" : [{{#values}} "{{value}}"{{^last}},{{/last}} {{/values}}] }
+                }{{^last}},{{/last}}
+            {{/notTerms}}
+            ],
+            {{/hasMustNotTerm}}
             "must": [
+              {{#wildcard}}
+                  {"wildcard": {"{{field}}":"{{value}}"}} {{^last}},{{/last}}
+              {{/wildcard}}
               {{#term}}
                   {"term": {"{{field}}":"{{value}}"}} {{^last}},{{/last}}
               {{/term}}

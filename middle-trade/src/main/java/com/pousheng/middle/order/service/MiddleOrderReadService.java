@@ -1,6 +1,5 @@
 package com.pousheng.middle.order.service;
 
-import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.model.SkuOrderLockStock;
 import io.terminus.common.model.Paging;
@@ -84,4 +83,11 @@ public interface MiddleOrderReadService {
      */
     public Response<List<SkuOrderLockStock>> findOccupyQuantityList(List<Long> shopIds,
                                                            List<Long> warehouseIds, List<String> skuCodes);
+
+    /**
+     * 根据 id 查询
+     * @param ids
+     * @return
+     */
+    Response<List<ShopOrder>> findByOrderIds(List<Long> ids);
 }

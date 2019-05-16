@@ -6,7 +6,7 @@
 
     <groupId>com.pousheng</groupId>
     <artifactId>pousheng-middle</artifactId>
-    <version>4.7.2.RELEASE</version>
+    <version>4.7.3.BUILD-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -17,6 +17,7 @@
         <module>middle-web</module>
         <module>middle-auth</module>
         <module>middle-web-common</module>
+        <module>middle-index-consume</module>
     </modules>
 
     <properties>
@@ -36,6 +37,7 @@
         <powermock.version>1.7.0</powermock.version>
         <excel-engine.version>1.1.2-SNAPSHOT</excel-engine.version>
         <terminus-dingtalk.version>1.0.0.RELEASE</terminus-dingtalk.version>
+        <rpc.version>1.0.7.RELEASE</rpc.version>
     </properties>
 
     <dependencies>
@@ -47,10 +49,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -136,7 +134,7 @@
             <dependency>
                 <groupId>io.terminus.boot.rpc</groupId>
                 <artifactId>rpc-common</artifactId>
-                <version>1.0.5.RELEASE</version>
+                <version>1.0.7.RELEASE</version>
                 <exclusions>
                     <exclusion>
                         <groupId>log4j</groupId>

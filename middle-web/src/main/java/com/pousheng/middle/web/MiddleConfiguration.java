@@ -45,7 +45,6 @@ import io.terminus.parana.user.ext.UserTypeBean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.MultipartAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
@@ -101,18 +100,19 @@ import java.util.concurrent.TimeUnit;
 
 @ComponentScan(
         {"com.pousheng.middle.order",
-                "com.pousheng.middle.common.utils.component",
-                "com.pousheng.middle.warehouse",
-                "com.pousheng.middle.open",
-                "com.pousheng.middle.mq",
-                "com.pousheng.middle.advices",
-                "com.pousheng.middle.auth",
-                "com.pousheng.middle.erpsyc",
-                "com.pousheng.middle.hksyc",
-                "com.pousheng.middle.yyedisyc",
-                "com.pousheng.middle.interceptors",
-                "com.pousheng.middle.web",
-                "com.pousheng.middle.gd"})
+        "com.pousheng.middle.common.utils.component",
+        "com.pousheng.middle.search",
+        "com.pousheng.middle.warehouse",
+        "com.pousheng.middle.open",
+        "com.pousheng.middle.mq",
+        "com.pousheng.middle.advices",
+        "com.pousheng.middle.auth",
+        "com.pousheng.middle.erpsyc",
+        "com.pousheng.middle.hksyc",
+        "com.pousheng.middle.yyedisyc",
+        "com.pousheng.middle.interceptors",
+        "com.pousheng.middle.web",
+        "com.pousheng.middle.gd"})
 @EnableScheduling
 @EnableAutoConfiguration
 @EnableConfigurationProperties({

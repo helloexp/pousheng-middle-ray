@@ -109,6 +109,10 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
      */
     private String buyerNote;
     /**
+     *  排除买家备注信息模糊查询
+     */
+    private String buyerNoteLike;
+    /**
      * 如果Start的时间和End的时间一致, 则End+1day
      */
     @Override

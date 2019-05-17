@@ -37,6 +37,9 @@ public class MiddleAfterSaleExecutor extends AfterSaleExecutor {
     @Value("${open.client.sync.after.sale.fetch.size: 20}")
     private Integer afterSaleFetchSize;
 
+    @Value("${order.fetch.mq.queue.size:0}")
+    public Integer orderFetchMqQueueSize;
+
     @Autowired
     public MiddleAfterSaleExecutor(@Value("${shop.max.pool.size: 20}") int maxPoolSizeOfShop,
                                    @Value("${after.sale.queue.size: 20000}") int queueSizeOfAfterSale) {
@@ -69,7 +72,7 @@ public class MiddleAfterSaleExecutor extends AfterSaleExecutor {
             orderFetchDTO.setOrderFetchType(OrderFetchTypeConstants.AFTER_SALE_COMMON);
             orderFetchDTO.setAfterSaleStatus(afterSaleStatus);
             String message = JsonMapper.nonEmptyMapper().toJson(orderFetchDTO);
-            rocketMqProducerService.asyncSendOrderly(MqConstants.POUSHENG_MIDDLE_ORDER_FETCH_TOPIC, message, messageKey, 15);
+            rocketMqProducerService.asyncSendOrderly(MqConstants.POUSHENG_MIDDLE_ORDER_FETCH_TOPIC, message, messageKey, orderFetchMqQueueSize);
         }
     }
 }

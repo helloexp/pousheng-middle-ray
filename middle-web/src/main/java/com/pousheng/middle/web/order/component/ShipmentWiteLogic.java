@@ -1012,6 +1012,7 @@ public class ShipmentWiteLogic {
             skuOrderIdAndQuantity.put(skuCodeAndQuantity.getSkuOrderId(), skuCodeAndQuantity.getQuantity());
         }
         if (skuOrderIdAndQuantity.size() == 0) {
+            this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());
             return null;
         }
         //获取该发货单中涉及到的sku订单
@@ -1120,6 +1121,7 @@ public class ShipmentWiteLogic {
             skuOrderIdAndQuantity.put(skuCodeAndQuantity.getSkuOrderId(), skuCodeAndQuantity.getQuantity());
         }
         if (skuOrderIdAndQuantity.size() == 0) {
+            this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());
             return null;
         }
         //获取该发货单中涉及到的sku订单

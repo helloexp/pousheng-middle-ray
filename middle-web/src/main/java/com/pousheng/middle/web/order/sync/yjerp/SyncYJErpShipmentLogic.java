@@ -25,6 +25,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.dingtalk.DingTalkNotifies;
 import io.terminus.open.client.center.constant.ExtraKeyConstant;
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.order.dto.fsm.Flow;
@@ -73,6 +74,8 @@ public class SyncYJErpShipmentLogic {
     private ShipmentWriteService shipmentWriteService;
     @Autowired
     private ReceiverInfoCompleter receiverInfoCompleter;
+    @Autowired
+    private DingTalkNotifies dingTalkNotifies;
 
 
     /**
@@ -146,9 +149,11 @@ public class SyncYJErpShipmentLogic {
             }
 
         } catch (Exception e) {
-            log.error("sync yj erp shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));
+            String errorMsg = String.format("发货单[id=%s]同步云聚 ERP 异常: %s", shipment.getId(), Throwables.getStackTraceAsString(e));
+            log.error(errorMsg);
             //更新状态为同步失败
             updateShipmetSyncFail(shipment);
+            dingTalkNotifies.addMsg(errorMsg);
             return Response.fail("sync.yj.erp.shipment.fail");
         }
         return Response.ok(Boolean.TRUE);

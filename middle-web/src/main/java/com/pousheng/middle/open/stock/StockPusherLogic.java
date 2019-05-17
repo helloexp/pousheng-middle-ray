@@ -697,10 +697,7 @@ public class StockPusherLogic {
             );
 
             //按照设定的比例确定推送数量
-            stock = Math.max(0,
-                    channelStock
-                            + shareStock - waitHandleNumber * shopRule.getRatio() / 100
-            );
+            stock = Math.max(0, (channelStock + shareStock - waitHandleNumber) * shopRule.getRatio() / 100);
             log.info("ShopRatio-sku code:{} shop(id:{}) is open subtract wait handle flag and not setting warehouse and sku" +
                     " ratio originStock:{},waitHandleNumber:{},currentStock:{} ",skuCode,shopRule.getShopId(),originStock,waitHandleNumber,stock);
 

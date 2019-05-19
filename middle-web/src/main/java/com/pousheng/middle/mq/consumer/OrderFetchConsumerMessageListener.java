@@ -1,5 +1,6 @@
 package com.pousheng.middle.mq.consumer;
 
+import com.google.common.base.Throwables;
 import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.web.order.dto.OrderFetchDTO;
 import com.pousheng.middle.web.order.dto.OrderFetchTypeConstants;
@@ -8,6 +9,7 @@ import io.terminus.common.rocketmq.annotation.ConsumeMode;
 import io.terminus.common.rocketmq.annotation.MQConsumer;
 import io.terminus.common.rocketmq.annotation.MQSubscribe;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.dingtalk.DingTalkNotifies;
 import io.terminus.open.client.center.AfterSaleExchangeServiceRegistryCenter;
 import io.terminus.open.client.center.AfterSaleServiceRegistryCenter;
 import io.terminus.open.client.center.job.aftersale.api.AfterSaleExchangeReceiver;
@@ -56,6 +58,8 @@ public class OrderFetchConsumerMessageListener {
     private AfterSaleReceiver afterSaleReceiver;
     @Autowired
     private AfterSaleExchangeReceiver afterSaleExchangeReceiver;
+    @Autowired
+    private DingTalkNotifies dingTalkNotifies;
 
     @MQSubscribe(topic = MqConstants.POUSHENG_MIDDLE_ORDER_FETCH_TOPIC,
             consumerGroup =  MqConstants.POUSHENG_MIDDLE_ORDER_FETCH_CONSUMER_GROUP,
@@ -72,7 +76,14 @@ public class OrderFetchConsumerMessageListener {
         if (orderSearchNotifier != null) {
             orderSearchNotifier.notify(openShop);
         }
-        fetchOrders(orderFetchDTO, openShop);
+        try {
+            fetchOrders(orderFetchDTO, openShop);
+        } catch (Exception e) {
+            String errorMsg = String.format("MQ 拉单异常，orderFetchDTO:%s. 异常详情:%s",
+                    orderFetchDTO, Throwables.getStackTraceAsString(e));
+            log.error(errorMsg);
+            dingTalkNotifies.addMsg(errorMsg);
+        }
     }
 
     private void fetchOrders(OrderFetchDTO orderFetchDTO, OpenShop openShop) {
@@ -110,6 +121,8 @@ public class OrderFetchConsumerMessageListener {
                     orderFetchDTO.getPageSize());
             return;
         }
+        log.debug("paid.receiveOrder, openShopId:{}, results:{}",
+                openShop.getId(), findResp.getResult().getData());
         orderReceiver.receiveOrder(OpenClientShop.from(openShop), findResp.getResult().getData());
     }
 
@@ -127,6 +140,7 @@ public class OrderFetchConsumerMessageListener {
                     orderFetchDTO.getPageSize());
             return;
         }
+        log.debug("preSale.receiveOrder, openShopId:{}, results:{}", openShop.getId(), findResp.getResult().getData());
         orderReceiver.receiveOrder(OpenClientShop.from(openShop), findResp.getResult().getData());
     }
 
@@ -146,6 +160,8 @@ public class OrderFetchConsumerMessageListener {
                     orderFetchDTO.getPageSize());
             return;
         }
+        log.debug("afterSaleReceiver.receiveAfterSale, openShopId:{}, results:{}",
+                openShop.getId(), findResp.getResult().getData());
         afterSaleReceiver.receiveAfterSale(OpenClientShop.from(openShop), findResp.getResult().getData());
     }
 
@@ -165,6 +181,8 @@ public class OrderFetchConsumerMessageListener {
                     orderFetchDTO.getPageSize());
             return;
         }
+        log.debug("afterSaleExchangeReceiver.receiveAfterSaleExchange, openShopId:{}, results:{}",
+                openShop.getId(), findResp.getResult().getData());
         afterSaleExchangeReceiver.receiveAfterSaleExchange(OpenClientShop.from(openShop), findResp.getResult().getData());
     }
 }

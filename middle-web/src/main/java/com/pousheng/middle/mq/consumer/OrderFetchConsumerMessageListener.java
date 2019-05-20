@@ -114,6 +114,8 @@ public class OrderFetchConsumerMessageListener {
             log.error("fail to fetch paid order for open shop(id={}) with fetchType={}, pageNo={}, pageSize={}, cause:{}",
                     orderFetchDTO.getOpenShopId(), orderFetchDTO.getOrderFetchType(), orderFetchDTO.getPageNo(),
                     orderFetchDTO.getPageSize(), findResp.getError());
+            dingTalkNotifies.addMsg(String.format("已付款拉单失败：%s", findResp.getError()));
+            return;
         }
         if (CollectionUtils.isEmpty(findResp.getResult().getData())) {
             log.info("SYNC-PAID-ORDER-EMPTY for open shop(id={}) with fetchType={}, pageNo={}, pageSize={}",
@@ -133,6 +135,8 @@ public class OrderFetchConsumerMessageListener {
             log.error("fail to fetch pre-sale order for open shop(id={}) with fetchType={}, pageNo={}, pageSize={}, cause:{}",
                     orderFetchDTO.getOpenShopId(), orderFetchDTO.getOrderFetchType(), orderFetchDTO.getPageNo(),
                     orderFetchDTO.getPageSize(), findResp.getError());
+            dingTalkNotifies.addMsg(String.format("预售拉单失败：%s", findResp.getError()));
+            return;
         }
         if (CollectionUtils.isEmpty(findResp.getResult().getData())) {
             log.info("SYNC-PRE-SALE-ORDER-EMPTY for open shop(id={}) with fetchType={}, pageNo={}, pageSize={}",
@@ -152,6 +156,7 @@ public class OrderFetchConsumerMessageListener {
         if (!findResp.isSuccess()) {
             log.error("fail to fetch after-sale-common order for open shop(id={}) with pageNo={},pageSize={},cause:{}",
                     openShop.getId(), orderFetchDTO.getPageNo(), orderFetchDTO.getPageSize(), findResp.getError());
+            dingTalkNotifies.addMsg(String.format("售后拉单失败：%s", findResp.getError()));
             return;
         }
         if (CollectionUtils.isEmpty(findResp.getResult().getData())) {
@@ -173,6 +178,7 @@ public class OrderFetchConsumerMessageListener {
         if (!findResp.isSuccess()) {
             log.error("fail to fetch after-sale-exchange order for open shop(id={}) with pageNo={}, pageSize={},cause:{}",
                     openShop.getId(), orderFetchDTO.getPageNo(), orderFetchDTO.getPageSize(), findResp.getError());
+            dingTalkNotifies.addMsg(String.format("收货换货拉单失败：%s", findResp.getError()));
             return;
         }
         if (CollectionUtils.isEmpty(findResp.getResult().getData())) {

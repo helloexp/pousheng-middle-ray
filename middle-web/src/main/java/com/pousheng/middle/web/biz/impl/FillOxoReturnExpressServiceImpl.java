@@ -218,6 +218,7 @@ public class FillOxoReturnExpressServiceImpl implements CompensateBizService {
             receiverInfo.setReceiveUserName(oxoReturnOrder.getBuyer());
             receiverInfo.setMobile(oxoReturnOrder.getMobile());
             receiverInfo.setPhone(oxoReturnOrder.getTel());
+            receiverInfo.setDetail(oxoReturnOrder.getAddress());
             refundExtra.setSenderInfo(receiverInfo);
         }
         //更新售后单信息

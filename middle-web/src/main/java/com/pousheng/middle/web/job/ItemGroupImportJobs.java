@@ -144,6 +144,8 @@ public class ItemGroupImportJobs {
                         Response<SkuTemplate> skuTemplateRes = skuTemplateSuitableAddToGroup(searchSkuTemplate, groupId,
                                 type, helper, strs, skuCode);
                         if (skuTemplateRes == null) {
+                            appendErrorToExcel(helper, strs, "不存在该条码商品");
+                            log.error("import make sku code:{} flag fail, error:{}", skuCode, "不存在该条码商品");
                             continue;
                         }
                         skuTemplates.add(skuTemplateRes.getResult());
@@ -290,7 +292,7 @@ public class ItemGroupImportJobs {
         String templateName = "ps_search.mustache";
         Map<String, String> params = Maps.newHashMap();
         params.put("spuCode", spuCode);
-        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 20,
+        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 200,
                 templateName, params, SearchSkuTemplate.class);
         if (!response.isSuccess()) {
             log.error("query sku template by spuCode:{} fail,error:{}", spuCode, response.getError());

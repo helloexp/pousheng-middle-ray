@@ -34,6 +34,7 @@ public class OxoReturnOrderAutoCancelServiceImpl implements CompensateBizService
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
 
+        log.info("oxo.timeout.auto.cance.refund.id={}",poushengCompensateBiz.getBizId());
         Refund refund = refundReadLogic.findRefundById(Long.valueOf(poushengCompensateBiz.getBizId()));
 
         if(checkRefundInfo(refund)){

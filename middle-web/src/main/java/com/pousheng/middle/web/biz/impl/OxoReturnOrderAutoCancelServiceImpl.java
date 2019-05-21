@@ -38,7 +38,7 @@ public class OxoReturnOrderAutoCancelServiceImpl implements CompensateBizService
         log.info("oxo.timeout.auto.cance.refund.id={}",poushengCompensateBiz.getBizId());
         Refund refund = refundReadLogic.findRefundById(Long.valueOf(poushengCompensateBiz.getBizId()));
 
-        if(checkRefundInfo(refund)){
+        if(!checkRefundInfo(refund)){
             log.info("oxo.checkfundType fail,refund={}", JsonMapper.nonEmptyMapper().toJson(refund));
             return;
         }

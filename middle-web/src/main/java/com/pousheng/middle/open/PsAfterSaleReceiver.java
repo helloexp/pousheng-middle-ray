@@ -729,6 +729,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         if (Arguments.isNull(openClientAfterSale.getStatus()) || Arguments.isNull(openClientAfterSale.getType())) {
             return false;
         }
+        log.info("check refund order status,outOrderId={},currentStatus={},type={},shopId={}",new Object[]{openClientAfterSale.getOpenOrderId(),openClientAfterSale.getStatus(),openClientAfterSale.getType(),openClientAfterSale.getOpenShopId()});
 
         String openClientAfterSaleType = openClientAfterSale.getType().name();
 

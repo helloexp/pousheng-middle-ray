@@ -11,6 +11,7 @@ import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.Refund;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,7 @@ public class OxoReturnOrderAutoCancelServiceImpl implements CompensateBizService
         Refund refund = refundReadLogic.findRefundById(Long.valueOf(poushengCompensateBiz.getBizId()));
 
         if(checkRefundInfo(refund)){
+            log.info("oxo.checkfundType fail,refund={}", JsonMapper.nonEmptyMapper().toJson(refund));
             return;
         }
         Response<Boolean> cancelRes = refundWriteLogic.updateStatusLocking(refund,

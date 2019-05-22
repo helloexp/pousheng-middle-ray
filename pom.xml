@@ -6,7 +6,7 @@
 
     <groupId>com.pousheng</groupId>
     <artifactId>pousheng-middle</artifactId>
-    <version>4.7.1.RELEASE</version>
+    <version>4.7.2.RELEASE</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -24,7 +24,7 @@
         <java.version>1.8</java.version>
         <parana.version>5.1.6.MIDDLE-SNAPSHOT</parana.version>
         <terminus-boot.version>1.5.1.RELEASE</terminus-boot.version>
-        <open-client.version>2.0.3.RELEASE</open-client.version>
+        <open-client.version>2.0.8.BUILD-SNAPSHOT</open-client.version>
         <guava.version>19.0</guava.version>
         <spring-boot.version>1.5.3.RELEASE</spring-boot.version>
         <apache-poi.version>3.16</apache-poi.version>

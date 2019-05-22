@@ -21,12 +21,19 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.redis.utils.JedisTemplate;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.parana.brand.model.Brand;
+import io.terminus.parana.brand.service.BrandReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Lists;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +52,17 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
 
     private Long brandId;
 
-    private Long count = 0L;
+    private Long count = 0L;//匹配处理的数量
+
+    private Long skuSize = 0L;//品牌下sku数量
+
+    private String brandName;
+
+    private String shopName;
+
+    private Long operatorId;
+
+    private String operator;
 
     private final TaskWriteFacade taskWriteFacade;
 
@@ -59,24 +76,33 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
 
     private JedisTemplate jedisTemplate;
 
+    private BrandReadService brandReadService;
+
+    private OpenShopReadService openShopReadService;
+
     public SkuSupplyRuleDisableParser(Long taskId,
-                                      Long shopId,
-                                      Long brandId,
+                                      SkuSupplyRuleTaskDto param,
                                       TaskWriteFacade taskWriteFacade,
                                       TaskReadFacade taskReadFacade,
                                       PoushengMiddleSpuService poushengMiddleSpuService,
                                       ShopSkuSupplyRuleComponent shopSkuSupplyRuleComponent,
                                       JedisTemplate jedisTemplate,
-                                      SkuTemplateSearchReadService skuTemplateSearchReadService) {
+                                      SkuTemplateSearchReadService skuTemplateSearchReadService,
+                                      BrandReadService brandReadService,
+                                      OpenShopReadService openShopReadService) {
         this.taskId = taskId;
-        this.shopId = shopId;
-        this.brandId = brandId;
+        this.shopId = param.getShopId();
+        this.brandId = param.getBrandId();
+        this.operatorId = param.getOperatorId();
+        this.operator = param.getOperatorName();
         this.taskWriteFacade = taskWriteFacade;
         this.taskReadFacade = taskReadFacade;
         this.poushengMiddleSpuService = poushengMiddleSpuService;
         this.shopSkuSupplyRuleComponent = shopSkuSupplyRuleComponent;
         this.jedisTemplate = jedisTemplate;
         this.skuTemplateSearchReadService = skuTemplateSearchReadService;
+        this.brandReadService = brandReadService;
+        this.openShopReadService = openShopReadService;
     }
 
 
@@ -129,8 +155,8 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
             return;
         }
 
-        //根据库存服务数量设置并行，保留一个线程给主线程，最大4个并行
-        ThreadPoolExecutor CORE = new ThreadPoolExecutor(3, 3, 0L, TimeUnit.MILLISECONDS,
+        //根据库存服务数量设置并行，保留一个线程给主线程，最大5个并行
+        ThreadPoolExecutor CORE = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(1), new ThreadFactoryBuilder().setNameFormat("sku-supply-disable-handle-pool-%d").build(),
                 new ThreadPoolExecutor.CallerRunsPolicy());
 
@@ -140,6 +166,7 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
         SkuSupplyRuleDisableHandle handle = new SkuSupplyRuleDisableHandle(shopId, ruleResp.getResult(), shopSkuSupplyRuleComponent);
 
         while (!spuList.isEmpty()) {
+            List<Future<Long>> processeds = Lists.newArrayList();
             List<Long> spuIds = spuList.stream().map(Spu::getId).collect(Collectors.toList());
             if (getCurrentTaskId() <= 0) {
                 //不会中断已执行部分
@@ -152,14 +179,14 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
             while (!skuPaging.getResult().isEmpty()) {
                 for (SkuTemplate skuTemplate : skuPaging.getResult().getData()) {
                     if (handle.isFull()) {//每个线程最大2000个sku
-                        log.info("[sku-supply-rule-disable-handle-start] CORE:{}", CORE);
-                        CORE.submit(handle);
-                        updateTaskCount();
+//                        log.info("[sku-supply-rule-disable-handle-start] CORE:{}", CORE);
+                        Future<Long> result = CORE.submit(handle);
+                        processeds.add(result);
                         handle = new SkuSupplyRuleDisableHandle(shopId, ruleResp.getResult(), shopSkuSupplyRuleComponent);
                     }
 
                     handle.append(skuTemplate.getSkuCode());
-                    count++;
+                    skuSize++;
                 }
                 skuPageNo++;
                 skuPaging = skuTemplateSearchReadService.pagingSkuBySpuIds(skuPageNo, skuPageSize, spuIds);
@@ -174,10 +201,24 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
                 throw new ServiceException(spuPaging.getError());
             }
             spuList = spuPaging.getResult().getData();
+            for (Future<Long> future : processeds) {
+                try {
+                    count += future.get();
+                    updateTaskCount();
+                } catch (Exception e) {
+                    log.error("[sku-supply-rule-disable-handle-start] get processed fail:{}", e);
+                }
+            }
         }
 
         if (handle.size() > 1) {
-            CORE.submit(handle);
+            Future<Long> future = CORE.submit(handle);
+            try {
+                count += future.get();
+                updateTaskCount();
+            } catch (Exception e) {
+                log.error("[sku-supply-rule-disable-handle-start] get processed fail:{}", e);
+            }
         }
 
     }
@@ -195,7 +236,7 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
      */
     @Override
     public void onStop() {
-        log.info("[sku-supply-rule-disable-parser] executed skuCode count:{}", count);
+        log.info("[sku-supply-rule-disable-parser] executed skuSize{}, processed count:{}", skuSize, count);
         setCurrentTaskId(0L);
         updateTaskStatus(TaskStatusEnum.FINISH);
     }
@@ -205,7 +246,7 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
      */
     @Override
     public void onError(Exception e) {
-        log.info("[sku-supply-rule-disable-parser] executed skuCode count:{}", count);
+        log.info("[sku-supply-rule-disable-parser] executed skuSize:{}, processed count:{}", skuSize, count);
         setCurrentTaskId(0L);
         updateTaskStatus(TaskStatusEnum.ERROR, e);
     }
@@ -259,6 +300,20 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
         Map<String, Object> content = Maps.newHashMap();
         content.put("shopId", shopId);
         content.put("brandId", brandId);
+        content.put("operatorId", operatorId);
+        content.put("operator", operator);
+        content.put("count", 0L);
+        content.put("skuSize", 0L);
+        Response<Brand> brandResponse = brandReadService.findById(brandId);
+        if (brandResponse.isSuccess()) {
+            brandName = brandResponse.getResult().getName();
+            content.put("brandName", brandName);
+        }
+        Response<OpenShop> shopResponse = openShopReadService.findById(shopId);
+        if (shopResponse.isSuccess()) {
+            shopName = shopResponse.getResult().getShopName();
+            content.put("shopName", shopName);
+        }
         CreateTaskRequest createTaskRequest = new CreateTaskRequest();
         createTaskRequest.setType(TaskTypeEnum.SUPPLY_RULE_BATCH_DISABLE.name());
         createTaskRequest.setStatus(TaskStatusEnum.INIT.name());
@@ -281,6 +336,7 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
         request.setStatus(statusEnum.name());
         Map<String, Object> content = Maps.newHashMap();
         content.put("count", count);
+        content.put("skuSize", skuSize);
         request.setContent(content);
         Response<Boolean> r = taskWriteFacade.updateTask(request);
         if (!r.isSuccess()) {
@@ -290,11 +346,12 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
     }
 
     private void updateTaskCount() {
-        log.info("[SKU-SUPPLY-RULE-DISABLE-PARSER] update task {} count  {}", taskId, count);
+        log.info("[SKU-SUPPLY-RULE-DISABLE-PARSER] update task {} count  {} skuSize {}", taskId, count, skuSize);
         UpdateTaskRequest request = new UpdateTaskRequest();
         request.setTaskId(taskId);
         Map<String, Object> content = Maps.newHashMap();
         content.put("count", count);
+        content.put("skuSize", skuSize);
         request.setContent(content);
         Response<Boolean> r = taskWriteFacade.updateTask(request);
         if (!r.isSuccess()) {
@@ -310,6 +367,7 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
         request.setStatus(statusEnum.name());
         Map<String, Object> content = Maps.newHashMap();
         content.put("count", count);
+        content.put("skuSize", skuSize);
         content.put("msg", e.getMessage());
         request.setContent(content);
         Response<Boolean> r = taskWriteFacade.updateTask(request);
@@ -337,4 +395,17 @@ public class SkuSupplyRuleDisableParser implements TaskBehaviour {
         return "async_task_"+ TaskTypeEnum.SUPPLY_RULE_BATCH_DISABLE.name();
     }
 
+    public Paging<TaskDTO> pagingLong(Integer pageNo, Integer pageSize) {
+        PagingTaskRequest request = new PagingTaskRequest();
+        request.setPageNo(pageNo);
+        request.setPageSize(pageSize);
+        request.setType(TaskTypeEnum.SUPPLY_RULE_BATCH_DISABLE.name());
+        request.setStatus(TaskStatusEnum.FINISH.name());
+        Response<Paging<TaskDTO>> response = taskReadFacade.pagingTasks(request);
+        if (!response.isSuccess()) {
+            log.error("find log failed,  pageNo:({}), pageSize:({}), cause:({})", pageNo, pageSize, response.getError());
+            return Paging.empty();
+        }
+        return response.getResult();
+    }
 }

@@ -407,6 +407,7 @@ public class ExcelUtilSkuGroupSpuImport {
             list = processSheet(styles, strings, stream);
             stream.close();
             ++index;
+            break;
         }
         return list;
     }

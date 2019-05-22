@@ -1,11 +1,13 @@
 package com.pousheng.middle.web.async.supplyRule;
 
 import com.pousheng.middle.web.item.component.ShopSkuSupplyRuleComponent;
+import io.terminus.common.model.Response;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 /**
  * AUTHOR: zhangbin
@@ -13,7 +15,7 @@ import java.util.List;
  */
 @NoArgsConstructor
 @Slf4j
-public class SkuSupplyRuleDisableHandle implements Runnable {
+public class SkuSupplyRuleDisableHandle implements Callable<Long> {
     public static final int LIMIT_SIZE =  2000;
 
     private List<String> skuCodes = new ArrayList<>(LIMIT_SIZE);
@@ -30,12 +32,6 @@ public class SkuSupplyRuleDisableHandle implements Runnable {
         this.shopSkuSupplyRuleComponent = shopSkuSupplyRuleComponent;
     }
 
-    @Override
-    public void run() {
-        log.info("[sku-supply-rule-disable-handle] sku size:{}", skuCodes.size());
-        shopSkuSupplyRuleComponent.batchUpdateDisable(shopId, skuCodes, upperLimitId);
-    }
-
     public boolean isFull() {
         return skuCodes.size() >= LIMIT_SIZE;
     }
@@ -46,5 +42,13 @@ public class SkuSupplyRuleDisableHandle implements Runnable {
 
     public Integer size() {
         return skuCodes.size();
+    }
+
+    @Override
+    public Long call() {
+//        log.info("[sku-supply-rule-disable-handle] sku size:{}", skuCodes.size());
+        Response<Long> response = shopSkuSupplyRuleComponent.batchUpdateDisable(shopId, skuCodes, upperLimitId);
+//        log.info("[sku-supply-rule-disable-handle]  processed size:{}", response.getResult());
+        return response.getResult();
     }
 }

@@ -45,7 +45,6 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
-import com.pousheng.middle.web.utils.SkuCodeUtil;
 import com.pousheng.middle.web.utils.mail.MailLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import com.pousheng.middle.web.warehouses.component.WarehouseSkuStockLogic;
@@ -2267,17 +2266,13 @@ public class ShipmentWiteLogic {
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         Map<String, Integer> skuCodesAndQuantity = Maps.newHashMap();
         shipmentItems.forEach(shipmentItem -> {
-            //skuCodesAndQuantity.put(shipmentItem.getSkuCode(), shipmentItem.getQuantity());
-            skuCodesAndQuantity.put(SkuCodeUtil.getCombineCode(shipmentItem),shipmentItem.getQuantity());
+            skuCodesAndQuantity.put(shipmentItem.getSkuCode(), shipmentItem.getQuantity());
         });
         List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
         refundChangeItems.forEach(refundChangeItem -> {
-            //if (skuCodesAndQuantity.containsKey(refundChangeItem.getSkuCode())) {
-            if(skuCodesAndQuantity.containsKey(SkuCodeUtil.getCombineCode(refundChangeItem))){
-                //refundChangeItem.setAlreadyHandleNumber(refundChangeItem.getAlreadyHandleNumber() == null ? 0 :
-                //        refundChangeItem.getAlreadyHandleNumber() - skuCodesAndQuantity.get(refundChangeItem.getSkuCode()));
+            if (skuCodesAndQuantity.containsKey(refundChangeItem.getSkuCode())) {
                 refundChangeItem.setAlreadyHandleNumber(refundChangeItem.getAlreadyHandleNumber() == null ? 0 :
-                        refundChangeItem.getAlreadyHandleNumber() - skuCodesAndQuantity.get(SkuCodeUtil.getCombineCode(refundChangeItem)));
+                        refundChangeItem.getAlreadyHandleNumber() - skuCodesAndQuantity.get(refundChangeItem.getSkuCode()));
             }
         });
         Map<String, String> refundExtra = refund.getExtra();

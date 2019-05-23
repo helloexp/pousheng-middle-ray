@@ -764,4 +764,5 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         }
         return false;
     }
+
 }

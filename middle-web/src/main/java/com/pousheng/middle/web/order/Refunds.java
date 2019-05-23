@@ -209,7 +209,8 @@ public class Refunds {
                 //丢件补发售后单完善
                 refundWriteLogic.completeHandleForLostType(refund, editSubmitRefundInfo);
             } else {
-                if (!refundReadLogic.checkShipInfoUnique(editSubmitRefundInfo.getShipmentSerialNo())) {
+
+                if (!Objects.equals(refund.getChannel(),MiddleChannel.VIPOXO.getValue())&&!refundReadLogic.checkShipInfoUnique(editSubmitRefundInfo.getShipmentSerialNo())) {
                     throw new JsonResponseException("submit.ship.info.exists");
                 }                
                 // 退货退款，换货，的发货仓和退货仓账套是否匹配325的校验

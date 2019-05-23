@@ -249,7 +249,7 @@ public class RefundJob {
         criteria.setChannels(Lists.newArrayList(MiddleChannel.VIPOXO.getValue()));
         criteria.setRefundType(MiddleRefundType.AFTER_SALES_RETURN.value());
         criteria.setStatus(Lists.newArrayList(MiddleRefundStatus.WAIT_HANDLE.getValue()));
-        criteria.setRefundEndAt(DateTime.now().minusDays(46).toDate());
+        criteria.setRefundEndAt(DateTime.now().minusDays(45).toDate());
 
         while (true) {
             criteria.setPageNo(pageNo);

@@ -37,6 +37,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.vip.component.VipAfterSaleComponent;
 import io.terminus.open.client.vip.dto.StoreMapping;
 import io.terminus.open.client.vip.enums.TransportCodeEnum;
 import io.terminus.open.client.vip.extra.service.VipOrderReturnService;
@@ -57,6 +58,7 @@ import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import vipapis.delivery.RefuseGoods;
 import vipapis.delivery.ReturnGoods;
 
@@ -146,6 +148,10 @@ public class SyncVIPLogic {
 
     @Autowired
     private PsOrderReceiver orderReceiver;
+
+    private final  static String defaultShipmentCorpName="申通快递";
+    private final  static String defaultVipCorp="1000000457";
+
 
     /**
      * 通知vip接单并呼叫快递
@@ -273,9 +279,15 @@ public class SyncVIPLogic {
                 return Response.fail("order.is.not.from.vip");
             }
 
+
+
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+            String shipmentCorpName=refundExtra.getShipmentCorpName();
+            if(StringUtils.isEmpty(shipmentCorpName)){
+                shipmentCorpName=defaultShipmentCorpName;
+            }
             List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
-            ExpressCode expressCode = makeExpressNameByName(refundExtra.getShipmentCorpName());
+            ExpressCode expressCode = makeExpressNameByName(shipmentCorpName);
             if (refund.getRefundType().equals(MiddleRefundType.AFTER_SALES_RETURN.value())) {
                 List<ReturnGoods> goodsList = Lists.newArrayList();
                 for (RefundItem refundItem : refundItems) {
@@ -298,7 +310,7 @@ public class SyncVIPLogic {
                     goodsList.add(goods);
                 }
                 response = vipOrderReturnService.confirmRefuseResult(refund.getShopId(), shopOrder.getOutId(),
-                    expressCode.getVipCode(), refundExtra.getShipmentCorpName(), refundExtra.getShipmentSerialNo(),
+                    expressCode.getVipCode(), shipmentCorpName, refundExtra.getShipmentSerialNo(),
                     refund.getBuyerNote(), goodsList);
             }
             Refund update = new Refund();

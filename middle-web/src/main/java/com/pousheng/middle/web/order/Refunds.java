@@ -353,6 +353,7 @@ public class Refunds {
                             editSubmitChangeItem.setExchangeWarehouseName(refundItem.getExchangeWarehouseName());
                             editSubmitChangeItem.setChangeSkuCode(refundItem.getSkuCode());
                             editSubmitChangeItem.setChangeQuantity(refundItem.getApplyQuantity());
+                            editSubmitChangeItem.setSkuOrderId(refundItem.getSkuOrderId());
                             editSubmitChangeItems.add(editSubmitChangeItem);
                         }
                         boolean result = refundWriteLogic.createOccupyShipments(editSubmitChangeItems, refund.getId());

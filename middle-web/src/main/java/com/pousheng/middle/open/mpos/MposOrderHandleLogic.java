@@ -7,8 +7,8 @@ import com.pousheng.erp.component.ErpClient;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
-import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.RejectShipmentOccupy;
+import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
@@ -17,7 +17,6 @@ import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
 import com.pousheng.middle.web.events.warehouse.StockRecordEvent;
 import com.pousheng.middle.web.order.component.*;
-import com.pousheng.middle.web.utils.SkuCodeUtil;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.enums.ShipmentType;
@@ -229,8 +228,7 @@ public class MposOrderHandleLogic {
 
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         for (ShipmentItem shipmentItem : shipmentItems){
-            //skuCodeAndQuantity.put(shipmentItem.getSkuCode(),0- shipmentItem.getQuantity());
-            skuCodeAndQuantity.put(SkuCodeUtil.getCombineCode(shipmentItem),0- shipmentItem.getQuantity());
+            skuCodeAndQuantity.put(shipmentItem.getSkuCode(),0- shipmentItem.getQuantity());
         }
         if (!Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())) {
             refundWriteLogic.updateSkuHandleNumber(orderShipment.getAfterSaleOrderId(), skuCodeAndQuantity);

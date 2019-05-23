@@ -156,9 +156,9 @@ public class RefundWriteLogic {
         Boolean isAllHandle = Boolean.TRUE;
         //更新发货数量
         for (RefundItem refundItem : refundChangeItems) {
-            //if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
-            if (skuCodeAndQuantity.containsKey(SkuCodeUtil.getCombineCode(refundItem))) {
-                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber() == null ? 0 : refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(SkuCodeUtil.getCombineCode(refundItem)));
+            if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
+                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber() == null ? 0 :
+                        refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(refundItem.getSkuCode()));
             }
 
             //如果存在未处理完成的
@@ -214,9 +214,9 @@ public class RefundWriteLogic {
         Boolean isAllHandle = Boolean.TRUE;
         //更新发货数量
         for (RefundItem refundItem : refundChangeItems) {
-            //if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
-            if (skuCodeAndQuantity.containsKey(SkuCodeUtil.getCombineCode(refundItem))) {
-                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber() == null ? 0 : refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(SkuCodeUtil.getCombineCode(refundItem)));
+            if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
+                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber() == null ? 0 :
+                        refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(refundItem.getSkuCode()));
             }
 
             //如果存在未处理完成的
@@ -262,9 +262,9 @@ public class RefundWriteLogic {
         Boolean isAllHandle = Boolean.TRUE;
         //更新发货数量
         for (RefundItem refundItem : refundLostItems) {
-            //if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
-            if (skuCodeAndQuantity.containsKey(SkuCodeUtil.getCombineCode(refundItem))) {
-                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber() == null ? 0 : refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(SkuCodeUtil.getCombineCode(refundItem)));
+            if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
+                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber() == null ? 0 :
+                        refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(refundItem.getSkuCode()));
             }
 
             //如果存在未处理完成的
@@ -2030,6 +2030,9 @@ public class RefundWriteLogic {
             //获取skuCode和数量的集合
             String data = JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());
             Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
+            if (log.isDebugEnabled()) {
+                log.debug("refund:{} shipmentRequest:{}", refundId, data);
+            }
             //获取生成发货单的仓库
             Long warehouseId = shipmentRequest.getWarehouseId();
             Refund refund = refundReadLogic.findRefundById(refundId);
@@ -2524,10 +2527,8 @@ public class RefundWriteLogic {
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
 
-            //Map<String, Integer> skuCodeAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
-            //        .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getQuantity));
             Map<String, Integer> skuCodeAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
-                    .collect(Collectors.toMap(it -> SkuCodeUtil.getCombineCode(it), ShipmentItem::getQuantity));
+                    .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getQuantity));
             Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
             if (!Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())) {
                 result = this.updateSkuHandleNumberOccupy(orderShipment.getAfterSaleOrderId(), skuCodeAndQuantityMap);

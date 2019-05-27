@@ -1975,7 +1975,7 @@ public class ShipmentWiteLogic {
                 if (!isFirst) {
                     //如果不是第一次派单，将订单状态恢复至待处理
                     //this.makeSkuOrderWaitHandle(skuCodeAndQuantityList, skuOrders);
-                    this.makeSkuOrderWaitHandle(skuCodeAndQuantities, skuOrders, orderShipmentedCountMap);
+                    this.makeSkuOrderWaitHandle(skuCodeAndQuantityList, skuOrders, orderShipmentedCountMap);
                 }
             } else {
                 log.info("mpos order(id:{}) can not be dispatched", shopOrder.getId());

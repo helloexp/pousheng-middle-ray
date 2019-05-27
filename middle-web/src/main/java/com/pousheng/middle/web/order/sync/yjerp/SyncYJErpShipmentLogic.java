@@ -211,7 +211,8 @@ public class SyncYJErpShipmentLogic {
             List<YJErpCancelInfo> list = getSycYJErpCancelInfo(shipment);
             String response = sycYYEdiOrderCancelApi.doYJErpCancelOrder(list);
             JSONObject responseObj = JSONObject.parseObject(response);
-            if (Objects.equals(responseObj.get("error"), 0)) {
+            if (Objects.equals(responseObj.get("error"), 0) ||
+                    Objects.equals(responseObj.getString("error_info"), "此外部单号不存在")) {
                 OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatusLocking(shipment, operation);
                 if (!updateStatus.isSuccess()) {

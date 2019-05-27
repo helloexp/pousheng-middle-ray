@@ -47,6 +47,7 @@ public class PsAfterSaleReceiverHelper {
             case RETURN_CLOSED:
             case EXCHANGE_CLOSED:
             case EXCHANGE_SUCCESS:
+            case WAIT_SELLER_SEND_GOODS:
                 return true;
             default:
                 return false;

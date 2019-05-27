@@ -1880,17 +1880,6 @@ public class ShipmentWiteLogic {
                             orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
                         }
                     }
-                    if (!CollectionUtils.isEmpty(shipment.getSkuInfos())) {
-                        shipment.getSkuInfos().forEach((skuOrderId, quantity) -> {
-                            if (null != quantity && quantity > 0) {
-                                if (orderShipmentedCountMap.containsKey(skuOrderId)) {
-                                    orderShipmentedCountMap.put(skuOrderId, orderShipmentedCountMap.get(skuOrderId) + quantity);
-                                } else {
-                                    orderShipmentedCountMap.put(skuOrderId, quantity);
-                                }
-                            }
-                        });
-                    }
                     //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
                     Map<String, String> extraMap = shopOrder.getExtra();
                     String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
@@ -1935,17 +1924,6 @@ public class ShipmentWiteLogic {
                     }
 
                 }
-                if (!CollectionUtils.isEmpty(shipment.getSkuInfos())) {
-                    shipment.getSkuInfos().forEach((skuOrderId, quantity) -> {
-                        if (null != quantity && quantity > 0) {
-                            if (orderShipmentedCountMap.containsKey(skuOrderId)) {
-                                orderShipmentedCountMap.put(skuOrderId, orderShipmentedCountMap.get(skuOrderId) + quantity);
-                            } else {
-                                orderShipmentedCountMap.put(skuOrderId, quantity);
-                            }
-                        }
-                    });
-                }
                 //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
                 Map<String, String> extraMap = shopOrder.getExtra();
                 String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
@@ -1974,8 +1952,8 @@ public class ShipmentWiteLogic {
                 log.info("hk pos or all channel order(id:{}) can not be dispatched", shopOrder.getId());
                 if (!isFirst) {
                     //如果不是第一次派单，将订单状态恢复至待处理
-                    //this.makeSkuOrderWaitHandle(skuCodeAndQuantityList, skuOrders);
-                    this.makeSkuOrderWaitHandle(skuCodeAndQuantityList, skuOrders, orderShipmentedCountMap);
+                    this.makeSkuOrderWaitHandle(skuCodeAndQuantityList, skuOrders);
+                    //this.makeSkuOrderWaitHandle(skuCodeAndQuantityList, skuOrders, orderShipmentedCountMap);
                 }
             } else {
                 log.info("mpos order(id:{}) can not be dispatched", shopOrder.getId());

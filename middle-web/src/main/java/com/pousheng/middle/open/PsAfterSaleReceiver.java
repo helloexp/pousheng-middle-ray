@@ -426,9 +426,8 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     @Override
     protected void fillLogisticsInfo(Refund refund, String shipmentSerialNo, String shipmentCorpCode,
                                      String shipmentCorpName) {
-<<<<<<< HEAD
+
         psAfterSaleReceiverHelper.fillLogisticsInfo(refund,shipmentSerialNo,shipmentCorpCode,shipmentCorpName);
-=======
         log.info("fill address {} ,size{}", refund.toString());
         if (Strings.isNullOrEmpty(shipmentSerialNo)) {
             return;
@@ -515,7 +514,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
         refund.setExtra(extraMap);
 
->>>>>>> 苏宁天猫售后单改造
+        psAfterSaleReceiverHelper.fillLogisticsInfo(refund,shipmentSerialNo,shipmentCorpCode,shipmentCorpName);
     }
 
     @Override
@@ -810,24 +809,13 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         return false;
     }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 苏宁天猫售后单改造
     @Override
     protected boolean isExpectedStatus(OpenClientAfterSale openClientAfterSale) {
 
         if (Arguments.isNull(openClientAfterSale.getStatus()) || Arguments.isNull(openClientAfterSale.getType())) {
             return false;
         }
-<<<<<<< HEAD
-<<<<<<< HEAD
         log.info("check refund order status,outOrderId={},currentStatus={},type={},shopId={}",new Object[]{openClientAfterSale.getOpenOrderId(),openClientAfterSale.getStatus(),openClientAfterSale.getType(),openClientAfterSale.getOpenShopId()});
-=======
->>>>>>> 苏宁天猫售后单改造
-=======
-        log.info("check refund order status,outOrderId={},currentStatus={},type={},shopId={}",new Object[]{openClientAfterSale.getOpenOrderId(),openClientAfterSale.getStatus(),openClientAfterSale.getType(),openClientAfterSale.getOpenShopId()});
->>>>>>> 退货退款增加日志
 
         String openClientAfterSaleType = openClientAfterSale.getType().name();
 

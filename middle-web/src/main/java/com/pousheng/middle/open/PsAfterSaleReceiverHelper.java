@@ -13,7 +13,16 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.ExpressCodeCriteria;
+import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.order.service.ExpressCodeReadService;
+import com.pousheng.middle.web.order.component.RefundReadLogic;
+import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Paging;
+import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.dto.OpenClientAfterSale;
@@ -25,7 +34,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-
 import java.util.Objects;
 
 /**
@@ -167,7 +175,6 @@ public class PsAfterSaleReceiverHelper {
         refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
         refund.setExtra(extraMap);
         log.info("fill.fillLogisticsInfo.end.refundId={},refund={}", new Object[]{refund.getId(),JsonMapper.nonEmptyMapper().toJson(refund)});
-
 
     }
 }

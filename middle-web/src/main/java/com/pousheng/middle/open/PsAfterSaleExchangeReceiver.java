@@ -264,6 +264,12 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
     }
 
     @Override
+    protected void fillLogisticsInfo(Refund refund, String shipmentSerialNo, String shipmentCorpCode,
+                                     String shipmentCorpName) {
+        psAfterSaleReceiverHelper.fillLogisticsInfo(refund,shipmentSerialNo,shipmentCorpCode,shipmentCorpName);
+    }
+
+    @Override
     protected Integer toParanaRefundType(OpenClientAfterSaleType type) {
         switch (type) {
             case IN_SALE_REFUND:

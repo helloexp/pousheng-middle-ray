@@ -169,4 +169,8 @@ public class ShipmentExtra implements Serializable{
      */
     private Boolean isPostageOrder;
 
+    /**
+     * 同步到 WMS 是否有 esb 异常
+     */
+    private Boolean esb2WMSError;
 }

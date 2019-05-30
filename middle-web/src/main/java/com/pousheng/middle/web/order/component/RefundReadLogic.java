@@ -11,6 +11,7 @@ import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.service.MiddleRefundReadService;
+import com.pousheng.middle.web.utils.SkuCodeUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -413,6 +414,28 @@ public class RefundReadLogic {
         for (RefundItem refundItem : refundItems) {
             //如果传入的传入的skuCode以及数量的map当中存在该skuCode才会判断已经申请的和初始状态的值是否已经小于等于0
             if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
+                if ((refundItem.getApplyQuantity() - (refundItem.getAlreadyHandleNumber() == null ? 0 : refundItem.getAlreadyHandleNumber())) <= 0) {
+                    count++;
+                }
+            }
+        }
+        return count == 0;
+    }
+
+    /**
+     * 判断丢件补发或者售后换货是否可以继续生成发货单
+     *
+     * @param refundItems
+     * @return 可以继续生成发货单，则返回true，不可以继续生成发货单，返回false
+     */
+    public boolean checkRefundWaitHandleNumber2(List<RefundItem> refundItems, Map<String, Integer> skuCodeAndQuantity) {
+        int count = 0;
+        if (refundItems.isEmpty()) {
+            return count == 0;
+        }
+        for (RefundItem refundItem : refundItems) {
+            //如果传入的传入的skuCode以及数量的map当中存在该skuCode才会判断已经申请的和初始状态的值是否已经小于等于0
+            if (skuCodeAndQuantity.containsKey(SkuCodeUtil.toCombineCode(refundItem))) {
                 if ((refundItem.getApplyQuantity() - (refundItem.getAlreadyHandleNumber() == null ? 0 : refundItem.getAlreadyHandleNumber())) <= 0) {
                     count++;
                 }

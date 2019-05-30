@@ -1,6 +1,7 @@
 package com.pousheng.middle.consume.index.processor.impl.refund;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import com.pousheng.middle.consume.index.configuration.RefundSearchProperties;
 import com.pousheng.middle.consume.index.processor.core.IDEventProcessor;
@@ -11,6 +12,8 @@ import com.pousheng.middle.consume.index.processor.impl.refund.builder.RefundInd
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,7 +29,14 @@ public class RefundProcessor implements IndexEventProcessor {
     public RefundProcessor(RefundIndexManager refundIndexManager, RefundSearchProperties refundSearchProperties) {
         idEventProcessor = new IDEventProcessor(refundSearchProperties.getIndexName(),
                 row -> Longs.tryParse(row.get(0)),
-                ids -> ids.forEach(refundIndexManager::index));
+                ids -> {
+                    if (ids.size() > 100) {
+                        List<List<Long>> slices = Lists.partition(new ArrayList<>(ids), 500);
+                        slices.forEach(refundIndexManager::bulkIndex);
+                    } else {
+                        ids.forEach(refundIndexManager::index);
+                    }
+                });
     }
 
     @Override

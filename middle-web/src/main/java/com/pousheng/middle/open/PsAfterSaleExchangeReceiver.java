@@ -110,7 +110,7 @@ public class PsAfterSaleExchangeReceiver extends DefaultAfterSaleExchangeReceive
         //售后单添加一个锁标识
         refund.setTradeNo(TradeConstants.AFTER_SALE_EXHCANGE_UN_LOCK);
 
-        refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
+        //refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
 
         fillRefundItem(shopOrder, refund, skuOfRefundExchange, refundExtra);
 

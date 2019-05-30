@@ -31,7 +31,7 @@ public class ShopOrderProcessor implements IndexEventProcessor {
                 row -> Longs.tryParse(row.get(0)),
                 ids -> {
                     if (ids.size() > 100) {
-                        List<List<Long>> slices = Lists.partition(new ArrayList<>(ids), 200);
+                        List<List<Long>> slices = Lists.partition(new ArrayList<>(ids), 500);
                         slices.forEach(orderIndexerManager::bulkIndex);
                     } else {
                         ids.forEach(orderIndexerManager::index);

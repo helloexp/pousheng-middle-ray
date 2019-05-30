@@ -1,13 +1,11 @@
 package com.pousheng.middle.web.biz.impl;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.EditSubmitRefundInfo;
-import com.pousheng.middle.order.dto.MiddleOrderRefundDto;
-import com.pousheng.middle.order.dto.RefundExtra;
-import com.pousheng.middle.order.dto.RefundItem;
+import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
@@ -26,6 +24,8 @@ import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.vip.extra.service.VipOrderReturnService;
@@ -201,12 +201,19 @@ public class FillOxoReturnExpressServiceImpl implements CompensateBizService {
 
         //物流公司名称
         String shipmentSerialNo = oxoReturnOrder.getBarcodes().get(0).getReturnApply().get(0).getTransportNo();
-        String shipmentCode = "";
+        ExpressCodeCriteria expressCodeCriteria=new ExpressCodeCriteria();
+        String shipmentCode=toVipCarrierCode(shipmentCorpName);
+        expressCodeCriteria.setVipCode(shipmentCode);
+        Response<Paging<ExpressCode>> response=expressCodeReadService.pagingExpressCode(expressCodeCriteria);
 
-        Response<ExpressCode> response = expressCodeReadService.findByName(shipmentCorpName);
-        if (response.isSuccess()) {
-            shipmentCode = response.getResult().getVipCode();
+        if(!response.isSuccess()||Objects.isNull(response.getResult())){
+            throw new ServiceException("not.found.vip.logistic");
         }
+        if(Objects.isNull(response.getResult().getData())){
+            throw new ServiceException("not.found.vip.logistic");
+        }
+
+
         //物流单号
         refundExtra.setShipmentCorpName(shipmentCorpName);
         refundExtra.setShipmentSerialNo(shipmentSerialNo);
@@ -281,5 +288,36 @@ public class FillOxoReturnExpressServiceImpl implements CompensateBizService {
             return Boolean.FALSE;
         }
         return Boolean.TRUE;
+    }
+
+    private static final ImmutableBiMap<String, String> AFTER_SALE_CARRIER_MAP =
+        ImmutableBiMap.<String, String>builder()
+            .put("1000000454","中国邮政速递物流")
+            .put("1000000455","上海圆通速递")
+            .put("1000000455","上海圆通速递")
+            .put("1000000456","上海韵达货运")
+            .put("1000000457","申通快递")
+            .put("1000000458","顺丰速运")
+            .put("1000000459","中通速递")
+            .put("1000000460","百世汇通")
+            .put("1000000461","天天快递")
+            .put("1000000462","德邦物流")
+            .put("1000000464","天地华宇")
+            .put("1000000465","宅急送")
+            .put("1000000468","恒路物流")
+            .put("1000000474","安能物流")
+            .put("1000000475","新邦物流")
+            .put("1000000511","中铁物流")
+            .put("1200000530","联邦快递")
+            .put("1200000570","中远e环球")
+            .put("1200000573","UCS")
+            .put("1200000640","品骏快递")
+            .put("120001438","京东快递").build();
+    public String toVipCarrierCode(String carrierName) {
+        if(!AFTER_SALE_CARRIER_MAP.inverse().containsKey(carrierName)){
+            //没有在列表中时默认品骏
+            return "1200000640";
+        }
+        return AFTER_SALE_CARRIER_MAP.inverse().get(carrierName);
     }
 }

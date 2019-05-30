@@ -84,6 +84,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -172,7 +174,9 @@ public class AdminShops {
 
     private static String OPEN_SHOP_ID = "openShopId";
 
-
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+    
+    
     @ApiOperation("根据门店id查询门店信息")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Shop findShopById(@PathVariable("id") Long shopId) {
@@ -288,6 +292,8 @@ public class AdminShops {
                   }
                 }
                 entity.setShopStatus(ShopEnableStatus.fromValue(shop.getStatus()));
+                entity.setCreatedAt(sdf.format(shop.getCreatedAt()));
+                entity.setUpdatedAt(sdf.format(shop.getUpdatedAt()));
                 entities.add(entity);
             }
             ExportContext context = new ExportContext(entities);

@@ -398,11 +398,11 @@ public class InventoryClient {
      * @param request
      * @return
      */
-    public Response<Boolean> batchUpdateDisable(ShopSkuSupplyRuleBatchUpdateDisableRequest request) {
+    public Response<Long> batchUpdateDisable(ShopSkuSupplyRuleBatchUpdateDisableRequest request) {
 
         try {
             String path = "api/inventory/shop/sku/supply/rule/batch/disable";
-            Boolean result = (Boolean) inventoryBaseClient.postJson(path, JsonMapper.nonEmptyMapper().toJson(request), Boolean.class);
+            Long result = (Long) inventoryBaseClient.postJson(path, JsonMapper.nonEmptyMapper().toJson(request), Long.class);
             return Response.ok(result);
         } catch (Exception e) {
             log.error("fail to batch update disable request:{}, cause:{}", request, e);

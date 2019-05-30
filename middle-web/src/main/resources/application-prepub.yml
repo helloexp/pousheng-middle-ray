@@ -298,7 +298,7 @@ terminus:
 
 
 # 网易邮箱邮箱,exchange服务器
-outlook.mail.server: smtphz.qiye.163.com
+outlook.mail.server: fastsmtphz.qiye.163.com
 outlook.mail.username: mpos_order_notify@store.pousheng.com
 outlook.mail.password: ps_1233
 outlook.mail.title: 派单提醒

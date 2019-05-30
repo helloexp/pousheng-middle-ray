@@ -129,7 +129,7 @@ public class ShopSkuSupplyRuleComponent {
         return false;
     }
 
-    public Response<Boolean> batchUpdateDisable(Long shopId, List<String> skuCodes, Long upperLimitId) {
+    public Response<Long> batchUpdateDisable(Long shopId, List<String> skuCodes, Long upperLimitId) {
         if (CollectionUtils.isEmpty(skuCodes)) {
             return Response.fail("skuCodes.is.empty");
         }

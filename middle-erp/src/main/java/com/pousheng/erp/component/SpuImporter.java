@@ -131,11 +131,21 @@ public class SpuImporter {
                 if (!StringUtils.isEmpty(material.getSale_date())) {
                     SimpleDateFormat sdf = new SimpleDateFormat(DATE_PATTERN);
                     Date new_sale_date = sdf.parse(material.getSale_date());
-                    if (!exist.getSaleDate().equals(new_sale_date)) {
+                    Date saleDate = exist.getSaleDate();
+                    if (saleDate != null) {
+                        long time = saleDate.getTime();
+                        long newtime = new_sale_date.getTime();
+                        if (time != newtime) {
+                            exist.setSaleDate(new_sale_date);
+                            spuMaterialDao.update(exist);
+                            spuMaterialCacher.refreshById(materialId);
+                        }
+                    } else {
                         exist.setSaleDate(new_sale_date);
                         spuMaterialDao.update(exist);
                         spuMaterialCacher.refreshById(materialId);
                     }
+
                 }
                 Long spuId = exist.getSpuId();
                 Spu spu = spuCacher.findById(spuId);

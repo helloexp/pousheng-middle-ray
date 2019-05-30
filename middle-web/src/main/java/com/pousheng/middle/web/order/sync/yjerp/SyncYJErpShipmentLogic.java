@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.sync.yjerp;
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.kevinsawicki.http.HttpRequest;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.open.ReceiverInfoCompleter;
@@ -24,6 +25,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.dingtalk.DingTalkNotifies;
 import io.terminus.open.client.center.constant.ExtraKeyConstant;
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.order.dto.fsm.Flow;
@@ -72,6 +74,8 @@ public class SyncYJErpShipmentLogic {
     private ShipmentWriteService shipmentWriteService;
     @Autowired
     private ReceiverInfoCompleter receiverInfoCompleter;
+    @Autowired
+    private DingTalkNotifies dingTalkNotifies;
 
 
     /**
@@ -97,7 +101,8 @@ public class SyncYJErpShipmentLogic {
             shipment.setStatus(targetStatus);
 
             List<YJErpShipmentInfo> list = getSycYJErpShipmentInfo(shipment);
-            String response = sycYYEdiShipmentOrderApi.doSyncYJErpShipmentOrder(list);
+            HttpRequest request = sycYYEdiShipmentOrderApi.syncYJErpShipmentOrder(list);
+            String response = request.body();
             JSONObject responseObj = JSONObject.parseObject(response);
             if (Objects.equals(responseObj.get("error"), 0)) {
                 JSONObject data = JSONObject.parseObject(responseObj.getString("data"));
@@ -129,25 +134,58 @@ public class SyncYJErpShipmentLogic {
                 }
             }
             else {
+                // 如果有 ESB 异常，打标到 shipment 冗余字段
+                markIfHasEsbError(shipment, request, response);
                 //整体失败
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 }
-                // 失败原因
-                log.error("订单派发中心返回信息:{}", response);
                 return Response.fail(responseObj.getString("error_info"));
             }
 
         } catch (Exception e) {
-            log.error("sync yj erp shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));
+            String errorMsg = String.format("发货单[id=%s]同步云聚 ERP 异常: %s", shipment.getId(), Throwables.getStackTraceAsString(e));
+            log.error(errorMsg);
             //更新状态为同步失败
             updateShipmetSyncFail(shipment);
+            dingTalkNotifies.addMsg(errorMsg);
             return Response.fail("sync.yj.erp.shipment.fail");
         }
         return Response.ok(Boolean.TRUE);
 
+    }
+
+    /**
+     * 如果有 ESB 异常，打标到 shipment 冗余字段
+     * @param shipment
+     * @param request
+     */
+    private void markIfHasEsbError(Shipment shipment, HttpRequest request, String responseBody) {
+        try {
+            String errorCode = request.header("code");
+            boolean hasEsbError = !"ESB00000".equals(errorCode);
+            if (hasEsbError) {
+                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                shipmentExtra.setEsb2WMSError(true);
+                //封装更新信息
+                Shipment update = new Shipment();
+                update.setId(shipment.getId());
+                Map<String, String> extraMap = shipment.getExtra();
+                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
+                update.setExtra(extraMap);
+                //更新基本信息
+                Response<Boolean> updateRes = shipmentWriteService.update(update);
+                if (!updateRes.isSuccess()) {
+                    log.error("fail to update shipment for esb error, cause: {}", updateRes.getError());
+                }
+            }
+            // 失败原因
+            log.error("订单派发中心返回报文头 Code:{}, 报文体: {}", errorCode, responseBody);
+        } catch (Exception e) {
+            dingTalkNotifies.addMsg(String.format("esb 打标异常：%s", Throwables.getStackTraceAsString(e)));
+        }
     }
 
 
@@ -173,7 +211,8 @@ public class SyncYJErpShipmentLogic {
             List<YJErpCancelInfo> list = getSycYJErpCancelInfo(shipment);
             String response = sycYYEdiOrderCancelApi.doYJErpCancelOrder(list);
             JSONObject responseObj = JSONObject.parseObject(response);
-            if (Objects.equals(responseObj.get("error"), 0)) {
+            if (Objects.equals(responseObj.get("error"), 0) ||
+                    Objects.equals(responseObj.getString("error_info"), "此外部单号不存在")) {
                 OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatusLocking(shipment, operation);
                 if (!updateStatus.isSuccess()) {

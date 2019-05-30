@@ -604,4 +604,7 @@ public class TradeConstants {
 
     public static  final  String PULL_REFUND_EXCHANGE_FLAG_KEY="checkStatusWhenPullRefundAndExchange";
     public static  final  String PULL_REFUND_EXCHANGE_FLAG_VALUE="1";
+
+
+    public static final int MAX_REFUND_FLAG=127;
 }

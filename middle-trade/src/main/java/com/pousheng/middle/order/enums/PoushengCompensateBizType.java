@@ -84,6 +84,11 @@ public enum PoushengCompensateBizType {
     IMPORT_ITEM_PUSH_RATIO,
 
     /**
+     * 批量导入售后单
+     */
+    IMPORT_AFTERSALE_ORDER,
+
+    /**
      * 异步插入云聚JIT订单
      */
     OUT_OPEN_ORDER,

@@ -1111,7 +1111,8 @@ public class RefundWriteLogic {
                 //判断申请售后的商品数量和已经退货的商品数量之和是否大于发货单中商品的数量
                 int currentRefundApplyQuantity = editSubmitRefundItem.getRefundQuantity();
                 int alreadyRefundApplyQuantity = skuCodesAndShipmentItems.get(key).getRefundQuantity() == null ? 0 : skuCodesAndShipmentItems.get(key).getRefundQuantity();
-                if ((currentRefundApplyQuantity + alreadyRefundApplyQuantity) > skuCodesAndQuantity.get(key)) {
+                int remainQuantuty = skuCodesAndQuantity.get(key) == null ? 0 : skuCodesAndQuantity.get(key);
+                if ((currentRefundApplyQuantity + alreadyRefundApplyQuantity) > remainQuantuty) {
                     log.error("refund applyQuantity:{} gt available applyQuantity:{}", editSubmitRefundItem.getRefundQuantity(), skuCodesAndQuantity.get(key));
                     throw new JsonResponseException("refund.apply.quantity.invalid");
                 }

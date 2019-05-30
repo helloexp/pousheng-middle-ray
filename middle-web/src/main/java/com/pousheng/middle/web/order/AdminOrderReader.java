@@ -92,16 +92,17 @@ public class AdminOrderReader {
 
     /**
      * 交易订单分页
+     *
      * @param middleOrderCriteria 查询参数
      * @return 订单分页结果
      */
     @RequestMapping(value = "/api/order/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<ShopOrderPagingInfo>> findBy(MiddleOrderCriteria middleOrderCriteria) {
         String criteriaStr = JsonMapper.nonEmptyMapper().toJson(middleOrderCriteria);
-        if(log.isDebugEnabled()){
-            log.debug("API-ORDER-PAGING-START param: middleOrderCriteria [{}] ",criteriaStr);
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-PAGING-START param: middleOrderCriteria [{}]", criteriaStr);
         }
-        if(middleOrderCriteria.getOutCreatedEndAt()!=null){
+        if (middleOrderCriteria.getOutCreatedEndAt() != null) {
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
 
@@ -111,90 +112,90 @@ public class AdminOrderReader {
         } else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
             throw new JsonResponseException("permission.check.query.deny");
         }
-        if (StringUtils.isNotEmpty(middleOrderCriteria.getMobile())){
-          middleOrderCriteria.setOutBuyerId(middleOrderCriteria.getMobile());
+        if (StringUtils.isNotEmpty(middleOrderCriteria.getMobile())) {
+            middleOrderCriteria.setOutBuyerId(middleOrderCriteria.getMobile());
         }
         //不显示jit时效订单来源
         middleOrderCriteria.setExcludeOutFrom(JitConsts.YUNJU_REALTIME);
 
         Response<Paging<ShopOrder>> pagingRes;
         if (middleOrderCriteria.getStatus() != null && middleOrderCriteria.getStatus().contains(99)) {
-        	try {
-        		SimpleDateFormat formatter  = new SimpleDateFormat("yyyy-MM-dd");
-        		if(middleOrderCriteria.getOutCreatedStartAt()==null){
-            		Calendar caStart = Calendar.getInstance();
-            		caStart.setTime(formatter.parse(formatter.format(new Date())));
-            		caStart.add(Calendar.MONTH, -1);
+            try {
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+                if (middleOrderCriteria.getOutCreatedStartAt() == null) {
+                    Calendar caStart = Calendar.getInstance();
+                    caStart.setTime(formatter.parse(formatter.format(new Date())));
+                    caStart.add(Calendar.MONTH, -1);
                     middleOrderCriteria.setOutCreatedStartAt(new DateTime(caStart.getTime()).toDate());
                 }
-        		if(middleOrderCriteria.getOutCreatedEndAt()==null){
-        			Calendar caEnd = Calendar.getInstance();
-        			caEnd.setTime(formatter.parse(formatter.format(new Date())));
+                if (middleOrderCriteria.getOutCreatedEndAt() == null) {
+                    Calendar caEnd = Calendar.getInstance();
+                    caEnd.setTime(formatter.parse(formatter.format(new Date())));
                     caEnd.add(Calendar.DATE, 1);
-                    caEnd.add(Calendar.SECOND,-1);
+                    caEnd.add(Calendar.SECOND, -1);
                     middleOrderCriteria.setOutCreatedEndAt(new DateTime(caEnd.getTime()).toDate());
-        		}
-        		// compare 
-        		
-        		long diff = middleOrderCriteria.getOutCreatedEndAt().getTime() - middleOrderCriteria.getOutCreatedStartAt().getTime();
-        		diff = diff/1000/60/60/24;
-        		if (diff > 31) {
-        			return Response.fail("over 30 days");
-        		}
-        	}catch(Exception e) {
-        		return Response.fail(e.getMessage());
-        	}
-        	
-        	SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            Map<String, Object> params = Maps.newHashMap();
-            params.put("dtStart",sdf.format(middleOrderCriteria.getOutCreatedStartAt()));
-            params.put("dtEnd",sdf.format(middleOrderCriteria.getOutCreatedEndAt()));
-            if (middleOrderCriteria.getPageSize() !=null){
-                params.put("limit",middleOrderCriteria.getPageSize());
-            }else{
-                params.put("limit",20);
+                }
+                // compare
+
+                long diff = middleOrderCriteria.getOutCreatedEndAt().getTime() - middleOrderCriteria.getOutCreatedStartAt().getTime();
+                diff = diff / 1000 / 60 / 60 / 24;
+                if (diff > 31) {
+                    return Response.fail("over 30 days");
+                }
+            } catch (Exception e) {
+                return Response.fail(e.getMessage());
             }
 
-            if (middleOrderCriteria.getPageNo() !=null){
-                params.put("offset",(middleOrderCriteria.getPageNo()-1)*middleOrderCriteria.getPageSize());
-            }else{
-                params.put("offset",0);
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Map<String, Object> params = Maps.newHashMap();
+            params.put("dtStart", sdf.format(middleOrderCriteria.getOutCreatedStartAt()));
+            params.put("dtEnd", sdf.format(middleOrderCriteria.getOutCreatedEndAt()));
+            if (middleOrderCriteria.getPageSize() != null) {
+                params.put("limit", middleOrderCriteria.getPageSize());
+            } else {
+                params.put("limit", 20);
             }
-            if (middleOrderCriteria.getOrderCode() != null){
-                params.put("order_code",middleOrderCriteria.getOrderCode());
+
+            if (middleOrderCriteria.getPageNo() != null) {
+                params.put("offset", (middleOrderCriteria.getPageNo() - 1) * middleOrderCriteria.getPageSize());
+            } else {
+                params.put("offset", 0);
             }
-            if (middleOrderCriteria.getOutId() != null){
-                params.put("out_id",middleOrderCriteria.getOutId());
+            if (middleOrderCriteria.getOrderCode() != null) {
+                params.put("order_code", middleOrderCriteria.getOrderCode());
             }
-            if (middleOrderCriteria.getBuyerName() != null){
-                params.put("buyer_name",middleOrderCriteria.getBuyerName());
+            if (middleOrderCriteria.getOutId() != null) {
+                params.put("out_id", middleOrderCriteria.getOutId());
             }
-            if (middleOrderCriteria.getShopName() != null){
-                params.put("shop_name",middleOrderCriteria.getShopName());
+            if (middleOrderCriteria.getBuyerName() != null) {
+                params.put("buyer_name", middleOrderCriteria.getBuyerName());
             }
-            if (middleOrderCriteria.getShopId() != null){
-                params.put("shop_id",middleOrderCriteria.getShopId());
+            if (middleOrderCriteria.getShopName() != null) {
+                params.put("shop_name", middleOrderCriteria.getShopName());
             }
-            if (middleOrderCriteria.getMobile() != null){
-                params.put("mobile",middleOrderCriteria.getMobile());
+            if (middleOrderCriteria.getShopId() != null) {
+                params.put("shop_id", middleOrderCriteria.getShopId());
             }
-            if (middleOrderCriteria.getShopIds() != null){
-                params.put("allow_shop_ids",middleOrderCriteria.getShopIds());
+            if (middleOrderCriteria.getMobile() != null) {
+                params.put("mobile", middleOrderCriteria.getMobile());
             }
-            if (middleOrderCriteria.getCompanyId() != null){
-                params.put("company_id",middleOrderCriteria.getCompanyId());
+            if (middleOrderCriteria.getShopIds() != null) {
+                params.put("allow_shop_ids", middleOrderCriteria.getShopIds());
+            }
+            if (middleOrderCriteria.getCompanyId() != null) {
+                params.put("company_id", middleOrderCriteria.getCompanyId());
             }
 
             //不显示jit时效订单来源
-            if (middleOrderCriteria.getExcludeOutFrom() != null){
-                params.put("exclude_out_from",middleOrderCriteria.getExcludeOutFrom());
+            if (middleOrderCriteria.getExcludeOutFrom() != null) {
+                params.put("exclude_out_from", middleOrderCriteria.getExcludeOutFrom());
             }
-        	pagingRes = middleOrderReadService.findByecpOrderStatus(params);
-        }else {
-        	pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria); 
+            pagingRes = middleOrderReadService.findByecpOrderStatus(params);
+        } else {
+            pagingRes = middleOrderReadService.pagingShopOrder(middleOrderCriteria);
         }
-         
-        if(!pagingRes.isSuccess()){
+
+        if (!pagingRes.isSuccess()) {
             return Response.fail(pagingRes.getError());
         }
         Flow flow = flowPicker.pickOrder();
@@ -205,11 +206,11 @@ public class AdminOrderReader {
             ShopOrderPagingInfo shopOrderPagingInfo = new ShopOrderPagingInfo();
             shopOrderPagingInfo.setShopOrder(shopOrder);
             //如果是mpos订单，不允许有其他操作。
-            if(!shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
-                String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS,shopOrder);
+            if (!shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)) {
+                String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
                 shopOrderPagingInfo.setShopOrderOperations(shipmentReadLogic.isShopOrderCanRevoke(shopOrder)
-                        ?flow.availableOperations(shopOrder.getStatus())
-                        :flow.availableOperations(shopOrder.getStatus()).stream().filter(it->it.getValue()!=MiddleOrderEvent.REVOKE.getValue()).collect(Collectors.toSet()));
+                        ? flow.availableOperations(shopOrder.getStatus())
+                        : flow.availableOperations(shopOrder.getStatus()).stream().filter(it -> it.getValue() != MiddleOrderEvent.REVOKE.getValue()).collect(Collectors.toSet()));
             }
             //待处理的单子如果是派单失败的 允许出现 不包含有备注订单
             if (shopOrder.getOutFrom().equals(MiddleChannel.VIPOXO.getValue()) && shopOrder.getStatus().equals(MiddleOrderStatus.WAIT_HANDLE.getValue())) {
@@ -225,8 +226,8 @@ public class AdminOrderReader {
         //撤销时必须保证订单没有发货
         pagingInfoPaging.setData(pagingInfos);
         pagingInfoPaging.setTotal(pagingRes.getResult().getTotal());
-        if(log.isDebugEnabled()){
-            log.debug("API-ORDER-PAGING-END param: middleOrderCriteria [{}] ,resp: [{}]",criteriaStr,JsonMapper.nonEmptyMapper().toJson(pagingInfoPaging));
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-PAGING-END param: middleOrderCriteria [{}] ,resp: [{}]", criteriaStr, JsonMapper.nonEmptyMapper().toJson(pagingInfoPaging));
         }
         return Response.ok(pagingInfoPaging);
 
@@ -235,22 +236,23 @@ public class AdminOrderReader {
 
     /**
      * 交易订单详情
+     *
      * @param id 交易订单id
      * @return 订单详情DTO
      */
     @RequestMapping(value = "/api/order/{id}/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<OrderDetail> detail(@PathVariable("id") @PermissionCheckParam Long id,
                                         HttpServletRequest request) {
-        if(log.isDebugEnabled()){
-            log.debug("API-ORDER-DETAIL-START param: id [{}] ",id);
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-DETAIL-START param: id [{}] ", id);
         }
-        Response<OrderDetail> response=  orderReadLogic.orderDetail(id);
-        if(response.isSuccess()){
-            OrderDetail orderDetail=response.getResult();
+        Response<OrderDetail> response = orderReadLogic.orderDetail(id);
+        if (response.isSuccess()) {
+            OrderDetail orderDetail = response.getResult();
         }
-        sendLogForTaobao(response,request);
-        if(log.isDebugEnabled()){
-            log.debug("API-ORDER-DETAIL-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(response));
+        sendLogForTaobao(response, request);
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-DETAIL-END param: id [{}] ,resp: [{}]", id, JsonMapper.nonEmptyMapper().toJson(response));
         }
         return response;
     }
@@ -258,40 +260,41 @@ public class AdminOrderReader {
 
     /**
      * 交易订单待处理商品列表 for 手动生成发货单流程的选择仓库页面
+     *
      * @param id 交易订单id
      * @return 待发货商品列表 注意：待发货数量(waitHandleNumber) = 下单数量 - 已发货数量 ,waitHandleNumber为skuOrder.extraMap中的一个key，value为待发货数量
      */
     @RequestMapping(value = "/api/order/{id}/wait/handle/sku", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<WaitShipItemInfo> orderWaitHandleSku(@PathVariable("id") @PermissionCheckParam Long id) {
-        if(log.isDebugEnabled()){
-            log.debug("API-ORDER-ORDERWAITHANDLESKU-START param: id [{}] ",id);
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-ORDERWAITHANDLESKU-START param: id [{}] ", id);
         }
-        List<SkuOrder> skuOrders =  orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id, MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id, MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
         List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(skuOrders.size());
-        for (SkuOrder skuOrder : skuOrders){
+        for (SkuOrder skuOrder : skuOrders) {
             WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
             waitShipItemInfo.setSkuOrderId(skuOrder.getId());
             waitShipItemInfo.setSkuCode(skuOrder.getSkuCode());
             waitShipItemInfo.setOutSkuCode(skuOrder.getOutSkuId());
             waitShipItemInfo.setSkuName(skuOrder.getItemName());
-            if (skuOrder.getShipmentType()!=null&&Objects.equals(skuOrder.getShipmentType(),1)){
+            if (skuOrder.getShipmentType() != null && Objects.equals(skuOrder.getShipmentType(), 1)) {
                 waitShipItemInfo.setIsGift(true);
-            }else{
+            } else {
                 waitShipItemInfo.setIsGift(false);
             }
-            String outItemId="";
-            try{
-                outItemId =  orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.MIDDLE_OUT_ITEM_ID,skuOrder);
-            }catch (Exception e){
+            String outItemId = "";
+            try {
+                outItemId = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.MIDDLE_OUT_ITEM_ID, skuOrder);
+            } catch (Exception e) {
                 log.info("outItemmId is not exist");
             }
             waitShipItemInfo.setItemId(outItemId);
             waitShipItemInfo.setSkuAttrs(skuOrder.getSkuAttrs());
-            waitShipItemInfo.setWaitHandleNumber(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER,skuOrder)));
+            waitShipItemInfo.setWaitHandleNumber(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER, skuOrder)));
             waitShipItemInfos.add(waitShipItemInfo);
         }
-        if(log.isDebugEnabled()){
-            log.debug("API-ORDER-ORDERWAITHANDLESKU-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(waitShipItemInfos));
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-ORDERWAITHANDLESKU-END param: id [{}] ,resp: [{}]", id, JsonMapper.nonEmptyMapper().toJson(waitShipItemInfos));
         }
         return waitShipItemInfos;
     }
@@ -299,24 +302,25 @@ public class AdminOrderReader {
 
     /**
      * 判断交易订单是否存在
+     *
      * @param id 交易订单id
      * @return boolean类型 ，true为存在，false为不存在
      */
     @RequestMapping(value = "/api/order/{id}/exist", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean checkExist(@PathVariable("id") @PermissionCheckParam Long id) {
-        if(log.isDebugEnabled()){
-            log.debug("API-ORDER-CHECKEXIST-START param: id [{}] ",id);
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-CHECKEXIST-START param: id [{}] ", id);
         }
         Response<ShopOrder> shopOrderRes = shopOrderReadService.findById(id);
-        if(!shopOrderRes.isSuccess()){
-            log.error("find shop order by id:{} fail,error:{}",id,shopOrderRes.getError());
-            if(Objects.equals(shopOrderRes.getError(),"order.not.found")){
+        if (!shopOrderRes.isSuccess()) {
+            log.error("find shop order by id:{} fail,error:{}", id, shopOrderRes.getError());
+            if (Objects.equals(shopOrderRes.getError(), "order.not.found")) {
                 return Boolean.FALSE;
             }
             throw new JsonResponseException(shopOrderRes.getError());
         }
-        if(log.isDebugEnabled()){
-            log.debug("API-ORDER-CHECKEXIST-END param: id [{}] ",id);
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-CHECKEXIST-END param: id [{}] ", id);
         }
         return Boolean.TRUE;
 
@@ -324,78 +328,81 @@ public class AdminOrderReader {
 
     /**
      * 订单信息和收货地址信息封装 for 新建售后订单展示订单信息
+     *
      * @param code 交易订单id
      * @return 订单信息和收货地址信息封装DTO
      */
     @RequestMapping(value = "/api/order/{code}/for/after/sale", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<ShopOrderWithReceiveInfo> afterSaleOrderInfo(@PathVariable("code") @PermissionCheckParam String code) {
-        if(log.isDebugEnabled()){
-            log.debug("API-ORDER-AFTERSALEORDERINFO-START param: code [{}] ",code);
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-AFTERSALEORDERINFO-START param: code [{}] ", code);
         }
         Response<ShopOrder> shopOrderRes = shopOrderReadService.findByOrderCode(code);
-        if(!shopOrderRes.isSuccess()){
-            log.error("find shop order by code:{} fail,error:{}",code,shopOrderRes.getError());
+        if (!shopOrderRes.isSuccess()) {
+            log.error("find shop order by code:{} fail,error:{}", code, shopOrderRes.getError());
             return Response.fail(shopOrderRes.getError());
         }
         ShopOrder shopOrder = shopOrderRes.getResult();
 
         Response<List<ReceiverInfo>> response = receiverInfoReadService.findByOrderId(shopOrder.getId(), OrderLevel.SHOP);
-        if(!response.isSuccess()){
-            log.error("find order receive info by order id:{} fial,error:{}",shopOrder.getId(),response.getError());
+        if (!response.isSuccess()) {
+            log.error("find order receive info by order id:{} fial,error:{}", shopOrder.getId(), response.getError());
             return Response.fail(response.getError());
         }
         List<ReceiverInfo> receiverInfos = response.getResult();
-        if(CollectionUtils.isEmpty(receiverInfos)){
-            log.error("not find receive info by order id:{}",shopOrder.getId());
+        if (CollectionUtils.isEmpty(receiverInfos)) {
+            log.error("not find receive info by order id:{}", shopOrder.getId());
             return Response.fail("order.receive.info.not.exist");
         }
 
         ShopOrderWithReceiveInfo withReceiveInfo = new ShopOrderWithReceiveInfo();
         withReceiveInfo.setShopOrder(shopOrder);
         withReceiveInfo.setReceiverInfo(receiverInfos.get(0));
-        if(log.isDebugEnabled()){
-            log.debug("API-ORDER-AFTERSALEORDERINFO-END param: code [{}] ,resp: [{}]",code,JsonMapper.nonEmptyMapper().toJson(withReceiveInfo));
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-AFTERSALEORDERINFO-END param: code [{}] ,resp: [{}]", code, JsonMapper.nonEmptyMapper().toJson(withReceiveInfo));
         }
         return Response.ok(withReceiveInfo);
     }
 
     /**
      * 根据店铺订单id判断是否生成过发货单
-     * @param id  店铺订单主键
+     *
+     * @param id 店铺订单主键
      * @return
      */
-    @RequestMapping(value = "/api/order/{id}/is/shipment/created",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean isShipmentCreated(@PathVariable("id") Long id){
-        if(log.isDebugEnabled()){
-           log.debug("API-ORDER-ISSHIPMENTCREATED-START param: id [{}] ",id);
+    @RequestMapping(value = "/api/order/{id}/is/shipment/created", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean isShipmentCreated(@PathVariable("id") Long id) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-ISSHIPMENTCREATED-START param: id [{}] ", id);
         }
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
-        if(log.isDebugEnabled()){
-           log.debug("API-ORDER-ISSHIPMENTCREATED-END param: id [{}] ,resp: [{}]",id,result);
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-ISSHIPMENTCREATED-END param: id [{}] ,resp: [{}]", id, result);
         }
         return result;
     }
 
     /**
      * 判断待处理,处理中的子单是否有条码没有关联的
+     *
      * @param id
      * @return
      */
-    @RequestMapping(value = "/api/order/{id}/is/handle/legal",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean isLegalHandleShopOrder(@PathVariable("id") Long id){
-        if(log.isDebugEnabled()){
-           log.debug("API-ORDER-ISLEGALHANDLESHOPORDER-START param: id [{}] ",id);
+    @RequestMapping(value = "/api/order/{id}/is/handle/legal", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean isLegalHandleShopOrder(@PathVariable("id") Long id) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-ISLEGALHANDLESHOPORDER-START param: id [{}] ", id);
         }
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id,
-                MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
+                MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
         int count = 0;
-        for (SkuOrder skuOrder:skuOrders){
-            if (StringUtils.isEmpty(skuOrder.getSkuCode())){
+        for (SkuOrder skuOrder : skuOrders) {
+            if (StringUtils.isEmpty(skuOrder.getSkuCode())) {
                 count++;
             }
         }
-        if(log.isDebugEnabled()){
-           log.debug("API-ORDER-ISLEGALHANDLESHOPORDER-END param: id [{}] ,resp: [{}]",id,count);
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-ISLEGALHANDLESHOPORDER-END param: id [{}] ,resp: [{}]", id, count);
         }
         return count <= 0;
 
@@ -404,37 +411,39 @@ public class AdminOrderReader {
 
     /**
      * 根据店铺订单id获取所关联的发货单id(不包括已取消)
+     *
      * @param shopOrderId 店铺订单id
      * @return
      */
-    @RequestMapping(value = "/api/order/shipment/{id}/list",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<List<Long>> findShipmentIdsByShopOrderId(@PathVariable("id")Long shopOrderId){
-        if(log.isDebugEnabled()){
-            log.debug("API-ORDER-FINDSHIPMENTIDSBYSHOPORDERID-START param: shopOrderId [{}] ",shopOrderId);
+    @RequestMapping(value = "/api/order/shipment/{id}/list", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<List<Long>> findShipmentIdsByShopOrderId(@PathVariable("id") Long shopOrderId) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-FINDSHIPMENTIDSBYSHOPORDERID-START param: shopOrderId [{}] ", shopOrderId);
         }
         List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
         List<Long> shipmentIds = orderShipments.stream().filter(Objects::nonNull).
-                filter(it->!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).map(OrderShipment::getShipmentId).collect(Collectors.toList());;
-        if(log.isDebugEnabled()){
-            log.debug("API-ORDER-FINDSHIPMENTIDSBYSHOPORDERID-END param: shopOrderId [{}] ,resp: [{}]",shopOrderId,shipmentIds);
+                filter(it -> !Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(), MiddleShipmentsStatus.REJECTED.getValue())).map(OrderShipment::getShipmentId).collect(Collectors.toList());
+        ;
+        if (log.isDebugEnabled()) {
+            log.debug("API-ORDER-FINDSHIPMENTIDSBYSHOPORDERID-END param: shopOrderId [{}] ,resp: [{}]", shopOrderId, shipmentIds);
         }
-        return  Response.ok(shipmentIds);
+        return Response.ok(shipmentIds);
     }
 
 
     @ApiOperation("查询店铺商品订单待处理数量")
-    @RequestMapping(value = "/api/order/shop/wait/handle/number",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long orderWaitHandleNumber(@RequestParam Long shopId,@RequestParam String skuCode){
+    @RequestMapping(value = "/api/order/shop/wait/handle/number", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Long orderWaitHandleNumber(@RequestParam Long shopId, @RequestParam String skuCode) {
 
-        return waitHandleSkuQuantityComponent.queryWaitHandleQuantiy(shopId,skuCode);
+        return waitHandleSkuQuantityComponent.queryWaitHandleQuantiy(shopId, skuCode);
 
     }
 
     @ApiOperation("查询店铺商品订单待处理数量明细")
-    @RequestMapping(value = "/api/order/shop/wait/handle/number/detail",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
-    public Multiset<String> orderWaitHandleNumberDetail(@RequestParam Long shopId, @RequestParam String skuCode){
+    @RequestMapping(value = "/api/order/shop/wait/handle/number/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Multiset<String> orderWaitHandleNumberDetail(@RequestParam Long shopId, @RequestParam String skuCode) {
 
-        return waitHandleSkuQuantityComponent.queryWaitHandleQuantiyDetail(shopId,skuCode);
+        return waitHandleSkuQuantityComponent.queryWaitHandleQuantiyDetail(shopId, skuCode);
 
     }
 
@@ -447,21 +456,23 @@ public class AdminOrderReader {
             eventBus.post(new OrderOpEvent(request, UserUtil.getCurrentUser(), shopOrder, "查看订单"));
         }
     }
-    private void checkOrderPer(ShopOrder shopOrder){
+
+    private void checkOrderPer(ShopOrder shopOrder) {
         //判断是否有权限
-        if(Objects.nonNull(shopOrder)){
-            if(!permissionUtil.getCurrentUserCanOperateShopIDs().contains(shopOrder.getShopId())){
+        if (Objects.nonNull(shopOrder)) {
+            if (!permissionUtil.getCurrentUserCanOperateShopIDs().contains(shopOrder.getShopId())) {
                 log.error("find shopId no permission");
                 throw new JsonResponseException("permission.check.query.deny");
             }
         }
     }
-    private void checkOrderShipPer(List<OrderShipment> orderShipmentList){
-        for (Iterator<OrderShipment> it = orderShipmentList.iterator(); it.hasNext();) {
+
+    private void checkOrderShipPer(List<OrderShipment> orderShipmentList) {
+        for (Iterator<OrderShipment> it = orderShipmentList.iterator(); it.hasNext(); ) {
             OrderShipment shipment = (OrderShipment) it.next();
-            if(!permissionUtil.getCurrentUserCanOperateShopIDs().contains(shipment.getShopId())){
+            if (!permissionUtil.getCurrentUserCanOperateShopIDs().contains(shipment.getShopId())) {
                 it.remove();
             }
         }
     }
- }
+}

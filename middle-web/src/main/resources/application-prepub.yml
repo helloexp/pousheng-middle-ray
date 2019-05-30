@@ -94,10 +94,16 @@ redis:
   max-idle: 8
   test-on-borrow: true
 
-rpc.mode: false
-rpc.dubbo:
-  module: pousheng-middle
-  registryAddress: ${POUSHENG_ZK_HOST}:${POUSHENG_ZK_PORT}
+rpc.mode: ${RPC_MODE:false}
+rpc:
+  dubbo:
+    port: 20880
+    exportHost: ${TERMINUS_HOST:127.0.0.1}
+    exportPort: ${TERMINUS_PORT_20880:2181}
+    module: pousheng-middle
+    registry-address: ${POUSHENG_ZK_HOST:127.0.0.1}:${POUSHENG_ZK_PORT:2181}
+    timeout: 30000
+    version: middle.1.0.0
 
 gateway:
   erp:
@@ -393,6 +399,14 @@ common.biz.mq.queue.size: ${COMMON_BIZ_MQ_QUEUE_SIZE:0}
 ### 供货导入队列index
 item.supply.import.mq.queue.index: ${ITEM_SUPPLY_IMPORT_MQ_QUEUE_INDEX:0}
 
+### 拉单 mq 队列大小
+order.fetch.mq.queue.size: ${ORDER_FETCH_MQ_QUEUE_SIZE:0}
+
 # 发货限制异步导入开关
 pousheng.supply-rule.import.enable: ${SUPPLY_RULE_IMPORT_ENABLE:false}
 pousheng.supply-rule.import.hosts: ${SUPPLY_RULE_IMPORT_HOSTS:}
+
+# 钉钉通知开关，默认是关闭的，需要配置开启
+dingtalk.robot.flag: true
+# 钉钉机器人 webhook
+dingtalk.robot.webhook: https://oapi.dingtalk.com/robot/send?access_token=4804cb399541e684fcf95353fbd572f29d1ea5a57c1844975a40f65191273797

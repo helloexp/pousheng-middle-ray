@@ -4,6 +4,7 @@ import io.terminus.parana.order.dto.RefundCriteria;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * Created by songrenfei on 2017/8/10
@@ -36,5 +37,24 @@ public class MiddleRefundCriteria extends RefundCriteria implements Serializable
 
     private String orderCode;
 
+    private Integer refundFlag;
 
+    /**
+     * 退回快递单号
+     */
+    private String shipmentSerialNo;
+
+    /**
+     * 是否完善退货物流
+     */
+    private Integer completeReturn;
+
+    /**
+     * 退货入库时间
+     */
+    private Date hkReturnDoneAtStart;
+    private Date hkReturnDoneAtEnd;
+
+
+    private Integer pageSize;
 }

@@ -5,13 +5,18 @@
     <parent>
         <artifactId>pousheng-middle</artifactId>
         <groupId>com.pousheng</groupId>
-        <version>4.7.2.RELEASE</version>
+        <version>4.7.3.BUILD-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>middle-web-common</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>io.terminus.boot.rpc</groupId>
             <artifactId>rpc-common</artifactId>
@@ -20,6 +25,11 @@
         <dependency>
             <groupId>com.pousheng</groupId>
             <artifactId>middle-item</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.pousheng</groupId>
+            <artifactId>middle-trade</artifactId>
             <version>${project.version}</version>
         </dependency>
 

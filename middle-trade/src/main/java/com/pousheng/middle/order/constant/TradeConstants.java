@@ -601,4 +601,10 @@ public class TradeConstants {
      * 虚仓编码
      */
     public static final String VISUAL_WAREHOUSE_CODE = "visualWarehouseCode";
+
+    public static  final  String PULL_REFUND_EXCHANGE_FLAG_KEY="checkStatusWhenPullRefundAndExchange";
+    public static  final  String PULL_REFUND_EXCHANGE_FLAG_VALUE="1";
+
+
+    public static final int MAX_REFUND_FLAG=127;
 }

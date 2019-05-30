@@ -396,3 +396,11 @@ item.supply.import.mq.queue.index: ${ITEM_SUPPLY_IMPORT_MQ_QUEUE_INDEX:0}
 # 发货限制异步导入开关
 pousheng.supply-rule.import.enable: ${SUPPLY_RULE_IMPORT_ENABLE:false}
 pousheng.supply-rule.import.hosts: ${SUPPLY_RULE_IMPORT_HOSTS:}
+
+# 钉钉通知开关，默认是关闭的，需要配置开启
+dingtalk.robot.flag: true
+# 钉钉机器人 webhook
+dingtalk.robot.webhook: https://oapi.dingtalk.com/robot/send?access_token=4804cb399541e684fcf95353fbd572f29d1ea5a57c1844975a40f65191273797
+
+### 拉单 mq 队列大小
+order.fetch.mq.queue.size: ${ORDER_FETCH_MQ_QUEUE_SIZE:0}

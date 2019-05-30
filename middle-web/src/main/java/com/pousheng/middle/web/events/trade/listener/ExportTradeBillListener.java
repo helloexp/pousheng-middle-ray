@@ -17,6 +17,7 @@ import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
+import com.pousheng.middle.search.refund.RefundSearchComponent;
 import com.pousheng.middle.web.events.trade.ExportTradeBillEvent;
 import com.pousheng.middle.web.export.*;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
@@ -28,18 +29,18 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
-import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
-import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.model.Criteria;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
-import io.terminus.parana.order.service.*;
+import io.terminus.parana.order.service.PaymentReadService;
+import io.terminus.parana.order.service.ReceiverInfoReadService;
+import io.terminus.parana.order.service.ShipmentReadService;
+import io.terminus.parana.order.service.SkuOrderReadService;
 import io.terminus.parana.shop.model.Shop;
-import io.terminus.parana.shop.service.ShopReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
@@ -55,7 +56,6 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -83,14 +83,12 @@ public class ExportTradeBillListener {
     @RpcConsumer
     private ReceiverInfoReadService receiverInfoReadService;
     @RpcConsumer
-    private ShopOrderReadService shopOrderReadService;
-    @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
-    @RpcConsumer
-    private ShopReadService shopReadService;
 
     @Autowired
     private RefundReadLogic refundReadLogic;
+    @Autowired
+    private RefundSearchComponent refundSearchComponent;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
@@ -102,20 +100,13 @@ public class ExportTradeBillListener {
     @Autowired
     private PoushengSettlementPosReadService poushengSettlementPosReadService;
 
-    @RpcConsumer
-    private OpenShopReadService openShopReadService;
-
     @Autowired
     private OpenShopCacher openShopCacher;
 
     @Autowired
     private OrderReadLogic orderReadLogic;
 
-    private static JsonMapper jsonMapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
-
     private static final int SKU_TEMPLATES_AVALIABLE_STATUS = 1;
-
-    private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     @Autowired
     private ShopCacher shopCacher;
@@ -175,11 +166,13 @@ public class ExportTradeBillListener {
                 log.error("get order fail,error:{}", pagingRes.getError());
                 throw new JsonResponseException(pagingRes.getError());
             }
-            if (pagingRes.getResult().getTotal() == 0)
+            if (pagingRes.getResult().getTotal() == 0) {
                 throw new JsonResponseException("export.data.empty");
+            }
 
-            if (pagingRes.getResult().isEmpty())
+            if (pagingRes.getResult().isEmpty()) {
                 break;
+            }
 
 
             List<Long> orderIds = pagingRes.getResult().getData().stream().map(ShopOrder::getId).collect(Collectors.toList());
@@ -195,8 +188,9 @@ public class ExportTradeBillListener {
 
                 Long orderID = shopOrder.getId();
 
-                if (!skuOrders.containsKey(orderID))
+                if (!skuOrders.containsKey(orderID)) {
                     continue;
+                }
                 Response<List<Shipment>> shipmentResponse = shipmentReadService.findByOrderIdAndOrderLevel(orderID, OrderLevel.SHOP);
                 if (!shipmentResponse.isSuccess()) {
                     log.error("get shipment fail,error:{}", shipmentResponse.getError());
@@ -288,11 +282,13 @@ public class ExportTradeBillListener {
                         });
                     }
 
-                    if (spus.containsKey(skuOrder.getSkuCode()))
+                    if (spus.containsKey(skuOrder.getSkuCode())) {
                         export.setBrandName(spus.get(skuOrder.getSkuCode()).getBrandName());
+                    }
                     export.setSkuQuantity(skuOrder.getQuantity());
-                    if (null != skuOrder.getFee())
+                    if (null != skuOrder.getFee()) {
                         export.setFee(new BigDecimal(skuOrder.getFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());//从分转换成元
+                    }
                     orderExportData.add(export);
                 });
 
@@ -326,7 +322,7 @@ public class ExportTradeBillListener {
     private void refundExport(MiddleRefundCriteria criteria,Long userId) {
 
         criteria.setExcludeRefundType(MiddleRefundType.ON_SALES_REFUND.value());
-        criteria.setSize(500);
+        criteria.setPageSize(500);
         if (criteria.getRefundEndAt() != null) {
             criteria.setRefundEndAt(new DateTime(criteria.getRefundEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
@@ -334,18 +330,14 @@ public class ExportTradeBillListener {
 
         int pageNO = 1;
         while (true) {
-            criteria.setPageNo(pageNO++);
-            Response<Paging<RefundPaging>> pagingResponse = refundReadLogic.refundPaging(criteria);
-            if (!pagingResponse.isSuccess()) {
-                throw new JsonResponseException(pagingResponse.getError());
-            }
-            if (pagingResponse.getResult().getTotal() == 0)
-                throw new JsonResponseException("export.data.empty");
+            criteria.setPageNo(pageNO);
+            pageNO += 1;
 
-            if (pagingResponse.getResult().isEmpty()) {
+            Paging<RefundPaging> paging = refundSearchComponent.search(criteria);
+            if (paging.isEmpty()) {
                 break;
             }
-            pagingResponse.getResult().getData().forEach(refundInfo -> {
+            paging.getData().forEach(refundInfo -> {
 
                 boolean dirtyData = false;
                 List<RefundItem> refundItems = null;
@@ -357,14 +349,17 @@ public class ExportTradeBillListener {
                         refundItems = refundReadLogic.findRefundItems(refundInfo.getRefund());
                     }
                 } catch (JsonResponseException e) {
-                    if (e.getMessage().equals("refund.exit.not.contain.item.info"))
+                    if (e.getMessage().equals("refund.exit.not.contain.item.info")) {
                         dirtyData = true;
+                    }
                 }
                 if (!dirtyData) {
-                    if (null == refundInfo.getRefund())
+                    if (null == refundInfo.getRefund()) {
                         throw new JsonResponseException("order.refund.find.fail");
-                    if (null == refundInfo.getOrderRefund())
+                    }
+                    if (null == refundInfo.getOrderRefund()) {
                         throw new JsonResponseException("order.refund.find.fail");
+                    }
 
                     RefundExtra refundExtra = refundReadLogic.findRefundExtra(refundInfo.getRefund());
 
@@ -474,6 +469,9 @@ public class ExportTradeBillListener {
 
         }
 
+        if (refundExportData.isEmpty()) {
+            throw new JsonResponseException("export.data.empty");
+        }
         exportService.saveToDiskAndCloud(new ExportContext(refundExportData),userId);
     }
 
@@ -520,8 +518,9 @@ public class ExportTradeBillListener {
                 log.error("find shipment by criteria:{} fail,error:{}", criteria, response.getError());
                 throw new JsonResponseException(response.getError());
             }
-            if (response.getResult().getTotal() == 0)
+            if (response.getResult().getTotal() == 0) {
                 throw new JsonResponseException("export.data.empty");
+            }
 
             if (CollectionUtils.isEmpty(response.getResult().getData())) {
                 break;
@@ -620,10 +619,11 @@ public class ExportTradeBillListener {
                     }
 
                     entity.setSkuQuantity(item.getQuantity());
-                    if (null == item.getCleanFee())
+                    if (null == item.getCleanFee()) {
                         entity.setFee(0D);
-                    else
+                    } else {
                         entity.setFee(new BigDecimal(item.getCleanFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
+                    }
 //                    entity.setShipFee(null == shopOrderResponse.getResult().getShipFee() ? null : new BigDecimal(shopOrderResponse.getResult().getShipFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
                     entity.setOrderMemo(shopOrder.getBuyerNote());
                     String shipmentStatus = convertStatus(shipmentContext.getShipment().getStatus(), shipmentContext.getShipment().getShipWay());

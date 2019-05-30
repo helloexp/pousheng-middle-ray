@@ -1,10 +1,11 @@
 package com.pousheng.middle.order.impl.service;
 
-import com.google.common.base.Function;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dto.MiddleRefundCriteria;
+import com.pousheng.middle.order.enums.MiddleRefundFlagEnum;
+import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.service.MiddleRefundReadService;
 import io.terminus.common.model.PageInfo;
 import io.terminus.common.model.Paging;
@@ -53,6 +54,11 @@ public class MiddleRefundReadServiceImpl implements MiddleRefundReadService {
             }
 
             handleDate(criteria);
+            //状态多个就不能这么判断了；目前状态-99，只有中台有用到
+            if(criteria.getStatus()!=null&& criteria.getStatus().contains(MiddleRefundStatus.REFUND_SYNC_ECP_FAIL.getValue())){
+                criteria.setStatus(Lists.newArrayList(MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue()));
+                criteria.setRefundFlag(MiddleRefundFlagEnum.REFUND_SYN_THIRD_PLANT.getValue());
+            }
             Map<String, Object> params = criteria.toMap();
 //            orderRefundDao.paging(pageInfo.getOffset(),pageInfo.getLimit(),params)
             Paging<Refund> refundP = refundDao.paging(pageInfo.getOffset(), pageInfo.getLimit(), params);
@@ -116,12 +122,7 @@ public class MiddleRefundReadServiceImpl implements MiddleRefundReadService {
     }
 
     private List<Long> retrieveRefundIds(List<OrderRefund> orderRefunds) {
-        return Lists.transform(orderRefunds, new Function<OrderRefund, Long>() {
-            @Override
-            public Long apply(OrderRefund input) {
-                return input.getRefundId();
-            }
-        });
+        return Lists.transform(orderRefunds, OrderRefund::getRefundId);
     }
 
 }

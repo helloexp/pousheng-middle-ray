@@ -135,4 +135,21 @@ public class MiddleOrderReadServiceImpl implements MiddleOrderReadService {
         }
 
     }
+
+    /**
+     * 根据 id 查询
+     *
+     * @param ids
+     * @return
+     */
+    @Override
+    public Response<List<ShopOrder>> findByOrderIds(List<Long> ids) {
+        try {
+            List<ShopOrder> orders = shopOrderDao.findByIds(ids);
+            return Response.ok(orders);
+        } catch (Exception e) {
+            log.error("fail to find order by ids {}, cause:{}", ids, Throwables.getStackTraceAsString(e));
+            return Response.fail("failed.to.find.shop.orders");
+        }
+    }
 }

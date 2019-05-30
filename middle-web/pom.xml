@@ -5,7 +5,7 @@
     <parent>
         <artifactId>pousheng-middle</artifactId>
         <groupId>com.pousheng</groupId>
-        <version>4.7.2.RELEASE</version>
+        <version>4.7.3.BUILD-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -21,6 +21,12 @@
         <dependency>
             <groupId>io.terminus.boot.rpc</groupId>
             <artifactId>rpc-common</artifactId>
+            <version>${rpc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.terminus.boot.rpc</groupId>
+            <artifactId>rpc-dubbo</artifactId>
+            <version>${rpc.version}</version>
         </dependency>
 
         <!-- session -->

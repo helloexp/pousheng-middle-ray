@@ -141,7 +141,8 @@ public class CompensateBizFailedJob {
                 //业务处理
                 try{
                     compensateBizProcessor.doProcess(compensateBiz);
-                    compensateBizWriteService.updateStatus(compensateBiz.getId(), PoushengCompensateBizStatus.PROCESSING.name(), PoushengCompensateBizStatus.SUCCESS.name());
+                    compensateBizWriteService.updateStatus(compensateBiz.getId(),
+                            PoushengCompensateBizStatus.PROCESSING.name(), PoushengCompensateBizStatus.SUCCESS.name());
                 }catch (BizException e0){
                     log.error("process pousheng biz failed,id is {},bizType is {},caused by {}", compensateBiz.getId(), compensateBiz.getBizType(), e0.getMessage());
                     compensateBizWriteService.updateStatus(compensateBiz.getId(), PoushengCompensateBizStatus.PROCESSING.name(), PoushengCompensateBizStatus.FAILED.name());

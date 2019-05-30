@@ -58,22 +58,17 @@ public class SycYYEdiShipmentOrderApi {
         return responseBody;
     }
 
-
-    public String doSyncYJErpShipmentOrder(List<YJErpShipmentInfo> requestData) {
+    public HttpRequest syncYJErpShipmentOrder(List<YJErpShipmentInfo> requestData) {
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData.get(0));
         log.info("sync shipment to yj erp paramJson:{}, serialNo:{}",paramJson,serialNo);
         String gateway =hkGateway + "/common-yjerp/yjerp/default/pushmgorderset";
-        String responseBody = HttpRequest.post(gateway)
+        return HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
                 .header("serialNo",serialNo)
                 .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
                 .contentType("application/json")
                 .send(paramJson)
-                .connectTimeout(10000).readTimeout(10000)
-                .body();
-
-        log.info("sync shipment to yj erp result:{} ,serialNo:{}",responseBody,serialNo);
-        return responseBody;
+                .connectTimeout(10000).readTimeout(10000);
     }
 }

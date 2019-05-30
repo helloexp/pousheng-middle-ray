@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.component;
 
+import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
@@ -1011,6 +1012,7 @@ public class ShipmentWiteLogic {
             skuOrderIdAndQuantity.put(skuCodeAndQuantity.getSkuOrderId(), skuCodeAndQuantity.getQuantity());
         }
         if (skuOrderIdAndQuantity.size() == 0) {
+            this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());
             return null;
         }
         //获取该发货单中涉及到的sku订单
@@ -1119,6 +1121,7 @@ public class ShipmentWiteLogic {
             skuOrderIdAndQuantity.put(skuCodeAndQuantity.getSkuOrderId(), skuCodeAndQuantity.getQuantity());
         }
         if (skuOrderIdAndQuantity.size() == 0) {
+            this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());
             return null;
         }
         //获取该发货单中涉及到的sku订单
@@ -1855,6 +1858,7 @@ public class ShipmentWiteLogic {
         log.info("MPOS DISPATCH ORDER:{} SUCCESS result:{}", shopOrder.getOrderCode(), dispatchOrderItemInfo);
 
         List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
+        Map<Long, Integer> orderShipmentedCountMap = Maps.newHashMap();
         //首次寻源拆单后（在任务没扫到拆出来的单子时），可能出现部分发货的情况，订单未记录拆单的原因（整单库存不足）
         boolean needSpiltOrder = !CollectionUtils.isEmpty(dispatchOrderItemInfo.getSkuCodeAndQuantities());
         int orderNoteCount = 0;
@@ -1876,8 +1880,6 @@ public class ShipmentWiteLogic {
                             orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
                         }
                     }
-
-
                     //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
                     Map<String, String> extraMap = shopOrder.getExtra();
                     String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
@@ -1922,7 +1924,6 @@ public class ShipmentWiteLogic {
                     }
 
                 }
-
                 //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
                 Map<String, String> extraMap = shopOrder.getExtra();
                 String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
@@ -1952,6 +1953,7 @@ public class ShipmentWiteLogic {
                 if (!isFirst) {
                     //如果不是第一次派单，将订单状态恢复至待处理
                     this.makeSkuOrderWaitHandle(skuCodeAndQuantityList, skuOrders);
+                    //this.makeSkuOrderWaitHandle(skuCodeAndQuantityList, skuOrders, orderShipmentedCountMap);
                 }
             } else {
                 log.info("mpos order(id:{}) can not be dispatched", shopOrder.getId());
@@ -2014,12 +2016,16 @@ public class ShipmentWiteLogic {
      * @param skuOrders
      */
     public void makeSkuOrderWaitHandle(List<SkuCodeAndQuantity> skuCodeAndQuantities, List<SkuOrder> skuOrders) {
+        log.info("toDispatch.fail.list:{}", JSON.toJSONString(skuCodeAndQuantities));
         for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
             SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuOrderId(), skuCodeAndQuantity.getSkuCode());
             orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue());
             Map<String, String> extraMap = skuOrder.getExtra();
             //存在数量级拆单 所以不能直接用skuorder的数量 需要回滚对应的子单数量
             Integer waitHandleNumber = Integer.parseInt(extraMap.get(TradeConstants.WAIT_HANDLE_NUMBER) == null ? "0" : extraMap.get(TradeConstants.WAIT_HANDLE_NUMBER)) + skuCodeAndQuantity.getQuantity();
+            if (waitHandleNumber > skuOrder.getQuantity()) {
+                log.error("skuOrderId :{} quantity:{} waitHandleNumber:{} skuCodeAndQuantity:{}", skuOrder.getOrderId(), skuOrder.getQuantity(), extraMap.get(TradeConstants.WAIT_HANDLE_NUMBER), skuCodeAndQuantity.getQuantity());
+            }
             extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(waitHandleNumber));
             Response<Boolean> response1 = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
             if (!response1.isSuccess()) {
@@ -2027,6 +2033,44 @@ public class ShipmentWiteLogic {
             }
             log.info("sku order(id:{}) be change to wait_handle", skuOrder.getId());
         }
+    }
+
+    /**
+     * 将子单置为待处理
+     *
+     * @param skuCodeAndQuantities    派单失败的集合
+     * @param skuOrders
+     * @param orderShipmentedCountMap 已经派发出去的单子
+     */
+    public void makeSkuOrderWaitHandle(List<SkuCodeAndQuantity> skuCodeAndQuantities, List<SkuOrder> skuOrders, Map<Long, Integer> orderShipmentedCountMap) {
+        log.info("toDispatcher.fail.list:{}", JSON.toJSONString(skuCodeAndQuantities));
+        log.info("toDispatcher.success.list:{}", JSON.toJSONString(orderShipmentedCountMap));
+        Map<Long, String> orderSkuMap = Maps.newHashMap();
+        skuCodeAndQuantities.forEach(it -> {
+            orderSkuMap.put(it.getSkuOrderId(), it.getSkuCode());
+        });
+        orderSkuMap.forEach((skuOrderId, skuCode) -> {
+            SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuOrderId, skuCode);
+            Map<String, String> extraMap = skuOrder.getExtra();
+            //存在数量级拆单 所以不能直接用skuorder的数量 需要回滚对应的子单数量
+            //用skuOrder的数量-已派单出去的数量得到待处理的数量，避免MPOS重复派单失败导致的skuCodeAndQuantities中重复仓库/门店发货失败问题
+            //数量级拆单了
+            int waitHandleNumber = 0;
+            if (orderShipmentedCountMap.containsKey(skuOrderId) && null != orderShipmentedCountMap.get(skuOrderId)) {
+                waitHandleNumber = skuOrder.getQuantity() - orderShipmentedCountMap.get(skuOrderId).intValue();
+            } else {
+                waitHandleNumber = skuOrder.getQuantity();
+            }
+            if (waitHandleNumber > 0) {
+                orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue());
+            }
+            extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(waitHandleNumber));
+            Response<Boolean> response1 = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
+            if (!response1.isSuccess()) {
+                log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), extraMap, response1.getError());
+            }
+            log.info("sku order(id:{}) be change to wait_handle", skuOrder.getId());
+        });
     }
 
     /**

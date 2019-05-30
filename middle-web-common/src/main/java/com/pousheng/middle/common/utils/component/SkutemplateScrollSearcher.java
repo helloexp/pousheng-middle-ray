@@ -10,7 +10,6 @@ import io.terminus.search.api.model.Pagination;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import redis.clients.jedis.Jedis;
 
 import java.util.Map;
 
@@ -55,7 +54,7 @@ public class SkutemplateScrollSearcher {
         scrollId = response.getResult().getScrollId();
 
         if(Arguments.notNull(scrollId)){
-         setetScrollId(contextId,scrollId);
+         setScrollId(contextId,scrollId);
         }
         return response;
     }
@@ -64,22 +63,15 @@ public class SkutemplateScrollSearcher {
 
 
     private String doGetScrollId(String contextId) {
-        return jedisTemplate.execute(new JedisTemplate.JedisAction<String>() {
-            @Override
-            public String action(Jedis jedis) {
-                return jedis.get(contextId);
-            }
+        return jedisTemplate.execute(jedis -> {
+            return jedis.get(contextId);
         });
     }
 
-
-    // 120秒到期时间
-    public String setetScrollId(String contextId,String scrollId) {
-        return jedisTemplate.execute(new JedisTemplate.JedisAction<String>() {
-            @Override
-            public String action(Jedis jedis) {
-                return jedis.setex(contextId,120,scrollId);
-            }
+    public String setScrollId(String contextId, String scrollId) {
+        // 120秒到期时间
+        return jedisTemplate.execute(jedis -> {
+            return jedis.setex(contextId,120,scrollId);
         });
     }
 }

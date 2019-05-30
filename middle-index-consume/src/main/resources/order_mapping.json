@@ -1,0 +1,64 @@
+{
+  "order": {
+    "_all": {
+      "enabled": false
+    },
+    "properties": {
+      "id": {
+        "type": "long"
+      },
+      "outId": {
+        "type": "keyword"
+      },
+      "outFrom": {
+        "type": "keyword"
+      },
+      "orderCode": {
+        "type": "keyword"
+      },
+      "companyId": {
+        "type": "long"
+      },
+      "shopId": {
+        "type": "long"
+      },
+      "shopName": {
+        "type": "keyword"
+      },
+      "buyerName": {
+        "type": "keyword"
+      },
+      "buyerPhone": {
+        "type": "keyword"
+      },
+      "updatedAt": {
+        "type": "date"
+      },
+      "createdAt": {
+        "type": "date"
+      },
+      "outCreatedAt": {
+        "type": "date"
+      },
+      "status": {
+        "type": "integer"
+      },
+      "ecpOrderStatus": {
+        "type": "integer"
+      },
+      "handleStatus": {
+        "type": "integer"
+      },
+      "buyerNote": {
+        "type": "text",
+        "analyzer": "ngram_tokenizer_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above":256
+          }
+        }
+      }
+    }
+  }
+}

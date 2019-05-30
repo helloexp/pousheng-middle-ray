@@ -1,6 +1,5 @@
 package com.pousheng.middle.order.impl.service;
 
-import com.google.common.base.Function;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -123,12 +122,7 @@ public class MiddleRefundReadServiceImpl implements MiddleRefundReadService {
     }
 
     private List<Long> retrieveRefundIds(List<OrderRefund> orderRefunds) {
-        return Lists.transform(orderRefunds, new Function<OrderRefund, Long>() {
-            @Override
-            public Long apply(OrderRefund input) {
-                return input.getRefundId();
-            }
-        });
+        return Lists.transform(orderRefunds, OrderRefund::getRefundId);
     }
 
 }

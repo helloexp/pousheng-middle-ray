@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    initialize: false
+
+terminus:
+  rocketmq:
+    nameServerAddress: ${MQ_NAME_ADDR:127.0.0.1:9876}
+    producerGroup: ${MQ_PRODUCER_GROUP:default-index-producer}
+
+mq:
+  topic: scanner
+  consumeThreadMin: 2
+  consumeThreadMax: 8
+  name-server-addr: ${MQ_NAME_ADDR:127.0.0.1:9876}
+  consume-group: default-index-consumer
+
+
+# es基础配置
+search:
+  host: ${POUSHENG_ES_HOST:127.0.0.1}
+  port: ${POUSHENG_ES_PORT:9200}
+
+order:
+  search:
+    index-name: orders
+    index-type: order
+
+rpc:
+  mode: true
+  dubbo:
+    module: pousheng-index-consumer
+    registry-address: ${POUSHENG_ZK_HOST:127.0.0.1}:${POUSHENG_ZK_PORT:2181}
+    version: middle.1.0.0

@@ -1,10 +1,9 @@
 package com.pousheng.middle.item;
 
 import com.pousheng.middle.item.service.CriteriasWithShould;
-import io.terminus.search.api.query.CriteriasBuilder;
-import io.terminus.search.api.query.Element;
-import io.terminus.search.api.query.Range;
-import io.terminus.search.api.query.Terms;
+import io.terminus.search.api.query.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
@@ -16,6 +15,15 @@ import java.util.List;
  * @date 2018/7/17
  */
 public class PsCriteriasBuilder extends CriteriasBuilder {
+    @Getter
+    @Setter
+    private List<Term> notTerm;
+    @Getter
+    @Setter
+    private List<Terms> notTerms;
+    @Getter
+    @Setter
+    private List<Term> wildcard;
 
     public boolean isHasShouldNot() {
         return hasShouldNot;
@@ -122,15 +130,13 @@ public class PsCriteriasBuilder extends CriteriasBuilder {
     }
 
     public CriteriasWithShould build(CriteriasWithShould psCr) {
-        Terms t;
-
         if (psCr.getShouldNotTerms() != null && !psCr.getShouldNotTerms().isEmpty()) {
-            t = psCr.getShouldNotTerms().get(this.shouldNotTerms.size() - 1);
+            Terms t = psCr.getShouldNotTerms().get(this.shouldNotTerms.size() - 1);
             t.setLast(true);
         }
 
         if (psCr.getShouldTerms() != null && !psCr.getShouldTerms().isEmpty()) {
-            t = psCr.getShouldTerms().get(this.shouldTerms.size() - 1);
+            Terms t = psCr.getShouldTerms().get(this.shouldTerms.size() - 1);
             t.setLast(true);
         }
 
@@ -151,6 +157,32 @@ public class PsCriteriasBuilder extends CriteriasBuilder {
             if (!ObjectUtils.isEmpty(psCr.getShouldRanges())) {
                 psCr.hasShouldRange(true);
             }
+        }
+
+        psCr.setHasMustNotTerm(!CollectionUtils.isEmpty(notTerm) || !CollectionUtils.isEmpty(notTerms));
+        if (!CollectionUtils.isEmpty(notTerms)) {
+            psCr.setNotTerms(notTerms);
+            notTerms.get(notTerms.size() - 1).setLast(Boolean.TRUE);
+        }
+        if (!CollectionUtils.isEmpty(notTerm)) {
+            psCr.setNotTerm(notTerm);
+            notTerm.get(notTerm.size() - 1).setLast(Boolean.TRUE);
+        }
+
+        if (getRanges() != null && !getRanges().isEmpty()) {
+            Range r = getRanges().get(getRanges().size() - 1);
+            r.setLast(true);
+        } else if (getTerms() != null && !getTerms().isEmpty()) {
+            Terms t = getTerms().get(getTerms().size() - 1);
+            t.setLast(true);
+
+        } else if (getTerm() != null && !getTerm().isEmpty()) {
+            Term t = getTerm().get(getTerm().size() - 1);
+            t.setLast(true);
+        }
+        if (getMustNotTerms() != null && !getMustNotTerms().isEmpty()) {
+            Terms t = getMustNotTerms().get(getMustNotTerms().size() - 1);
+            t.setLast(true);
         }
 
         return psCr;

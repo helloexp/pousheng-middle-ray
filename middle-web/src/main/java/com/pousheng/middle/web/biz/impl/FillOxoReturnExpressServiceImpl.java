@@ -294,7 +294,6 @@ public class FillOxoReturnExpressServiceImpl implements CompensateBizService {
         ImmutableBiMap.<String, String>builder()
             .put("1000000454","中国邮政速递物流")
             .put("1000000455","上海圆通速递")
-            .put("1000000455","上海圆通速递")
             .put("1000000456","上海韵达货运")
             .put("1000000457","申通快递")
             .put("1000000458","顺丰速运")
@@ -313,11 +312,12 @@ public class FillOxoReturnExpressServiceImpl implements CompensateBizService {
             .put("1200000573","UCS")
             .put("1200000640","品骏快递")
             .put("120001438","京东快递").build();
-    public String toVipCarrierCode(String carrierName) {
+    public  String toVipCarrierCode(String carrierName) {
         if(!AFTER_SALE_CARRIER_MAP.inverse().containsKey(carrierName)){
             //没有在列表中时默认品骏
             return "1200000640";
         }
         return AFTER_SALE_CARRIER_MAP.inverse().get(carrierName);
     }
+
 }

@@ -2496,10 +2496,8 @@ public class RefundWriteLogic {
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
 
-            //Map<String, Integer> skuCodeAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
-            //        .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getQuantity));
             Map<String, Integer> skuCodeAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
-                    .collect(Collectors.toMap(it -> SkuCodeUtil.getCombineCode(it), ShipmentItem::getQuantity));
+                    .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getQuantity));
             Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
             if (!Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())) {
                 result = this.updateSkuHandleNumber(orderShipment.getAfterSaleOrderId(), skuCodeAndQuantityMap);

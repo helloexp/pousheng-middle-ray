@@ -71,7 +71,10 @@ public class PsAfterSaleReceiverHelper {
             case RETURN_CLOSED:
             case EXCHANGE_CLOSED:
             case EXCHANGE_SUCCESS:
+<<<<<<< HEAD
             case WAIT_SELLER_SEND_GOODS:
+=======
+>>>>>>> 退货退款增加日志
                 return true;
             default:
                 return false;

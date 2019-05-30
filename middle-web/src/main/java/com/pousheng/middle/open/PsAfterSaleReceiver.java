@@ -821,9 +821,13 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             return false;
         }
 <<<<<<< HEAD
+<<<<<<< HEAD
         log.info("check refund order status,outOrderId={},currentStatus={},type={},shopId={}",new Object[]{openClientAfterSale.getOpenOrderId(),openClientAfterSale.getStatus(),openClientAfterSale.getType(),openClientAfterSale.getOpenShopId()});
 =======
 >>>>>>> 苏宁天猫售后单改造
+=======
+        log.info("check refund order status,outOrderId={},currentStatus={},type={},shopId={}",new Object[]{openClientAfterSale.getOpenOrderId(),openClientAfterSale.getStatus(),openClientAfterSale.getType(),openClientAfterSale.getOpenShopId()});
+>>>>>>> 退货退款增加日志
 
         String openClientAfterSaleType = openClientAfterSale.getType().name();
 

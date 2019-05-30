@@ -401,3 +401,6 @@ pousheng.supply-rule.import.hosts: ${SUPPLY_RULE_IMPORT_HOSTS:}
 dingtalk.robot.flag: true
 # 钉钉机器人 webhook
 dingtalk.robot.webhook: https://oapi.dingtalk.com/robot/send?access_token=4804cb399541e684fcf95353fbd572f29d1ea5a57c1844975a40f65191273797
+
+### 拉单 mq 队列大小
+order.fetch.mq.queue.size: ${ORDER_FETCH_MQ_QUEUE_SIZE:0}

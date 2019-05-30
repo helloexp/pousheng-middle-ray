@@ -175,10 +175,6 @@ public class PsAfterSaleReceiverHelper {
         refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
         refund.setExtra(extraMap);
         log.info("fill.fillLogisticsInfo.end.refundId={},refund={}", new Object[]{refund.getId(),JsonMapper.nonEmptyMapper().toJson(refund)});
-<<<<<<< HEAD
-=======
-
->>>>>>> add log for logistic
 
     }
 }

@@ -427,92 +427,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     protected void fillLogisticsInfo(Refund refund, String shipmentSerialNo, String shipmentCorpCode,
                                      String shipmentCorpName) {
 
-        psAfterSaleReceiverHelper.fillLogisticsInfo(refund,shipmentSerialNo,shipmentCorpCode,shipmentCorpName);
-        log.info("fill address {} ,size{}", refund.toString());
-        if (Strings.isNullOrEmpty(shipmentSerialNo)) {
-            return;
-        }
-
-        Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
-        RefundExtra refundExtra = null;
-        try {
-            refundExtra = refundReadLogic.findRefundExtra(refund);
-        } catch (JsonResponseException e) {
-            log.error("refund(id:{}) extra map not contain key:{}", refund.getId(), TradeConstants.REFUND_EXTRA_INFO);
-            return;
-        }
-        refundExtra.setShipmentSerialNo(shipmentSerialNo);
-        //转换为中台的物流信息
-        ExpressCodeCriteria criteria = new ExpressCodeCriteria();
-        if (!Objects.isNull(shipmentCorpCode) && !Objects.equals(shipmentCorpCode, "")) {
-            MiddleChannel channel = MiddleChannel.from(refund.getChannel());
-            switch (channel) {
-                case JD:
-                    criteria.setJdCode(shipmentCorpCode);
-                    break;
-                case TAOBAO:
-                case TFENXIAO:
-                    criteria.setTaobaoCode(shipmentCorpCode);
-                    break;
-                case FENQILE:
-                    criteria.setFenqileCode(shipmentCorpCode);
-                    break;
-                case SUNING:
-                case SUNINGSALE:
-                    criteria.setSuningCode(shipmentCorpCode);
-                    break;
-                case OFFICIAL:
-                    criteria.setPoushengCode(shipmentCorpCode);
-                    break;
-                case YUNJUBBC:
-                    criteria.setOfficalCode(shipmentCorpCode);
-                    break;
-                case YUNJUJIT:
-                    criteria.setOfficalCode(shipmentCorpCode);
-                    break;
-                case CODOON:
-                    criteria.setCodoonCode(shipmentCorpCode);
-                    break;
-                case KAOLA:
-                    criteria.setKaolaCode(shipmentCorpCode);
-                    break;
-                case VIPOXO:
-                    criteria.setVipCode(shipmentCorpCode);
-                    break;
-                default:
-                    log.error("there is not any express info by channel:{} and poushengCode:{}", channel.getValue(),
-                        shipmentCorpCode);
-                    throw new JsonResponseException("find.expressCode.failed");
-            }
-        } else if (!Objects.isNull(shipmentCorpName) && !Objects.equals(shipmentCorpName, "")) {
-            criteria.setName(shipmentCorpName);
-        }
-
-        Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);
-        if (!response.isSuccess()) {
-            log.error("failed to pagination expressCode with criteria:{}, error code:{}", criteria,
-                response.getError());
-            return;
-        }
-        if (response.getResult().getData().size() == 0) {
-            //唯品会找不到物流公司映射时默认品骏
-            if (Objects.equals(refund.getChannel(), MiddleChannel.VIPOXO.getValue())) {
-                refundExtra.setShipmentCorpName("品骏");
-                refundExtra.setShipmentCorpCode("PINJUN");
-            } else {
-                log.error("there is not any express info by poushengCode:{}", shipmentCorpCode);
-                return;
-            }
-        } else {
-            ExpressCode expressCode = response.getResult().getData().get(0);
-            refundExtra.setShipmentCorpName(expressCode.getName());
-            refundExtra.setShipmentCorpCode(expressCode.getOfficalCode());
-        }
-
-        extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
-        refund.setShipmentSerialNo(refundExtra.getShipmentSerialNo());
-        refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
-        refund.setExtra(extraMap);
 
         psAfterSaleReceiverHelper.fillLogisticsInfo(refund,shipmentSerialNo,shipmentCorpCode,shipmentCorpName);
     }
@@ -717,8 +631,10 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         }
         List<Shipment> availShipments = Lists.newArrayList();
         List<Shipment> shipments = response.getResult().stream().filter(Objects::nonNull).
-                filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.REJECTED.getValue()))
-                .collect(Collectors.toList());
+            filter(
+                shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects
+                    .equals(shipment.getStatus(), MiddleShipmentsStatus.REJECTED.getValue()))
+            .collect(Collectors.toList());
         for (Shipment shipment : shipments) {
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
             long count = shipmentItems.stream()

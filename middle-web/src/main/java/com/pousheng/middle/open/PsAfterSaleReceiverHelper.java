@@ -78,7 +78,8 @@ public class PsAfterSaleReceiverHelper {
 
     public void fillLogisticsInfo(Refund refund, String shipmentSerialNo, String shipmentCorpCode,
                                   String shipmentCorpName) {
-        log.info("fill address {} ,size{}", refund.toString());
+        log.info("fill.fillLogisticsInfo.start.refundId={} shipmentSerialNo={}, shipmentCorpCode={},shipmentCorpName={},refund={}", new Object[]{refund.getId(),shipmentSerialNo,  shipmentCorpCode,
+             shipmentCorpName,JsonMapper.nonEmptyMapper().toJson(refund)});
         if (Strings.isNullOrEmpty(shipmentSerialNo)) {
             return;
         }
@@ -163,6 +164,8 @@ public class PsAfterSaleReceiverHelper {
         refund.setShipmentSerialNo(refundExtra.getShipmentSerialNo());
         refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
         refund.setExtra(extraMap);
+        log.info("fill.fillLogisticsInfo.end.refundId={},refund={}", new Object[]{refund.getId(),JsonMapper.nonEmptyMapper().toJson(refund)});
+
 
     }
 }

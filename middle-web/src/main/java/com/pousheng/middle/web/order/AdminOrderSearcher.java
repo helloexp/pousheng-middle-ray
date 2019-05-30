@@ -83,7 +83,7 @@ public class AdminOrderSearcher {
         }
         long diff = middleOrderCriteria.getOutCreatedEndAt().getTime() - middleOrderCriteria.getOutCreatedStartAt().getTime();
         diff = diff / 1000 / 60 / 60 / 24;
-        if (diff > 31) {
+        if (diff > 32) {
             return Response.fail("over 30 days");
         }
         // 不显示jit时效订单来源

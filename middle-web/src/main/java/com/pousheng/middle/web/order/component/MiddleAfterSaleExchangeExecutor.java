@@ -24,8 +24,8 @@ import java.util.Date;
  * @author Xiongmin
  * 2019/5/5
  */
-@Primary
-@Component
+/*@Primary
+@Component*/
 @Slf4j
 public class MiddleAfterSaleExchangeExecutor extends AfterSaleExchangeExecutor {
 

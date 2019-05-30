@@ -118,6 +118,29 @@
         </if>
     </select>
 
+    <select id="pagingBySpuIdsCount" parameterType="map" resultType="long">
+        SELECT count(*)
+        FROM
+        <include refid="tb"/>
+        WHERE
+        spu_id IN
+        <foreach collection="spuIds" open="(" separator="," close=")" item="id">
+            #{id}
+        </foreach>
+    </select>
 
+    <select id="pagingBySpuIds" parameterType="map" resultMap="SkuTemplateMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        WHERE
+        spu_id IN
+        <foreach collection="spuIds" open="(" separator="," close=")" item="id">
+            #{id}
+        </foreach>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
 
 </mapper>

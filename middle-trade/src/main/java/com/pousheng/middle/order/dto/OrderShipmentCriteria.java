@@ -159,6 +159,16 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
     private String isOccupyShipment;
 
     /**
+     * 派单类型
+     */
+    private Integer dispatchType;
+    
+    /**
+     * 发货仓库名称  or 外部编码
+     */
+    private String warehouseNameOrOutCode;
+    
+    /**
      * 如果Start的时间和End的时间一致, 则End+1day
      */
     @Override

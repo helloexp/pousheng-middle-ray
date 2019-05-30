@@ -157,7 +157,8 @@ public class RefundWriteLogic {
         //更新发货数量
         for (RefundItem refundItem : refundChangeItems) {
             if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
-                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber() == null ? 0 : refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(refundItem.getSkuCode()));
+                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber() == null ? 0 :
+                        refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(refundItem.getSkuCode()));
             }
 
             //如果存在未处理完成的
@@ -214,7 +215,8 @@ public class RefundWriteLogic {
         //更新发货数量
         for (RefundItem refundItem : refundChangeItems) {
             if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
-                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber() == null ? 0 : refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(refundItem.getSkuCode()));
+                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber() == null ? 0 :
+                        refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(refundItem.getSkuCode()));
             }
 
             //如果存在未处理完成的
@@ -261,7 +263,8 @@ public class RefundWriteLogic {
         //更新发货数量
         for (RefundItem refundItem : refundLostItems) {
             if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
-                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber() == null ? 0 : refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(refundItem.getSkuCode()));
+                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber() == null ? 0 :
+                        refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(refundItem.getSkuCode()));
             }
 
             //如果存在未处理完成的
@@ -407,8 +410,8 @@ public class RefundWriteLogic {
             shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
         }
         shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
-    }   
-    
+    }
+
     /**
      * 新增仅退款，退货，售后类型的售后单
      * 支持对于换货售后单继续售后
@@ -428,9 +431,9 @@ public class RefundWriteLogic {
         List<RefundItem> refundItems = checkRefundQuantity(submitRefundInfo, shipmentItems);
         //场景1：源订单发货店仓的账套为325时，退货仓只能为此仓：WH001092。
         //场景2：源订单发货店仓的账套非325时，校验源定单的店铺账套必须与退货仓账套一致。
-        if(Objects.equals(submitRefundInfo.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value()) || Objects.equals(submitRefundInfo.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())){
-            checkRefundCompanyCode(shipment,shopOrder,submitRefundInfo);
-        }                
+        if (Objects.equals(submitRefundInfo.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value()) || Objects.equals(submitRefundInfo.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())) {
+            checkRefundCompanyCode(shipment, shopOrder, submitRefundInfo);
+        }
         //更新货品信息
         completeSkuAttributeInfo(refundItems);
         //更新金额
@@ -2007,7 +2010,8 @@ public class RefundWriteLogic {
             shipmentRequest.setWarehouseId(warehouseId);
             Map<Object, Integer> data = Maps.newHashMap();
             for (EditSubmitChangeItem editSubmitChangeItem : changeItems) {
-                data.put(editSubmitChangeItem.getChangeSkuCode(), editSubmitChangeItem.getChangeQuantity());
+                //data.put(editSubmitChangeItem.getChangeSkuCode(), editSubmitChangeItem.getChangeQuantity());
+                data.put(SkuCodeUtil.toCombineCode(editSubmitChangeItem), editSubmitChangeItem.getChangeQuantity());
             }
             shipmentRequest.setData(data);
             shipmentRequests.add(shipmentRequest);
@@ -2026,17 +2030,22 @@ public class RefundWriteLogic {
             //获取skuCode和数量的集合
             String data = JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());
             Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
+            if (log.isDebugEnabled()) {
+                log.debug("refund:{} shipmentRequest:{}", refundId, data);
+            }
             //获取生成发货单的仓库
             Long warehouseId = shipmentRequest.getWarehouseId();
             Refund refund = refundReadLogic.findRefundById(refundId);
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(refund.getShopId());
             List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
-            if (!refundReadLogic.checkRefundWaitHandleNumber(refundChangeItems, skuCodeAndQuantity)) {
+            //if (!refundReadLogic.checkRefundWaitHandleNumber(refundChangeItems, skuCodeAndQuantity)) {
+            if (!refundReadLogic.checkRefundWaitHandleNumber2(refundChangeItems, skuCodeAndQuantity)) {
                 throw new JsonResponseException("refund.wait.shipment.item.can.not.dupliacte");
             }
             OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
             //检查库存是否充足
-            checkStockIsEnough(warehouseId, skuCodeAndQuantity, openShop.getId());
+            //checkStockIsEnough(warehouseId, skuCodeAndQuantity, openShop.getId());
+            checkStockIsEnough2(warehouseId, skuCodeAndQuantity, openShop.getId());
 
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
 
@@ -2124,6 +2133,47 @@ public class RefundWriteLogic {
     }
 
     /**
+     * 检查库存是否充足
+     *
+     * @param warehouseId           仓库id
+     * @param skuCodeAndQuantityMap skuCode以及数量的集合
+     * @param shopId                店铺id
+     */
+    private void checkStockIsEnough2(Long warehouseId, Map<String, Integer> skuCodeAndQuantityMap, Long shopId) {
+        Set<String> skuCodes = skuCodeAndQuantityMap.keySet().stream().map(key -> key.split(":")[1]).collect(Collectors.toSet());
+        Map<String, Integer> warehouseStockInfo = findStocksForSkus(warehouseId, Lists.newArrayList(skuCodes), shopId);
+        //存在skuCode重复的情况
+        if (skuCodes.size() < skuCodeAndQuantityMap.size()) {
+            //计算重复skuCode的总数量
+            Map<String, Integer> skuCodeQuantitys = Maps.newHashMap();
+            for (Map.Entry<String, Integer> entry : skuCodeAndQuantityMap.entrySet()) {
+                String skuCode = entry.getKey().split(":")[1];
+                if (!skuCodeQuantitys.containsKey(skuCode)) {
+                    skuCodeQuantitys.put(skuCode, entry.getValue());
+                } else {
+                    skuCodeQuantitys.put(skuCode, skuCodeQuantitys.get(skuCode) + entry.getValue());
+                }
+            }
+            for (String skuCode : warehouseStockInfo.keySet()) {
+                if (warehouseStockInfo.get(skuCode) < skuCodeQuantitys.get(skuCode)) {
+                    log.error("sku code:{} warehouse stock:{} ship applyQuantity:{} stock not enough",
+                            skuCode, warehouseStockInfo.get(skuCode), skuCodeQuantitys.get(skuCode));
+                    throw new JsonResponseException(skuCode + ".stock.not.enough");
+                }
+            }
+        } else {
+            for (Map.Entry<String, Integer> entry : skuCodeAndQuantityMap.entrySet()) {
+                String skuCode = entry.getKey().split(":")[1];
+                if (warehouseStockInfo.get(skuCode) < entry.getValue()) {
+                    log.error("sku code:{} warehouse stock:{} ship applyQuantity:{} stock not enough",
+                            skuCode, warehouseStockInfo.get(skuCode), entry.getValue());
+                    throw new JsonResponseException(skuCode + ".stock.not.enough");
+                }
+            }
+        }
+    }
+
+    /**
      * 获取指定库存
      *
      * @param warehouseId 仓库id
@@ -2143,54 +2193,55 @@ public class RefundWriteLogic {
 
     /**
      * 创建售后单时校验换货，退货单的退货仓账套是否一致
+     *
      * @param shipment
      * @param submitRefundInfo
      * @param shopOrder
      */
-    private void checkRefundCompanyCode(Shipment shipment,ShopOrder shopOrder,SubmitRefundInfo submitRefundInfo){
+    private void checkRefundCompanyCode(Shipment shipment, ShopOrder shopOrder, SubmitRefundInfo submitRefundInfo) {
         String shipmentExtrajson = shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO);
-        ShipmentExtra shipmentExtra = JsonMapper.nonEmptyMapper().fromJson(shipmentExtrajson,ShipmentExtra.class);
+        ShipmentExtra shipmentExtra = JsonMapper.nonEmptyMapper().fromJson(shipmentExtrajson, ShipmentExtra.class);
         Long oriDeliverid = shipmentExtra.getWarehouseId();
-        if(Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_SHOP_DELIVER)){
+        if (Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_SHOP_DELIVER)) {
             // 校验店发账套
             String getShipmentcompanyCode = getCompanyCodeShopDeliver(oriDeliverid);
-            if(StringUtils.hasText(getShipmentcompanyCode)){
-                if(Objects.equals(getShipmentcompanyCode,TradeConstants.BAO_WEI_COMPANY_ID.toString())){
-                    if (!Objects.equals(submitRefundInfo.getWarehouseId(), refundWareHouseId)){
+            if (StringUtils.hasText(getShipmentcompanyCode)) {
+                if (Objects.equals(getShipmentcompanyCode, TradeConstants.BAO_WEI_COMPANY_ID.toString())) {
+                    if (!Objects.equals(submitRefundInfo.getWarehouseId(), refundWareHouseId)) {
                         // 发货仓账套为325时，后台更新退货仓为WH001092。
                         submitRefundInfo.setWarehouseId(refundWareHouseId);
                     }
-                }else{
+                } else {
                     WarehouseDTO refundWarehousedto = findWarehouseById(submitRefundInfo.getWarehouseId());
                     // 场景2：如果来源单的发货店账套不是325，则校验来源单的店铺账套与退货仓的账套是否一致
                     String shopOrderCompanyCode1 = getCompanyCodeOrderShop(shopOrder.getShopId());
-                    if (refundWarehousedto != null){
-                        if(!Objects.equals(refundWarehousedto.getCompanyId(),shopOrderCompanyCode1)){
+                    if (refundWarehousedto != null) {
+                        if (!Objects.equals(refundWarehousedto.getCompanyId(), shopOrderCompanyCode1)) {
                             log.error("warehouse of refund(companycode:{}) companyCode is different ", shopOrderCompanyCode1);
                             throw new JsonResponseException("退货仓账套与订单店铺账套不一致");
                         }
                     }
                 }
-            }else{
+            } else {
                 //查询异常,返回
                 log.error("get shop deliver warehouse company code failed, shopid:{}", oriDeliverid);
                 throw new JsonResponseException("获取发货店账套失败");
             }
-        }else if(Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_WAREHOUSE_DELIVER)){
+        } else if (Objects.equals(shipment.getShipWay().toString(), TradeConstants.MPOS_WAREHOUSE_DELIVER)) {
             // 校验仓发账套
             WarehouseDTO shipmentWarehousedto = findWarehouseById(oriDeliverid);
-            if(shipmentWarehousedto != null){
-                if(Objects.equals(shipmentWarehousedto.getCompanyId(),TradeConstants.BAO_WEI_COMPANY_ID.toString())){
-                    if (!Objects.equals(submitRefundInfo.getWarehouseId(), refundWareHouseId)){
+            if (shipmentWarehousedto != null) {
+                if (Objects.equals(shipmentWarehousedto.getCompanyId(), TradeConstants.BAO_WEI_COMPANY_ID.toString())) {
+                    if (!Objects.equals(submitRefundInfo.getWarehouseId(), refundWareHouseId)) {
                         // 发货仓账套为325时，后台更新退货仓为WH001092。
                         submitRefundInfo.setWarehouseId(refundWareHouseId);
                     }
-                }else{
+                } else {
                     WarehouseDTO refundWarehousedto = findWarehouseById(submitRefundInfo.getWarehouseId());
                     // 场景2：如果来源单的发货店账套不是325，则校验来源单的店铺账套与退货仓的账套是否一致
                     String shopOrderCompanyCode2 = getCompanyCodeOrderShop(shopOrder.getShopId());
-                    if (refundWarehousedto != null){
-                        if(!Objects.equals(refundWarehousedto.getCompanyId(),shopOrderCompanyCode2)){
+                    if (refundWarehousedto != null) {
+                        if (!Objects.equals(refundWarehousedto.getCompanyId(), shopOrderCompanyCode2)) {
                             log.error("warehouse of refund(companycode:{}) companyCode is different ", shopOrderCompanyCode2);
                             throw new JsonResponseException("退货仓账套与订单店铺账套不一致");
                         }
@@ -2201,11 +2252,11 @@ public class RefundWriteLogic {
     }
 
     // 查询店发的仓库账套
-    private String getCompanyCodeShopDeliver(Long shopId){
+    private String getCompanyCodeShopDeliver(Long shopId) {
         String companyCode = "";
         Response<Shop> shopRes = shopReadService.findShopById(shopId);
-        if(shopRes.isSuccess()){
-            if(shopRes.getResult() != null){
+        if (shopRes.isSuccess()) {
+            if (shopRes.getResult() != null) {
                 companyCode = shopRes.getResult().getBusinessId().toString();
             }
         }
@@ -2213,13 +2264,13 @@ public class RefundWriteLogic {
     }
 
     // 查询下单店铺的账套
-    private String getCompanyCodeOrderShop(Long shopId){
+    private String getCompanyCodeOrderShop(Long shopId) {
         String companyCode = "";
         Response<OpenShop> openshopRes = openShopReadService.findById(shopId);
-        if(openshopRes.isSuccess()){
-            if(openshopRes.getResult() != null){
-                Map<String,String> shopExtraMap = openshopRes.getResult().getExtra();
-                if(!CollectionUtils.isEmpty(shopExtraMap) && shopExtraMap.containsKey(TradeConstants.HK_COMPANY_CODE)) {
+        if (openshopRes.isSuccess()) {
+            if (openshopRes.getResult() != null) {
+                Map<String, String> shopExtraMap = openshopRes.getResult().getExtra();
+                if (!CollectionUtils.isEmpty(shopExtraMap) && shopExtraMap.containsKey(TradeConstants.HK_COMPANY_CODE)) {
                     companyCode = shopExtraMap.get(TradeConstants.HK_COMPANY_CODE);
                 }
             }
@@ -2237,7 +2288,8 @@ public class RefundWriteLogic {
     private List<ShipmentItem> makeChangeShipmentItems(List<RefundItem> refundChangeItems, Map<String, Integer> skuCodeAndQuantity, Long warehouseId, ShopOrder shopOrder) {
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuCodeAndQuantity.size());
 
-        Map<String, RefundItem> refundItemMap = refundChangeItems.stream().filter(Objects::nonNull).collect(Collectors.toMap(RefundItem::getSkuCode, it -> it));
+        //Map<String, RefundItem> refundItemMap = refundChangeItems.stream().filter(Objects::nonNull).collect(Collectors.toMap(RefundItem::getSkuCode, it -> it));
+        Map<String, RefundItem> refundItemMap = refundChangeItems.stream().filter(Objects::nonNull).collect(Collectors.toMap(SkuCodeUtil::toCombineCode, it -> it));
         for (String skuCode : skuCodeAndQuantity.keySet()) {
             ShipmentItem shipmentItem = new ShipmentItem();
             RefundItem refundItem = refundItemMap.get(skuCode);
@@ -2444,8 +2496,10 @@ public class RefundWriteLogic {
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
 
+            //Map<String, Integer> skuCodeAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
+            //        .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getQuantity));
             Map<String, Integer> skuCodeAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
-                    .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getQuantity));
+                    .collect(Collectors.toMap(it -> SkuCodeUtil.getCombineCode(it), ShipmentItem::getQuantity));
             Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
             if (!Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())) {
                 result = this.updateSkuHandleNumber(orderShipment.getAfterSaleOrderId(), skuCodeAndQuantityMap);

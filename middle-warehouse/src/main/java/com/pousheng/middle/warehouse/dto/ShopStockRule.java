@@ -84,4 +84,9 @@ public class ShopStockRule implements Serializable {
      */
     private Boolean isAverageRatio;
 
+    /**
+     * 未开启平均比例分配时没手动设置过比例的是否不推，是：不推，否：推0
+     */
+    private Boolean isNotPush;
+
 }

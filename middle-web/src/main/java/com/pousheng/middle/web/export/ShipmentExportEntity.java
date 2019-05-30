@@ -25,7 +25,9 @@ public class ShipmentExportEntity {
     private String materialCode;
     @ExportTitle("发货单号")
     private String shipmenCode;
-
+    @ExportTitle("派单类型")
+    private String dispatchType;
+    
     @ExportTitle("货品条码")
     private String itemNo;
 
@@ -80,6 +82,8 @@ public class ShipmentExportEntity {
 
     @ExportTitle("发货方")
     private String warehouseName;
+    @ExportTitle("发货方外码")
+    private String warehouseOutCode;
 
     @ExportTitle("发货方区部")
     private String shipArea;
@@ -90,6 +94,9 @@ public class ShipmentExportEntity {
     @ExportTitle("外部交易单号")
     private String outId;
 
+    @ExportTitle("门店自提")
+    private String shopCustomerPickUp;
+    
     @ExportTitle("订单类型")
     private String orderType;
 

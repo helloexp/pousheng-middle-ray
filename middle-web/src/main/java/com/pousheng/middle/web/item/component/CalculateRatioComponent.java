@@ -67,13 +67,19 @@ public class CalculateRatioComponent {
             return itemMapping.getRatio();
         }
 
+        Boolean isNotPush = shopStockRule.getIsNotPush();
+        if (Arguments.isNull(isNotPush)){
+            log.error(" shop id:{} isNotPush is null",shopStockRule.getShopId());
+            isNotPush = Boolean.FALSE;
+        }
+
 
         //未开启平均比例分配
         //如果关闭了平均分配比例，均以原来用户手工设置的比例为准(如果多条都没有设置比例，则第一条推送100%，其他的推0)
         //例如，开启平均分配比例前有三个映射，分别为30%，40%，空；当开关开启后，分配比例均为33%，等再关闭后，三个映射的比例分别为30%，40%，0
         //例如，开启平均分配比例前有三个映射，分别为空，空，空；当开关开启后，分配比例均为33%，等再关闭后，三个映射的比例分别为100%，0，0
         if (!shopStockRule.getIsAverageRatio()){
-            return notAverageRatio(itemMapping,validItemMappings);
+            return notAverageRatio(itemMapping,validItemMappings,isNotPush);
         } else {
             //开启了平均比例分配
             return averageSplitRatio(validItemMappings);
@@ -82,7 +88,7 @@ public class CalculateRatioComponent {
     }
 
 
-    private Integer notAverageRatio(ItemMapping itemMapping,List<ItemMapping> validItemMappings){
+    private Integer notAverageRatio(ItemMapping itemMapping,List<ItemMapping> validItemMappings,Boolean isNotPush){
 
         //如果有效的映射只有一条记录
         if (Objects.equals(validItemMappings.size(),1)){
@@ -105,7 +111,12 @@ public class CalculateRatioComponent {
                 if (Objects.equals(notSettingMapping.getId(),validItemMappings.get(0).getId())){
                     idRatioMaps.put(notSettingMapping.getId(),100);
                 } else {
-                    idRatioMaps.put(notSettingMapping.getId(),0);
+                    //不推则设置为null
+                    if (isNotPush){
+                        idRatioMaps.put(notSettingMapping.getId(),null);
+                    } else {
+                        idRatioMaps.put(notSettingMapping.getId(),0);
+                    }
                 }
             }
 
@@ -115,7 +126,11 @@ public class CalculateRatioComponent {
         //存在设置过的，如果设置过则按照设置的，无则比例为0
         for (ItemMapping im : validItemMappings){
             if (Arguments.isNull(im.getRatio())){
-                idRatioMaps.put(im.getId(),0);
+                if (isNotPush){
+                    idRatioMaps.put(im.getId(),null);
+                } else{
+                    idRatioMaps.put(im.getId(),0);
+                }
             } else{
                 idRatioMaps.put(im.getId(),im.getRatio());
             }

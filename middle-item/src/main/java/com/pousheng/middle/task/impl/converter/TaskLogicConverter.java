@@ -1,5 +1,6 @@
 package com.pousheng.middle.task.impl.converter;
 
+import com.google.common.base.MoreObjects;
 import com.pousheng.middle.task.dto.TaskDTO;
 import com.pousheng.middle.task.model.Task;
 import io.terminus.common.utils.BeanMapper;
@@ -7,6 +8,7 @@ import io.terminus.common.utils.JsonMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,9 +25,14 @@ public class TaskLogicConverter {
 
         TaskDTO dto = new TaskDTO();
         BeanMapper.copy(task, dto);
+        if (!StringUtils.isEmpty(task.getDetailJson())) {
+            Map<String, Object> detail = JsonMapper.nonEmptyMapper().fromJson(task.getDetailJson(), HashMap.class);
+            dto.setDetail(MoreObjects.firstNonNull(detail, Collections.emptyMap()));
+        }
+
         if (!StringUtils.isEmpty(task.getContextJson())) {
             Map<String, Object> content = JsonMapper.nonEmptyMapper().fromJson(task.getContextJson(), HashMap.class);
-            dto.setContent(content);
+            dto.setContent(MoreObjects.firstNonNull(content, Collections.emptyMap()));
         }
         return dto;
     }

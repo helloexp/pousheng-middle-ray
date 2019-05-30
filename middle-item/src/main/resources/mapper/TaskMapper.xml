@@ -12,6 +12,7 @@
         <id property="id" column="id"/>
         <result property="status" column="status"/>
         <result property="type" column="type"/>
+        <result property="detailJson" column="detail_json"/>
         <result property="contextJson" column="context_json"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
@@ -27,11 +28,11 @@
     </sql>
 
     <sql id="columns_exclude_id">
-        `status`, `type`, `context_json`, created_at, updated_at
+        `status`, `type`, `detail_json`, `context_json`, created_at, updated_at
     </sql>
 
     <sql id="values_exclude_id">
-        #{status}, #{type}, #{contextJson}, now(), now()
+        #{status}, #{type}, #{detailJson}, #{contextJson}, now(), now()
     </sql>
 
     <sql id="sort">
@@ -70,7 +71,7 @@
         (<include refid="columns_exclude_id"/>)
         VALUES
         <foreach collection="list" item="i" index="index" separator=",">
-            (#{i.status}, #{i.type}, #{i.contextJson}, now(), now())
+            (#{i.status}, #{i.type}, #{i.detailJson}, #{i.contextJson}, now(), now())
         </foreach>
     </insert>
 
@@ -99,6 +100,7 @@
         <set>
             <if test="status != null">`status` = #{status},</if>
             <if test="type != null">`type` = #{type},</if>
+            <if test="detailJson != null">`detail_json` = #{detailJson},</if>
             <if test="contextJson != null">`context_json` = #{contextJson},</if>
             updated_at = now()
         </set>

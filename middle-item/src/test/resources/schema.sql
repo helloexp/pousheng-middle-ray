@@ -209,7 +209,8 @@ create table pousheng_tasks (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `status`          varchar(16) default null comment '状态',
   `type`            varchar(16) default null comment '类型',
-  `context_json`    varchar(1024) default null comment '任务描述，应当精炼简介，尽量保存外部信息主键',
+  `detail_json`     text COMMENT '任务描述，只读',
+  `context_json`    text COMMENT '任务描述，应当精炼简介，尽量保存外部信息主键',
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)

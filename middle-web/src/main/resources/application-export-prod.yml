@@ -292,12 +292,12 @@ terminus:
       poushengInventoryTopic: ${MQ_TOPIC_INVENTORY_CONSUME_MAX_TPS:20}
 
 
-# outlook邮箱,exchange服务器
-outlook.mail.server: 10.0.0.101
-outlook.mail.username: mpos_order_notify@pousheng.com
+# 网易邮箱,exchange服务器
+outlook.mail.server: fastsmtphz.qiye.163.com
+outlook.mail.username: mpos_order_notify@store.pousheng.com
 outlook.mail.password: ps_1233
 outlook.mail.title: 派单提醒
-outlook.mail.copy: mpos_order_notify@pousheng.com
+outlook.mail.copy: mpos_order_notify@store.pousheng.com
 
 
 #是否为库存推送第三方的消息消费节点

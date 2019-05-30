@@ -7,11 +7,16 @@
 
 <mapper namespace="Shipment">
 
-
+	
 
     <sql id="criteriaExt">
         <if test="id!=null">AND `id`=#{id}</if>
         <if test="shipmentCode!=null">AND `shipment_code`=#{shipmentCode}</if>
+        <if test="shipmentIds != null">AND `id` IN
+        	<foreach collection="shipmentIds" open="(" separator="," close=")" item="shipmentId">
+        		#{shipmentId}
+        	</foreach>
+        </if>
         <if test="shopId!=null">AND shop_id=#{shopId}</if>
         <if test="shopIds != null">AND shop_id IN
             <foreach collection="shopIds" open="(" separator="," close=")" item="shopId">
@@ -28,6 +33,10 @@
         <if test="shipWay != null">AND `ship_way` = #{shipWay}</if>
         <if test="startAt != null">AND <![CDATA[created_at >= #{startAt}]]> </if>
         <if test="endAt != null">AND <![CDATA[created_at <= #{endAt}]]> </if>
+        <if test="shipmentSerialNo != null">AND `shipment_serial_no` = #{shipmentSerialNo}</if>
+        <if test="dispatchType != null">AND `dispatch_type` = #{dispatchType}</if>
+        <if test="warehouseNameOrOutCode != null">AND `extra_json` LIKE CONCAT(CONCAT('%', #{warehouseNameOrOutCode}) ,'%')</if>
+        																
     </sql>
 
 
@@ -64,5 +73,27 @@
             order by #{sort}
         </if>
         limit #{offset}, #{limit}
+    </select>
+    
+    <select id="findByDispatchType" parameterType="integer" resultMap="ShipmentMap" >
+        select id, <include refid="cols_exclude_id" />
+        from <include refid="tb"/>
+        where dispatch_type = #{dispatchType}
+    </select>
+    
+    <select id="findBySerialNoAndDispatchType" parameterType="map" resultMap="ShipmentMap">
+   		select id, <include refid="cols_exclude_id" />
+   		from <include refid="tb" />
+   		<where>
+   			<include refid="criteriaExt"/>
+   		</where>
+    </select>
+    
+    <select id="findByWHNameAndWHOutCodeWithShipmentIds" parameterType="map" resultMap="ShipmentMap">
+   		select id, <include refid="cols_exclude_id" />
+   		from <include refid="tb" />
+   		<where>
+   			<include refid="criteriaExt"/>
+   		</where>
     </select>
 </mapper>

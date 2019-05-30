@@ -25,10 +25,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author <a href="mailto:d@terminus.io">张成栋</a> at 2019
@@ -71,10 +68,11 @@ public class SupplyRuleImportTaskController {
         taskDTO.setDelta(Objects.equals(info.getDelta(), Boolean.TRUE));
         taskDTO.setStatus(request.getStatus());
         try {
-            request.setContent(BeanMapper.convertObjectToMap(taskDTO));
+            request.setDetail(BeanMapper.convertObjectToMap(taskDTO));
         } catch (Exception e) {
             // ignore
         }
+        request.setContent(Collections.emptyMap());
         Response<Long> r = taskWriteFacade.createTask(request);
         if (!r.isSuccess()) {
             log.error("failed to create import task {}, cause: {}", request, r.getError());
@@ -103,11 +101,13 @@ public class SupplyRuleImportTaskController {
 
     @ApiOperation("分页查询")
     @GetMapping("/paging")
-    public Paging<SupplyRuleImportTaskDTO> paging(@RequestParam(required = false, value = "pageNo", defaultValue = "1") Integer pageNo,
+    public Paging<SupplyRuleImportTaskDTO> paging(@RequestParam(required = false, defaultValue = "SUPPLY_RULE_IMPORT") String type,
+                                                  @RequestParam(required = false, value = "pageNo", defaultValue = "1") Integer pageNo,
                                                   @RequestParam(required = false, value = "pageSize", defaultValue = "20") Integer pageSize) {
         PagingTaskRequest request = new PagingTaskRequest();
         request.setPageSize(pageSize);
         request.setPageNo(pageNo);
+        request.setType(type);
         Response<Paging<TaskDTO>> r = taskReadFacade.pagingTasks(request);
         if (!r.isSuccess()) {
             log.error("failed to paging task, cause: {}", r.getResult());
@@ -122,8 +122,8 @@ public class SupplyRuleImportTaskController {
         d.setStatus(taskDTO.getStatus());
         d.setCreatedAt(taskDTO.getCreatedAt());
         d.setUpdatedAt(taskDTO.getCreatedAt());
-        d.setFileName((String) taskDTO.getContent().get("fileName"));
-        d.setFilePath((String) taskDTO.getContent().get("filePath"));
+        d.setFileName((String) taskDTO.getDetail().get("fileName"));
+        d.setFilePath((String) taskDTO.getDetail().get("filePath"));
         d.setMessage((String) taskDTO.getContent().get("message"));
         d.setProcessDetails(
                 CommonConverter.batchConvert(

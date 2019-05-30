@@ -42,6 +42,7 @@ public class TaskWriteFacadeImpl implements TaskWriteFacade {
             Task task = new Task();
             task.setStatus(request.getStatus());
             task.setType(request.getType());
+            task.setDetailJson(JsonMapper.nonEmptyMapper().toJson(request.getDetail()));
             task.setContextJson(JsonMapper.nonEmptyMapper().toJson(request.getContent()));
             Long id = taskDomainWriteService.create(task);
             return Response.ok(id);

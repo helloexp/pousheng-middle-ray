@@ -564,7 +564,19 @@ public class ExportTradeBillListener {
                     }
                     //发货方
                     entity.setWarehouseName(shipmentExtra.getWarehouseName());
-
+                    //发货方外码
+                    entity.setWarehouseOutCode(shipmentExtra.getWarehouseOutCode());
+                    //派单类型
+                    if (null != shipmentContext.getShipment().getDispatchType()) {
+                    	String dispatchType = "";
+                    	if (shipmentContext.getShipment().getDispatchType() == 1) {
+                    		dispatchType = "自动派单";
+                    	}
+                    	if (shipmentContext.getShipment().getDispatchType() == 2) {
+                    		dispatchType = "手动派单";
+                    	}
+                    	entity.setDispatchType(dispatchType);
+                    }
                     entity.setShopName(shipmentContext.getOrderShipment().getShopName());
                     OpenShop serverShop = openShopCacher.findById(shipmentContext.getOrderShipment().getShopId());
                     if (serverShop.getShopName().startsWith("mpos")) {
@@ -593,7 +605,13 @@ public class ExportTradeBillListener {
                     if(CollectionUtils.isEmpty(shopOrder.getExtra())){
                         entity.setOrderType("");
                     }else{
+                    	String shopCustomerPickUp = shopOrder.getExtra().get("is_customer_pick_up");
                         String stepOrder = shopOrder.getExtra().get("isStepOrder");
+                        if( StringUtils.isNotBlank(shopCustomerPickUp) && Objects.equals(shopCustomerPickUp, "true")) {
+                        	entity.setShopCustomerPickUp("是");
+                        }else {
+                        	entity.setShopCustomerPickUp("否");
+                        }
                         if(StringUtils.isNotBlank(stepOrder) && Objects.equals(stepOrder,"true")){
                             entity.setOrderType("预售订单");
                         }else{

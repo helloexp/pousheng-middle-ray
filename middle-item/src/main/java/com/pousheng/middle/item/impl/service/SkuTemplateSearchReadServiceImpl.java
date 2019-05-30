@@ -12,6 +12,7 @@ import com.pousheng.middle.item.impl.dao.SkuTemplateExtDao;
 import com.pousheng.middle.item.service.CriteriasWithShould;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
+import io.terminus.common.model.PageInfo;
 import io.terminus.common.model.Response;
 import io.terminus.parana.cache.CategoryBindingCacher;
 import io.terminus.parana.cache.FrontCategoryCacher;
@@ -201,6 +202,17 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
         }
     }
 
-
+    @Override
+    public Response<Paging<SkuTemplate>> pagingSkuBySpuIds(Integer pageNo, Integer pageSize, List<Long> spuIds) {
+        try {
+            Map<String, Object> criteria = Maps.newHashMap();
+            criteria.put("spuIds", spuIds);
+            Paging<SkuTemplate> paging = skuTemplateExtDao.pagingBySpuIds(pageNo, pageSize, criteria);
+            return Response.ok(paging);
+        } catch (Exception e) {
+            log.error("failed to find sku by  spuIds:({}), cause:({})", spuIds, e);
+            return Response.fail("sku.template.find.fail");
+        }
+    }
 
 }

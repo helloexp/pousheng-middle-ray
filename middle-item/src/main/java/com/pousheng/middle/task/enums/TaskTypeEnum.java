@@ -11,7 +11,9 @@ public enum TaskTypeEnum {
 
     ITEM_GROUP_IMPORT(2, "商品分组导入"),
 
-    SUPPLY_RULE_IMPORT(3, "发货限制导入");
+    SUPPLY_RULE_IMPORT(3, "发货限制导入"),
+
+    SUPPLY_RULE_BATCH_DISABLE(4, "发货规则批量禁用");
 
     private final Integer value;
     private final String desc;

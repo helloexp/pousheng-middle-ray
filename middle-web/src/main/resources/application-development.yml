@@ -399,5 +399,3 @@ pousheng.supply-rule.import.hosts: ${SUPPLY_RULE_IMPORT_HOSTS:}
 
 ### 拉单 mq 队列大小
 order.fetch.mq.queue.size: ${ORDER_FETCH_MQ_QUEUE_SIZE:0}
-
-# mock.order.fetch.enable: true

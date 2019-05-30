@@ -176,7 +176,7 @@ public class RefundJob {
     /**
      * 每5分钟定时拉取并同步到中台唯品会退货单的物流信息 唯品会的（待完善、同步订单派发中心成功（待退货）创建日期<=45天 的退货单
      */
-    @Scheduled(cron = "0 0/5 * * * ? ")
+    @Scheduled(cron = "0 0/55 * * * ? ")
     public void synVipReturnExpress() {
 
         if (!hostLeader.isLeader()) {

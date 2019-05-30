@@ -165,5 +165,15 @@ public enum PoushengCompensateBizType {
     /**
      * 同步售后单pos到恒康
      */
-    SYNC_AFTERSALE_POS_TO_HK;
+    SYNC_AFTERSALE_POS_TO_HK,
+
+    /**
+     * 同步唯品会退货物流信息
+     */
+    SYNC_OXO_RETURN_EXPRESS,
+
+    /**
+     * 唯品会超时退货单自动取消关闭
+     */
+    OXO_REFUND_AUTO_CLOSE;
 }

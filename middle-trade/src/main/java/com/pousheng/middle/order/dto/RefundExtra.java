@@ -25,6 +25,9 @@ public class RefundExtra implements Serializable{
     //买家收货地址
     private ReceiverInfo receiverInfo;
 
+    //退货寄件人信息
+    private ReceiverInfo senderInfo;
+
     //物流公司代码
     private String shipmentCorpCode;
     //物流公司名称

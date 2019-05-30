@@ -135,7 +135,9 @@ public enum MiddleRefundStatus {
     /**
      * 换货关闭
      */
-    EXCHANGE_CLOSED(-7, "换货关闭");
+    EXCHANGE_CLOSED(-7, "换货关闭"),
+
+    REFUND_SYNC_ECP_FAIL(-99, "待退款（退货单同步电商失败)");
 
 
     private final int value;

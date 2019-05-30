@@ -118,12 +118,12 @@ public class Refunds {
         }
         criteria.setExcludeRefundType(MiddleRefundType.ON_SALES_REFUND.value());
 
-        List<Long> currentUserCanOperateShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
-        if (criteria.getShopId() == null) {
-            criteria.setShopIds(currentUserCanOperateShopIds);
-        } else if (!currentUserCanOperateShopIds.contains(criteria.getShopId())) {
-            throw new JsonResponseException("permission.check.query.deny");
-        }
+        //List<Long> currentUserCanOperateShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
+        //if (criteria.getShopId() == null) {
+        //    criteria.setShopIds(currentUserCanOperateShopIds);
+        //} else if (!currentUserCanOperateShopIds.contains(criteria.getShopId())) {
+        //    throw new JsonResponseException("permission.check.query.deny");
+        //}
 
 
         Response<Paging<RefundPaging>> pagingRes = refundReadLogic.refundPaging(criteria);
@@ -210,7 +210,8 @@ public class Refunds {
                 //丢件补发售后单完善
                 refundWriteLogic.completeHandleForLostType(refund, editSubmitRefundInfo);
             } else {
-                if (!refundReadLogic.checkShipInfoUnique(editSubmitRefundInfo.getShipmentSerialNo())) {
+
+                if (!Objects.equals(refund.getChannel(),MiddleChannel.VIPOXO.getValue())&&!refundReadLogic.checkShipInfoUnique(editSubmitRefundInfo.getShipmentSerialNo())) {
                     throw new JsonResponseException("submit.ship.info.exists");
                 }                
                 // 退货退款，换货，的发货仓和退货仓账套是否匹配325的校验

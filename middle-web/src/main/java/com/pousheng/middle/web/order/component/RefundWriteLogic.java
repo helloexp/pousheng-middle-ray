@@ -2167,7 +2167,7 @@ public class RefundWriteLogic {
                     String shopOrderCompanyCode1 = getCompanyCodeOrderShop(shopOrder.getShopId());
                     if (refundWarehousedto != null){
                         if(!Objects.equals(refundWarehousedto.getCompanyId(),shopOrderCompanyCode1)){
-                            log.error("warehouse of refund(companycode:{}) companyCode is different ", shopOrderCompanyCode1);
+                            log.error("shop warehouse(warehouse company:{}) of refund(companycode:{}) companyCode is different ", refundWarehousedto.getCompanyId(), shopOrderCompanyCode1);
                             throw new JsonResponseException("退货仓账套与订单店铺账套不一致");
                         }
                     }
@@ -2192,7 +2192,7 @@ public class RefundWriteLogic {
                     String shopOrderCompanyCode2 = getCompanyCodeOrderShop(shopOrder.getShopId());
                     if (refundWarehousedto != null){
                         if(!Objects.equals(refundWarehousedto.getCompanyId(),shopOrderCompanyCode2)){
-                            log.error("warehouse of refund(companycode:{}) companyCode is different ", shopOrderCompanyCode2);
+                            log.error("warehouse(warehouse company:{}) of refund(companycode:{}) companyCode is different ", refundWarehousedto.getCompanyId(), shopOrderCompanyCode2);
                             throw new JsonResponseException("退货仓账套与订单店铺账套不一致");
                         }
                     }

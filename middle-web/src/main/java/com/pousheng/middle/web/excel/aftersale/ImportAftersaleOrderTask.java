@@ -72,8 +72,6 @@ public class ImportAftersaleOrderTask implements CompensateBizService {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
 
-    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
-
     @Autowired
     private OrderReadLogic orderReadLogic;
 

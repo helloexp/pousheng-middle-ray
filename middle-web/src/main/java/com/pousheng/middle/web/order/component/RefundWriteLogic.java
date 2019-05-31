@@ -1113,7 +1113,7 @@ public class RefundWriteLogic {
                 int alreadyRefundApplyQuantity = skuCodesAndShipmentItems.get(key).getRefundQuantity() == null ? 0 : skuCodesAndShipmentItems.get(key).getRefundQuantity();
                 int remainQuantuty = skuCodesAndQuantity.get(key) == null ? 0 : skuCodesAndQuantity.get(key);
                 if ((currentRefundApplyQuantity + alreadyRefundApplyQuantity) > remainQuantuty) {
-                    log.error("refund applyQuantity:{} gt available applyQuantity:{}", editSubmitRefundItem.getRefundQuantity(), skuCodesAndQuantity.get(key));
+                    log.error("refund applyQuantity:{} gt available applyQuantity:{}", editSubmitRefundItem.getRefundQuantity(), remainQuantuty);
                     throw new JsonResponseException("refund.apply.quantity.invalid");
                 }
                 RefundItem refundItem = new RefundItem();

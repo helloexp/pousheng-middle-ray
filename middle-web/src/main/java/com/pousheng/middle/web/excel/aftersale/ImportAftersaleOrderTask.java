@@ -16,6 +16,7 @@ import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.export.UploadFileComponent;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.utils.HandlerFileUtil;
@@ -24,8 +25,10 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.excel.model.ExcelReadErrorMsgModel;
 import io.terminus.excel.read.ExcelReader;
 import io.terminus.excel.read.ExcelReaderFactory;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShipmentItem;
+import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +73,9 @@ public class ImportAftersaleOrderTask implements CompensateBizService {
     private ShipmentReadLogic shipmentReadLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
+
+    @Autowired
+    private OrderReadLogic orderReadLogic;
 
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
@@ -140,9 +146,18 @@ public class ImportAftersaleOrderTask implements CompensateBizService {
                         EditSubmitRefundItem item = new EditSubmitRefundItem();
                         item.setRefundSkuCode(fileImportExcelBean.getBarCode());
                         item.setRefundQuantity(fileImportExcelBean.getQuantity());
+                        //设置退货仓库
+                        ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(fileImportExcelBean.getOrderNumber());
+                        Long shopId = shopOrder.getShopId();
+                        OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
+                        Map<String, String> extra = openShop.getExtra();
+                        String defaultReWarehouseId = extra.get("defaultReWarehouseId");
+                        if (! StringUtils.isEmpty(defaultReWarehouseId)) {
+                            submitRefundInfo.setWarehouseId(Long.valueOf(defaultReWarehouseId));
+                        }
 
                         Shipment shipments = shipmentReadLogic.findShipmentByShipmentCode(fileImportExcelBean.getShipmentOrderNumber());
-                        submitRefundInfo.setWarehouseId(shipments.getShipId());
+
 
                         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipments);
                         if (shipmentItems != null) {

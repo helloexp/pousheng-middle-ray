@@ -151,14 +151,12 @@ public class ImportAftersaleOrderTask implements CompensateBizService {
                         Long shopId = shopOrder.getShopId();
                         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
                         Map<String, String> extra = openShop.getExtra();
-                        String defaultReWarehouseId = extra.get("companyCode");
+                        String defaultReWarehouseId = extra.get(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID);
                         if (! StringUtils.isEmpty(defaultReWarehouseId)) {
                             submitRefundInfo.setWarehouseId(Long.valueOf(defaultReWarehouseId));
                         }
 
                         Shipment shipments = shipmentReadLogic.findShipmentByShipmentCode(fileImportExcelBean.getShipmentOrderNumber());
-
-
                         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipments);
                         if (shipmentItems != null) {
                             for (ShipmentItem shipmentItem : shipmentItems) {

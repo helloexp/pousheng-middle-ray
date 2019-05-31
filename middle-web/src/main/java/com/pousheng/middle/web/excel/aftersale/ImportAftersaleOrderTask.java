@@ -151,7 +151,7 @@ public class ImportAftersaleOrderTask implements CompensateBizService {
                         Long shopId = shopOrder.getShopId();
                         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
                         Map<String, String> extra = openShop.getExtra();
-                        String defaultReWarehouseId = extra.get("defaultReWarehouseId");
+                        String defaultReWarehouseId = extra.get("companyCode");
                         if (! StringUtils.isEmpty(defaultReWarehouseId)) {
                             submitRefundInfo.setWarehouseId(Long.valueOf(defaultReWarehouseId));
                         }

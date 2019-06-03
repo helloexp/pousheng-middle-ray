@@ -251,3 +251,6 @@ dingtalk.robot.webhook: https://oapi.dingtalk.com/robot/send?access_token=4804cb
 
 ### 拉单 mq 队列大小
 order.fetch.mq.queue.size: ${ORDER_FETCH_MQ_QUEUE_SIZE:0}
+
+# 拉单消费模块开关
+order.fetch.topic.consume.enable: ${ORDER_FETCH_TOPIC_CONSUME_ENABLE:false}

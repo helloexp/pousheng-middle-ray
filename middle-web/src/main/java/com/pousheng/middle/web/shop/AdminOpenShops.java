@@ -259,6 +259,10 @@ public class AdminOpenShops {
         if(jsonMap.containsKey(TradeConstants.PULL_REFUND_EXCHANGE_FLAG_KEY)){
             map.put(TradeConstants.PULL_REFUND_EXCHANGE_FLAG_KEY, jsonMap.get(TradeConstants.PULL_REFUND_EXCHANGE_FLAG_KEY));
         }
+        if (jsonMap.containsKey(TradeConstants.UN_SALE_ITEM_FETCH_ENABLED)) {
+            // 待上架商品映射开关
+            map.put(TradeConstants.UN_SALE_ITEM_FETCH_ENABLED, jsonMap.get(TradeConstants.UN_SALE_ITEM_FETCH_ENABLED));
+        }
         openShop.setExtra(map);
     }
 }

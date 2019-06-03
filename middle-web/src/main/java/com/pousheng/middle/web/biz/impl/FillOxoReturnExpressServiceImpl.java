@@ -201,23 +201,23 @@ public class FillOxoReturnExpressServiceImpl implements CompensateBizService {
 
         //物流公司名称
         String shipmentSerialNo = oxoReturnOrder.getBarcodes().get(0).getReturnApply().get(0).getTransportNo();
-        ExpressCodeCriteria expressCodeCriteria=new ExpressCodeCriteria();
-        String shipmentCode=toVipCarrierCode(shipmentCorpName);
-        expressCodeCriteria.setVipCode(shipmentCode);
-        Response<Paging<ExpressCode>> response=expressCodeReadService.pagingExpressCode(expressCodeCriteria);
-
-        if(!response.isSuccess()||Objects.isNull(response.getResult())){
-            throw new ServiceException("not.found.vip.logistic");
-        }
-        if(Objects.isNull(response.getResult().getData())){
-            throw new ServiceException("not.found.vip.logistic");
-        }
+        //ExpressCodeCriteria expressCodeCriteria=new ExpressCodeCriteria();
+        //String shipmentCode=toVipCarrierCode(shipmentCorpName);
+        //expressCodeCriteria.setVipCode(shipmentCode);
+        ////Response<Paging<ExpressCode>> response=expressCodeReadService.pagingExpressCode(expressCodeCriteria);
+        //
+        //if(!response.isSuccess()||Objects.isNull(response.getResult())){
+        //    throw new ServiceException("not.found.vip.logistic");
+        //}
+        //if(Objects.isNull(response.getResult().getData())){
+        //    throw new ServiceException("not.found.vip.logistic");
+        //}
 
 
         //物流单号
         refundExtra.setShipmentCorpName(shipmentCorpName);
         refundExtra.setShipmentSerialNo(shipmentSerialNo);
-        refundExtra.setShipmentCorpCode(shipmentCode);
+        //refundExtra.setShipmentCorpCode(shipmentCode);
 
         if (!StringUtils.isEmpty(oxoReturnOrder.getBuyer()) || !StringUtils.isEmpty(oxoReturnOrder.getMobile())
             || !StringUtils.isEmpty(oxoReturnOrder.getTel())) {
@@ -241,7 +241,7 @@ public class FillOxoReturnExpressServiceImpl implements CompensateBizService {
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
         updateRefund.setExtra(extraMap);
         updateRefund.setShipmentSerialNo(shipmentSerialNo);
-        updateRefund.setShipmentCorpCode(shipmentCode);
+        //updateRefund.setShipmentCorpCode(shipmentCode);
         //寄件人信息
         Response<Boolean> updateRes = refundWriteService.update(updateRefund);
         if (!updateRes.isSuccess()) {

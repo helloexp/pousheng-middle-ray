@@ -94,7 +94,7 @@ redis:
   max-idle: 8
   test-on-borrow: true
 
-rpc.mode: ${RPC_MODE:false}
+rpc.mode: ${POUSHENG_RPC_MODE:false}
 rpc:
   dubbo:
     port: 20880

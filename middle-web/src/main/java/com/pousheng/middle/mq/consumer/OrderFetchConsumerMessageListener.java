@@ -36,7 +36,7 @@ import static com.pousheng.middle.web.order.dto.OrderFetchTypeConstants.*;
  * @author Xiongmin
  * 2019/4/28
  */
-@ConditionalOnProperty(name = "order.fetch.topic.enable", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "order.fetch.topic.consume.enable", havingValue = "true", matchIfMissing = false)
 @Slf4j
 @Service
 @MQConsumer

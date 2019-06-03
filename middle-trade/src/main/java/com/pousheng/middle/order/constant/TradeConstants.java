@@ -607,4 +607,8 @@ public class TradeConstants {
 
 
     public static final int MAX_REFUND_FLAG=127;
+    /**
+     * 拉取待上架商品
+     */
+    public static final String UN_SALE_ITEM_FETCH_ENABLED = "unSaleItemFetchEnabled";
 }

@@ -9,8 +9,6 @@ terminus:
 
 mq:
   topic: scanner
-  consumeThreadMin: 2
-  consumeThreadMax: 8
   name-server-addr: ${MQ_NAME_ADDR:127.0.0.1:9876}
   consume-group: default-index-consumer
 
@@ -24,6 +22,10 @@ order:
   search:
     index-name: orders
     index-type: order
+refund:
+  search:
+    index-name: refunds
+    index-type: refund
 
 rpc:
   mode: true

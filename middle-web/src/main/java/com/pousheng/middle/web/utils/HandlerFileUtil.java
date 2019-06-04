@@ -502,7 +502,13 @@ public class HandlerFileUtil<T> {
                             wrapper.setHasError(true);
                             wrapper.setErrorMsg("发货单号字段缺失");
                         } else {
-                            bean.setShipmentOrderNumber(data[2]);
+                            //验证类型是否错误，当前只支持2退货退款
+                            if ("2".equals(data[2])) {
+                                bean.setShipmentOrderNumber(data[2]);
+                            } else {
+                                wrapper.setHasError(true);
+                                wrapper.setErrorMsg("不支持的售后类型");
+                            }
                         }
                         break;
                     case 3:
@@ -518,7 +524,19 @@ public class HandlerFileUtil<T> {
                             wrapper.setHasError(true);
                             wrapper.setErrorMsg("申请数量字段缺失");
                         } else {
-                            bean.setQuantity(Integer.valueOf(data[4]));
+                            //验证数字是否错误
+                            try {
+                                Integer quantity = Integer.valueOf(data[4]);
+                                if (quantity > 0) {
+                                    bean.setQuantity(Integer.valueOf(data[4]));
+                                } else {
+                                    wrapper.setHasError(true);
+                                    wrapper.setErrorMsg("申请数量错误");
+                                }
+                            } catch (Exception e) {
+                                wrapper.setHasError(true);
+                                wrapper.setErrorMsg("申请数量错误");
+                            }
                         }
                         break;
                 }

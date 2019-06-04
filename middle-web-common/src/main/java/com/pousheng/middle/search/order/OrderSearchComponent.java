@@ -113,7 +113,7 @@ public class OrderSearchComponent {
      */
     private List<Range> buildRange(MiddleOrderCriteria criteria) {
         List<Range> range = Lists.newArrayList();
-        Range r = new Range("createdAt",
+        Range r = new Range("outCreatedAt",
                 timeString(criteria.getOutCreatedStartAt()),
                 timeString(criteria.getOutCreatedEndAt()));
         r.setLast(true);

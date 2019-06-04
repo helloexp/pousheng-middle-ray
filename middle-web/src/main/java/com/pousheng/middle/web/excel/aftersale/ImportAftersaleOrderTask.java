@@ -119,72 +119,72 @@ public class ImportAftersaleOrderTask implements CompensateBizService {
             if (data.size() > 0) {
                 for(FileImportExcelBeanWrapper wrapper : data) {
                     FileImportExcelBean fileImportExcelBean = wrapper.getFileImportExcelBean();
-                    //当前数据行有错误
-                    String key = fileImportExcelBean.getShipmentOrderNumber() + fileImportExcelBean.getBarCode();
-                    if (wrapper.isHasError()) {
-                        FaildExcelBean faildExcelBean = toFaildExcelBean(wrapper);
-                        errorData.add(faildExcelBean);
-                    } else if(!StringUtils.isEmpty(filter.get(key))) {
-                        //重复sku，报错，手动合并
-                        FaildExcelBean faildExcelBean = toFaildExcelBean(wrapper);
-                        faildExcelBean.setFaildReason("同一商品重复申请，请合并数量");
-                        errorData.add(faildExcelBean);
-                    } else {
-                        SubmitRefundInfo submitRefundInfo = new SubmitRefundInfo();
-                        submitRefundInfo.setOrderCode(fileImportExcelBean.getOrderNumber());
-                        submitRefundInfo.setRefundType(MiddleRefundType.AFTER_SALES_RETURN.value());
-                        submitRefundInfo.setShipmentCode(fileImportExcelBean.getShipmentOrderNumber());
-                        submitRefundInfo.setReleOrderNo(fileImportExcelBean.getOrderNumber());
-                        //子单
-                        submitRefundInfo.setReleOrderType(2);
-                        //操作方式是保存，状态就会是待处理
-                        submitRefundInfo.setOperationType(1);
-                        //添加售后单sku信息
-                        List<EditSubmitRefundItem> editSubmitRefundItems = Lists.newArrayList();
-                        EditSubmitRefundItem item = new EditSubmitRefundItem();
-                        item.setRefundSkuCode(fileImportExcelBean.getBarCode());
-                        item.setRefundQuantity(fileImportExcelBean.getQuantity());
-                        //设置退货仓库
-                        ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(fileImportExcelBean.getOrderNumber());
-                        Long shopId = shopOrder.getShopId();
-                        OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
-                        Map<String, String> extra = openShop.getExtra();
-                        String defaultReWarehouseId = extra.get(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID);
-                        if (! StringUtils.isEmpty(defaultReWarehouseId)) {
-                            submitRefundInfo.setWarehouseId(Long.valueOf(defaultReWarehouseId));
-                        }
+                    try {
+                        //当前数据行有错误
+                        String key = fileImportExcelBean.getShipmentOrderNumber() + fileImportExcelBean.getBarCode();
+                        if (wrapper.isHasError()) {
+                            FaildExcelBean faildExcelBean = toFaildExcelBean(wrapper);
+                            errorData.add(faildExcelBean);
+                        } else if(!StringUtils.isEmpty(filter.get(key))) {
+                            //重复sku，报错，手动合并
+                            FaildExcelBean faildExcelBean = toFaildExcelBean(wrapper);
+                            faildExcelBean.setFaildReason("同一商品重复申请，请合并数量");
+                            errorData.add(faildExcelBean);
+                        } else {
+                            SubmitRefundInfo submitRefundInfo = new SubmitRefundInfo();
+                            submitRefundInfo.setOrderCode(fileImportExcelBean.getOrderNumber());
+                            submitRefundInfo.setRefundType(MiddleRefundType.AFTER_SALES_RETURN.value());
+                            submitRefundInfo.setShipmentCode(fileImportExcelBean.getShipmentOrderNumber());
+                            submitRefundInfo.setReleOrderNo(fileImportExcelBean.getOrderNumber());
+                            //子单
+                            submitRefundInfo.setReleOrderType(2);
+                            //操作方式是保存，状态就会是待处理
+                            submitRefundInfo.setOperationType(1);
+                            //添加售后单sku信息
+                            List<EditSubmitRefundItem> editSubmitRefundItems = Lists.newArrayList();
+                            EditSubmitRefundItem item = new EditSubmitRefundItem();
+                            item.setRefundSkuCode(fileImportExcelBean.getBarCode());
+                            item.setRefundQuantity(fileImportExcelBean.getQuantity());
+                            //设置退货仓库
+                            ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(fileImportExcelBean.getOrderNumber());
+                            Long shopId = shopOrder.getShopId();
+                            OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
+                            Map<String, String> extra = openShop.getExtra();
+                            String defaultReWarehouseId = extra.get(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID);
+                            if (! StringUtils.isEmpty(defaultReWarehouseId)) {
+                                submitRefundInfo.setWarehouseId(Long.valueOf(defaultReWarehouseId));
+                            }
 
-                        Shipment shipments = shipmentReadLogic.findShipmentByShipmentCode(fileImportExcelBean.getShipmentOrderNumber());
-                        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipments);
-                        if (shipmentItems != null) {
-                            for (ShipmentItem shipmentItem : shipmentItems) {
-                                if (fileImportExcelBean.getBarCode().equals(shipmentItem.getSkuCode())) {
-                                    item.setSkuOrderId(shipmentItem.getSkuOrderId());
-                                    item.setRefundOutSkuCode(shipmentItem.getOutSkuCode());
-                                    Long cleanFee = Long.valueOf(shipmentItem.getCleanFee());
-                                    Long refundFee = cleanFee/shipmentItem.getQuantity();
-                                    item.setFee(refundFee);
+                            Shipment shipments = shipmentReadLogic.findShipmentByShipmentCode(fileImportExcelBean.getShipmentOrderNumber());
+                            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipments);
+                            if (shipmentItems != null) {
+                                for (ShipmentItem shipmentItem : shipmentItems) {
+                                    if (fileImportExcelBean.getBarCode().equals(shipmentItem.getSkuCode())) {
+                                        item.setSkuOrderId(shipmentItem.getSkuOrderId());
+                                        item.setRefundOutSkuCode(shipmentItem.getOutSkuCode());
+                                        Long cleanFee = Long.valueOf(shipmentItem.getCleanFee());
+                                        Long refundFee = cleanFee/shipmentItem.getQuantity();
+                                        item.setFee(refundFee);
+                                    }
                                 }
                             }
-                        }
-                        submitRefundInfo.setFee(item.getFee());
-                        editSubmitRefundItems.add(item);
-                        submitRefundInfo.setEditSubmitRefundItems(editSubmitRefundItems);
+                            submitRefundInfo.setFee(item.getFee());
+                            editSubmitRefundItems.add(item);
+                            submitRefundInfo.setEditSubmitRefundItems(editSubmitRefundItems);
 
-                        filter.put(key, "1");
-                        try {
+                            filter.put(key, "1");
                             refundWriteLogic.createRefund(submitRefundInfo);
-                        } catch (Exception e) {
-                            //将数据加入到错误日志excel
-                            String msgCode = e.getMessage();
-                            log.error("处理导入售后单出错,交易单号:{}, {}", fileImportExcelBean.getOrderNumber(), msgCode);
-                            String message = getMessage(msgCode);
-                            FaildExcelBean faildExcelBean = toFaildExcelBean(wrapper);
-                            faildExcelBean.setFaildReason(message);
-                            errorData.add(faildExcelBean);
                         }
-
+                    } catch (Exception e) {
+                        //将数据加入到错误日志excel
+                        String msgCode = e.getMessage();
+                        log.error("处理导入售后单出错,交易单号:{}, {}", fileImportExcelBean.getOrderNumber(), msgCode);
+                        String message = getMessage(msgCode);
+                        FaildExcelBean faildExcelBean = toFaildExcelBean(wrapper);
+                        faildExcelBean.setFaildReason(message);
+                        errorData.add(faildExcelBean);
                     }
+
                 }
             }
 

@@ -490,18 +490,10 @@ public class HandlerFileUtil<T> {
                         }
                         break;
                     case 1:
+                        String type = data[1];
                         if (StringUtils.isEmpty(data[1])) {
                             wrapper.setHasError(true);
                             wrapper.setErrorMsg("售后类型字段缺失");
-                        } else {
-                            bean.setType(Integer.valueOf(data[1]));
-                        }
-                        break;
-                    case 2:
-                        String type = data[2];
-                        if (StringUtils.isEmpty(type)) {
-                            wrapper.setHasError(true);
-                            wrapper.setErrorMsg("发货单号字段缺失");
                         } else {
                             //验证类型是否错误，当前只支持2退货退款
                             type = type.trim();
@@ -511,6 +503,15 @@ public class HandlerFileUtil<T> {
                                 wrapper.setHasError(true);
                                 wrapper.setErrorMsg("不支持的售后类型");
                             }
+                            bean.setType(Integer.valueOf(data[1]));
+                        }
+                        break;
+                    case 2:
+                        if (StringUtils.isEmpty(data[2])) {
+                            wrapper.setHasError(true);
+                            wrapper.setErrorMsg("发货单号字段缺失");
+                        } else {
+                            bean.setShipmentOrderNumber(data[2]);
                         }
                         break;
                     case 3:

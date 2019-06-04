@@ -164,7 +164,7 @@ public class ImportAftersaleOrderTask implements CompensateBizService {
                                         item.setRefundOutSkuCode(shipmentItem.getOutSkuCode());
                                         Long cleanFee = Long.valueOf(shipmentItem.getCleanFee());
                                         Long refundFee = cleanFee/shipmentItem.getQuantity();
-                                        item.setFee(refundFee);
+                                        item.setFee(refundFee*item.getRefundQuantity());
                                     }
                                 }
                             }

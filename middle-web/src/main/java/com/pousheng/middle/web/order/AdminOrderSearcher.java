@@ -80,6 +80,8 @@ public class AdminOrderSearcher {
         }
         if (middleOrderCriteria.getOutCreatedEndAt() == null) {
             middleOrderCriteria.setOutCreatedEndAt(DateTime.now().withTimeAtStartOfDay().plusDays(1).toDate());
+        } else {
+            middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt()).plusDays(1).minusSeconds(1).toDate());
         }
         long diff = middleOrderCriteria.getOutCreatedEndAt().getTime() - middleOrderCriteria.getOutCreatedStartAt().getTime();
         diff = diff / 1000 / 60 / 60 / 24;

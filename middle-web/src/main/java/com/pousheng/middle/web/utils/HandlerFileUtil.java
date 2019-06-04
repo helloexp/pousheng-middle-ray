@@ -485,6 +485,7 @@ public class HandlerFileUtil<T> {
                         if (StringUtils.isEmpty(data[0])) {
                             wrapper.setHasError(true);
                             wrapper.setErrorMsg("交易单号字段缺失");
+                            break;
                         } else {
                             bean.setOrderNumber(data[0].trim());
                         }
@@ -494,6 +495,7 @@ public class HandlerFileUtil<T> {
                         if (StringUtils.isEmpty(data[1])) {
                             wrapper.setHasError(true);
                             wrapper.setErrorMsg("售后类型字段缺失");
+                            break;
                         } else {
                             //验证类型是否错误，当前只支持2退货退款
                             type = type.trim();
@@ -502,6 +504,7 @@ public class HandlerFileUtil<T> {
                             } else {
                                 wrapper.setHasError(true);
                                 wrapper.setErrorMsg("不支持的售后类型");
+                                break;
                             }
                         }
                         break;
@@ -509,6 +512,7 @@ public class HandlerFileUtil<T> {
                         if (StringUtils.isEmpty(data[2])) {
                             wrapper.setHasError(true);
                             wrapper.setErrorMsg("发货单号字段缺失");
+                            break;
                         } else {
                             bean.setShipmentOrderNumber(data[2].trim());
                         }
@@ -517,6 +521,7 @@ public class HandlerFileUtil<T> {
                         if (StringUtils.isEmpty(data[3])) {
                             wrapper.setHasError(true);
                             wrapper.setErrorMsg("货品条码字段缺失");
+                            break;
                         } else {
                             bean.setBarCode(data[3].trim());
                         }
@@ -525,6 +530,7 @@ public class HandlerFileUtil<T> {
                         if (StringUtils.isEmpty(data[4])) {
                             wrapper.setHasError(true);
                             wrapper.setErrorMsg("申请数量字段缺失");
+                            break;
                         } else {
                             //验证数字是否错误
                             try {
@@ -534,6 +540,7 @@ public class HandlerFileUtil<T> {
                                 } else {
                                     wrapper.setHasError(true);
                                     wrapper.setErrorMsg("申请数量错误");
+                                    break;
                                 }
                             } catch (Exception e) {
                                 wrapper.setHasError(true);

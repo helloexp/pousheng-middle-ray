@@ -484,7 +484,7 @@ public class HandlerFileUtil<T> {
                 switch (i) {
                     case 0:
                         if (StringUtils.isEmpty(data[0])) {
-                            setErrorMsg(errorMsg, "交易单号字段缺失");
+                            errorMsg = setErrorMsg(errorMsg, "交易单号字段缺失");
                             break;
                         } else {
                             bean.setOrderNumber(data[0].trim());
@@ -493,7 +493,7 @@ public class HandlerFileUtil<T> {
                     case 1:
                         String type = data[1];
                         if (StringUtils.isEmpty(data[1])) {
-                            setErrorMsg(errorMsg, "售后类型字段缺失");
+                            errorMsg = setErrorMsg(errorMsg, "售后类型字段缺失");
                             break;
                         } else {
                             //验证类型是否错误，当前只支持2退货退款
@@ -501,14 +501,14 @@ public class HandlerFileUtil<T> {
                             if ("2".equals(type)) {
                                 bean.setType(Integer.valueOf(type));
                             } else {
-                                setErrorMsg(errorMsg, "不支持的售后类型");
+                                errorMsg = setErrorMsg(errorMsg, "不支持的售后类型");
                                 break;
                             }
                         }
                         break;
                     case 2:
                         if (StringUtils.isEmpty(data[2])) {
-                            setErrorMsg(errorMsg, "发货单号字段缺失");
+                            errorMsg = setErrorMsg(errorMsg, "发货单号字段缺失");
                             break;
                         } else {
                             bean.setShipmentOrderNumber(data[2].trim());
@@ -516,7 +516,7 @@ public class HandlerFileUtil<T> {
                         break;
                     case 3:
                         if (StringUtils.isEmpty(data[3])) {
-                            setErrorMsg(errorMsg, "货品条码字段缺失");
+                            errorMsg = setErrorMsg(errorMsg, "货品条码字段缺失");
                             break;
                         } else {
                             bean.setBarCode(data[3].trim());
@@ -524,7 +524,7 @@ public class HandlerFileUtil<T> {
                         break;
                     case 4:
                         if (StringUtils.isEmpty(data[4])) {
-                            setErrorMsg(errorMsg, "申请数量字段缺失");
+                            errorMsg = setErrorMsg(errorMsg, "申请数量字段缺失");
                             break;
                         } else {
                             //验证数字是否错误
@@ -533,11 +533,11 @@ public class HandlerFileUtil<T> {
                                 if (quantity > 0) {
                                     bean.setQuantity(quantity);
                                 } else {
-                                    setErrorMsg(errorMsg, "申请数量错误");
+                                    errorMsg = setErrorMsg(errorMsg, "申请数量错误");
                                     break;
                                 }
                             } catch (Exception e) {
-                                setErrorMsg(errorMsg, "申请数量错误");
+                                errorMsg = setErrorMsg(errorMsg, "申请数量错误");
                             }
                         }
                         break;

@@ -215,7 +215,7 @@ public class HandlerFileUtil<T> {
         } catch (Exception e) {
             log.error("读取售后单excel数据出错:{}", e.getMessage());
             e.printStackTrace();
-            throw new BizException("读取售后单excel数据出错," + e.getMessage());
+            throw new BizException(e.getMessage());
         } finally {
             if (bufferedInputStream != null) {
                 bufferedInputStream.close();
@@ -498,12 +498,14 @@ public class HandlerFileUtil<T> {
                         }
                         break;
                     case 2:
-                        if (StringUtils.isEmpty(data[2])) {
+                        String type = data[2];
+                        if (StringUtils.isEmpty(type)) {
                             wrapper.setHasError(true);
                             wrapper.setErrorMsg("发货单号字段缺失");
                         } else {
                             //验证类型是否错误，当前只支持2退货退款
-                            if ("2".equals(data[2])) {
+                            type = type.trim();
+                            if ("2".equals(type)) {
                                 bean.setShipmentOrderNumber(data[2]);
                             } else {
                                 wrapper.setHasError(true);

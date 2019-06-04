@@ -12,6 +12,7 @@ import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.model.StylesTable;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFRichTextString;
+import org.springframework.util.StringUtils;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -216,7 +217,9 @@ public class ExcelCovertCsvReader {
                     if (lastColumnNumber == -1) {
                         lastColumnNumber = 0;
                     }
-                    rows.add(record.clone());
+                    if (! isAllNull(record)) {
+                        rows.add(record.clone());
+                    }
                     if (rows.size() > maxSize) {
                         throw new ServiceException("order.import.excel.more.max.size");
                     }
@@ -422,6 +425,22 @@ public class ExcelCovertCsvReader {
         List<String[]> list = xlsx2csv.processAt();
         p.close();
         return list;
+    }
+
+
+    public boolean isAllNull(String[] record){
+        int times = 0;
+        if (record != null && record.length > 0) {
+            for (int i =0 ; i < record.length; i++) {
+                if (StringUtils.isEmpty(record[i])) {
+                    times += 1;
+                }
+            }
+        }
+        if (times == record.length) {
+            return true;
+        }
+        return false;
     }
 
 

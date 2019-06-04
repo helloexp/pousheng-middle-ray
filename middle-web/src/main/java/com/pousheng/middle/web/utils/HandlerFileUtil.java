@@ -498,12 +498,11 @@ public class HandlerFileUtil<T> {
                             //验证类型是否错误，当前只支持2退货退款
                             type = type.trim();
                             if ("2".equals(type)) {
-                                bean.setShipmentOrderNumber(data[2]);
+                                bean.setType(Integer.valueOf(type));
                             } else {
                                 wrapper.setHasError(true);
                                 wrapper.setErrorMsg("不支持的售后类型");
                             }
-                            bean.setType(Integer.valueOf(data[1]));
                         }
                         break;
                     case 2:

@@ -486,7 +486,7 @@ public class HandlerFileUtil<T> {
                             wrapper.setHasError(true);
                             wrapper.setErrorMsg("交易单号字段缺失");
                         } else {
-                            bean.setOrderNumber(data[0]);
+                            bean.setOrderNumber(data[0].trim());
                         }
                         break;
                     case 1:
@@ -510,7 +510,7 @@ public class HandlerFileUtil<T> {
                             wrapper.setHasError(true);
                             wrapper.setErrorMsg("发货单号字段缺失");
                         } else {
-                            bean.setShipmentOrderNumber(data[2]);
+                            bean.setShipmentOrderNumber(data[2].trim());
                         }
                         break;
                     case 3:
@@ -518,7 +518,7 @@ public class HandlerFileUtil<T> {
                             wrapper.setHasError(true);
                             wrapper.setErrorMsg("货品条码字段缺失");
                         } else {
-                            bean.setBarCode(data[3]);
+                            bean.setBarCode(data[3].trim());
                         }
                         break;
                     case 4:
@@ -528,9 +528,9 @@ public class HandlerFileUtil<T> {
                         } else {
                             //验证数字是否错误
                             try {
-                                Integer quantity = Integer.valueOf(data[4]);
+                                Integer quantity = Integer.valueOf(data[4].trim());
                                 if (quantity > 0) {
-                                    bean.setQuantity(Integer.valueOf(data[4]));
+                                    bean.setQuantity(quantity);
                                 } else {
                                     wrapper.setHasError(true);
                                     wrapper.setErrorMsg("申请数量错误");

@@ -198,8 +198,9 @@ public class ImportAftersaleOrderTask implements CompensateBizService {
             }
 
         } catch (Exception e) {
-            log.error("处理售后单导入出错, 任务ID:{}", bizID);
+            log.error("处理售后单导入出错, 任务ID:{}, 错误:{}", bizID, e.getMessage());
             e.printStackTrace();
+            poushengCompensateBiz.setLastFailedReason(e.getMessage());
         }
         return poushengCompensateBiz;
     }

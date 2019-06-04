@@ -213,9 +213,9 @@ public class HandlerFileUtil<T> {
                 }
             }
         } catch (Exception e) {
-            log.error("读取售后单excel数据出错:");
+            log.error("读取售后单excel数据出错:{}", e.getMessage());
             e.printStackTrace();
-            throw new BizException("读取售后单excel数据出错");
+            throw new BizException("读取售后单excel数据出错," + e.getMessage());
         } finally {
             if (bufferedInputStream != null) {
                 bufferedInputStream.close();

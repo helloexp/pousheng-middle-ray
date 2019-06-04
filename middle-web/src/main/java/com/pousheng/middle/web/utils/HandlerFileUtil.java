@@ -479,12 +479,12 @@ public class HandlerFileUtil<T> {
             int length = data.length;
             FileImportExcelBean bean = new FileImportExcelBean();
             FileImportExcelBeanWrapper wrapper = new FileImportExcelBeanWrapper();
+            String errorMsg = null;
             for (int i = 0; i < length; i ++) {
                 switch (i) {
                     case 0:
                         if (StringUtils.isEmpty(data[0])) {
-                            wrapper.setHasError(true);
-                            wrapper.setErrorMsg("交易单号字段缺失");
+                            setErrorMsg(errorMsg, "交易单号字段缺失");
                             break;
                         } else {
                             bean.setOrderNumber(data[0].trim());
@@ -493,8 +493,7 @@ public class HandlerFileUtil<T> {
                     case 1:
                         String type = data[1];
                         if (StringUtils.isEmpty(data[1])) {
-                            wrapper.setHasError(true);
-                            wrapper.setErrorMsg("售后类型字段缺失");
+                            setErrorMsg(errorMsg, "售后类型字段缺失");
                             break;
                         } else {
                             //验证类型是否错误，当前只支持2退货退款
@@ -502,16 +501,14 @@ public class HandlerFileUtil<T> {
                             if ("2".equals(type)) {
                                 bean.setType(Integer.valueOf(type));
                             } else {
-                                wrapper.setHasError(true);
-                                wrapper.setErrorMsg("不支持的售后类型");
+                                setErrorMsg(errorMsg, "不支持的售后类型");
                                 break;
                             }
                         }
                         break;
                     case 2:
                         if (StringUtils.isEmpty(data[2])) {
-                            wrapper.setHasError(true);
-                            wrapper.setErrorMsg("发货单号字段缺失");
+                            setErrorMsg(errorMsg, "发货单号字段缺失");
                             break;
                         } else {
                             bean.setShipmentOrderNumber(data[2].trim());
@@ -519,8 +516,7 @@ public class HandlerFileUtil<T> {
                         break;
                     case 3:
                         if (StringUtils.isEmpty(data[3])) {
-                            wrapper.setHasError(true);
-                            wrapper.setErrorMsg("货品条码字段缺失");
+                            setErrorMsg(errorMsg, "货品条码字段缺失");
                             break;
                         } else {
                             bean.setBarCode(data[3].trim());
@@ -528,8 +524,7 @@ public class HandlerFileUtil<T> {
                         break;
                     case 4:
                         if (StringUtils.isEmpty(data[4])) {
-                            wrapper.setHasError(true);
-                            wrapper.setErrorMsg("申请数量字段缺失");
+                            setErrorMsg(errorMsg, "申请数量字段缺失");
                             break;
                         } else {
                             //验证数字是否错误
@@ -538,23 +533,29 @@ public class HandlerFileUtil<T> {
                                 if (quantity > 0) {
                                     bean.setQuantity(quantity);
                                 } else {
-                                    wrapper.setHasError(true);
-                                    wrapper.setErrorMsg("申请数量错误");
+                                    setErrorMsg(errorMsg, "申请数量错误");
                                     break;
                                 }
                             } catch (Exception e) {
-                                wrapper.setHasError(true);
-                                wrapper.setErrorMsg("申请数量错误");
+                                setErrorMsg(errorMsg, "申请数量错误");
                             }
                         }
                         break;
                 }
+            }
+            if (errorMsg != null) {
+                wrapper.setErrorMsg(errorMsg);
+                wrapper.setHasError(true);
             }
             wrapper.setFileImportExcelBean(bean);
             return wrapper;
         } else {
             return null;
         }
+    }
+
+    public String setErrorMsg(String errorMsg, String tips){
+        return errorMsg == null ? tips : errorMsg;
     }
 
     /**

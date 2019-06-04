@@ -3,15 +3,22 @@ package com.pousheng.middle.web.order;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
+import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
+import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.web.excel.aftersale.AftersaleImportFileInfo;
+import com.pousheng.middle.web.excel.aftersale.ImportAftersaleOrderTask;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.ecp.SyncRefundToEcpLogic;
 import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
@@ -105,6 +112,75 @@ public class Refunds {
     private Long refundWareHouseId;
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
+
+    @Autowired
+    private ImportAftersaleOrderTask importAftersaleOrderTask;
+
+    @Autowired
+    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+
+    @Autowired
+    private PoushengCompensateBizReadService poushengCompensateBizReadService;
+
+
+    /**
+     * 售后单导入
+     * @param info
+     * @return
+     */
+    @RequestMapping(value = "/api/refund/import", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public long importFile(AftersaleImportFileInfo info) {
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.IMPORT_AFTERSALE_ORDER.toString());
+        biz.setContext(mapper.toJson(info));
+        biz.setBizId(UUID.randomUUID().toString());
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+        long bizId = compensateBizLogic.createBizAndSendMq(biz, MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
+        return bizId;
+    }
+
+    @RequestMapping(value = "/api/refund/import/test", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public boolean testImportFile(AftersaleImportFileInfo info) {
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.IMPORT_AFTERSALE_ORDER.toString());
+        biz.setContext(mapper.toJson(info));
+        biz.setBizId(UUID.randomUUID().toString());
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+        poushengCompensateBizWriteService.create(biz);
+        log.info("开始测试导入服务");
+        importAftersaleOrderTask.doProcess(biz);
+        log.info("导入服务完成");
+        return true;
+    }
+
+    /**
+     * 查询导入文件的处理记录
+     *
+     * @param pageNo   第几页
+     * @param pageSize 分页大小
+     * @return 查询结果
+     */
+    @ApiOperation("查询售后单导入的处理记录")
+    @GetMapping(value = "/api/refund/import/result")
+    @OperationLogType("查询售后单导入的处理记录")
+    public Paging<PoushengCompensateBiz> importPaging(@RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                                      @RequestParam(required = false, value = "pageSize") Integer pageSize,
+                                                      Integer bizId) {
+        PoushengCompensateBizCriteria criteria = new PoushengCompensateBizCriteria();
+        criteria.setPageNo(pageNo);
+        criteria.setPageSize(pageSize);
+        if (bizId != null) {
+            criteria.setBizId(bizId.toString());
+        }
+        criteria.setBizType(PoushengCompensateBizType.IMPORT_AFTERSALE_ORDER.name());
+        Response<Paging<PoushengCompensateBiz>> response = poushengCompensateBizReadService.pagingForShow(criteria);
+        if (!response.isSuccess()) {
+            throw new JsonResponseException(response.getError());
+        }
+        return response.getResult();
+    }
 
     //逆向单分页
     @RequestMapping(value = "/api/refund/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)

@@ -479,12 +479,12 @@ public class HandlerFileUtil<T> {
             int length = data.length;
             FileImportExcelBean bean = new FileImportExcelBean();
             FileImportExcelBeanWrapper wrapper = new FileImportExcelBeanWrapper();
-            String errorMsg = null;
+            boolean hasError = false;
             for (int i = 0; i < length; i ++) {
                 switch (i) {
                     case 0:
                         if (StringUtils.isEmpty(data[0])) {
-                            errorMsg = setErrorMsg(errorMsg, "交易单号字段缺失");
+                            hasError = true;
                             break;
                         } else {
                             bean.setOrderNumber(data[0].trim());
@@ -493,7 +493,7 @@ public class HandlerFileUtil<T> {
                     case 1:
                         String type = data[1];
                         if (StringUtils.isEmpty(data[1])) {
-                            errorMsg = setErrorMsg(errorMsg, "售后类型字段缺失");
+                            hasError = true;
                             break;
                         } else {
                             //验证类型是否错误，当前只支持2退货退款
@@ -501,14 +501,14 @@ public class HandlerFileUtil<T> {
                             if ("2".equals(type)) {
                                 bean.setType(Integer.valueOf(type));
                             } else {
-                                errorMsg = setErrorMsg(errorMsg, "不支持的售后类型");
+                                hasError = true;
                                 break;
                             }
                         }
                         break;
                     case 2:
                         if (StringUtils.isEmpty(data[2])) {
-                            errorMsg = setErrorMsg(errorMsg, "发货单号字段缺失");
+                            hasError = true;
                             break;
                         } else {
                             bean.setShipmentOrderNumber(data[2].trim());
@@ -516,7 +516,7 @@ public class HandlerFileUtil<T> {
                         break;
                     case 3:
                         if (StringUtils.isEmpty(data[3])) {
-                            errorMsg = setErrorMsg(errorMsg, "货品条码字段缺失");
+                            hasError = true;
                             break;
                         } else {
                             bean.setBarCode(data[3].trim());
@@ -524,7 +524,7 @@ public class HandlerFileUtil<T> {
                         break;
                     case 4:
                         if (StringUtils.isEmpty(data[4])) {
-                            errorMsg = setErrorMsg(errorMsg, "申请数量字段缺失");
+                            hasError = true;
                             break;
                         } else {
                             //验证数字是否错误
@@ -533,18 +533,18 @@ public class HandlerFileUtil<T> {
                                 if (quantity > 0) {
                                     bean.setQuantity(quantity);
                                 } else {
-                                    errorMsg = setErrorMsg(errorMsg, "申请数量错误");
+                                    hasError = true;
                                     break;
                                 }
                             } catch (Exception e) {
-                                errorMsg = setErrorMsg(errorMsg, "申请数量错误");
+                                hasError = true;
                             }
                         }
                         break;
                 }
             }
-            if (errorMsg != null) {
-                wrapper.setErrorMsg(errorMsg);
+            if (hasError == true) {
+                wrapper.setErrorMsg("导入的参数错误,请核验");
                 wrapper.setHasError(true);
             }
             wrapper.setFileImportExcelBean(bean);
@@ -552,10 +552,6 @@ public class HandlerFileUtil<T> {
         } else {
             return null;
         }
-    }
-
-    public String setErrorMsg(String errorMsg, String tips){
-        return errorMsg == null ? tips : errorMsg;
     }
 
     /**

@@ -29,7 +29,7 @@ public class FileImportExcelBean extends ExcelBaseModel {
      * 6 拒收单
      */
     @ExcelImportProperty(titleName = "售后类型")
-    private Integer type;
+    private String type;
 
     @ExcelImportProperty(titleName = "发货单号")
     private String shipmentOrderNumber;
@@ -38,6 +38,6 @@ public class FileImportExcelBean extends ExcelBaseModel {
     private String barCode;
 
     @ExcelImportProperty(titleName = "申请数量")
-    private Integer quantity;
+    private String quantity;
 
 }

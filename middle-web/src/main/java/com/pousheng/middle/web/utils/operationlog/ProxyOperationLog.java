@@ -2,8 +2,12 @@ package com.pousheng.middle.web.utils.operationlog;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.auth.model.OperatorExt;
+import com.pousheng.auth.service.OperatorExtReadService;
 import com.pousheng.middle.order.model.OperationLog;
 import com.pousheng.middle.order.service.OperationLogWriteService;
+
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.utils.UserUtil;
@@ -18,6 +22,7 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -42,6 +47,8 @@ public class ProxyOperationLog {
     @Autowired
     private OperationLogWriteService operationLogWriteService;
 
+    @Autowired
+    private OperatorExtReadService operatorExtReadService;
 
     @Autowired
     private EventBus eventBus;
@@ -98,13 +105,24 @@ public class ProxyOperationLog {
         }
 
         String name = UserUtil.getCurrentUser().getName();
-
+        String realName = null;
         OperationLogModule moduleAnno = signature.getMethod().getDeclaredAnnotation(OperationLogModule.class);
         if (null == moduleAnno)
             moduleAnno = pjp.getTarget().getClass().getDeclaredAnnotation(OperationLogModule.class);
 
+        if (!StringUtils.isEmpty(name)) {
+        	Response<OperatorExt> operatorResp = operatorExtReadService.findByUserName(name);
+        	if (!operatorResp.isSuccess()) {
+        		log.warn("find operator failed by username:{}, cause:{}", 
+        				name, operatorResp.getError());
+        		throw new JsonResponseException(operatorResp.getError());
+        	}
+        	realName = operatorResp.getResult().getRealName();
+        }
+        
         OperationLog log = new OperationLog();
         log.setOperatorName(name);
+        log.setRealName(realName);
         log.setContent(getContent(signature.getMethod().getDeclaredAnnotation(OperationLogType.class), signature.getParameterNames(), pjp.getArgs()));
         log.setType(getType(moduleAnno, request.getRequestURI()));
         log.setOperateId(getKey(signature, pjp).orElse(""));

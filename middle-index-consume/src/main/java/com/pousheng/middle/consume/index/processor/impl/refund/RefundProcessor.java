@@ -30,8 +30,8 @@ public class RefundProcessor implements IndexEventProcessor {
         idEventProcessor = new IDEventProcessor(refundSearchProperties.getIndexName(),
                 row -> Longs.tryParse(row.get(0)),
                 ids -> {
-                    if (ids.size() > 100) {
-                        List<List<Long>> slices = Lists.partition(new ArrayList<>(ids), 500);
+                    if (ids.size() > 10) {
+                        List<List<Long>> slices = Lists.partition(new ArrayList<>(ids), 100);
                         slices.forEach(refundIndexManager::bulkIndex);
                     } else {
                         ids.forEach(refundIndexManager::index);

@@ -74,23 +74,26 @@ public class AdminOrderSearcher {
         } else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
             throw new JsonResponseException("permission.check.query.deny");
         }
-        // 开始结束时间
-        if (middleOrderCriteria.getOutCreatedStartAt() == null) {
-            middleOrderCriteria.setOutCreatedStartAt(DateTime.now().withTimeAtStartOfDay().minusMonths(1).toDate());
-        }
-        if (middleOrderCriteria.getOutCreatedEndAt() == null) {
-            middleOrderCriteria.setOutCreatedEndAt(DateTime.now().withTimeAtStartOfDay().plusDays(1).toDate());
-        } else {
+        // 结束时间格式化
+        if (middleOrderCriteria.getOutCreatedEndAt() != null) {
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt()).plusDays(1).minusSeconds(1).toDate());
         }
-        long diff = middleOrderCriteria.getOutCreatedEndAt().getTime() - middleOrderCriteria.getOutCreatedStartAt().getTime();
-        diff = diff / 1000 / 60 / 60 / 24;
-        if (diff > 32) {
-            return Response.fail("over 30 days");
+        if (middleOrderCriteria.getStatus() != null && middleOrderCriteria.getStatus().contains(99)) {
+            // 开始结束时间
+            if (middleOrderCriteria.getOutCreatedStartAt() == null) {
+                middleOrderCriteria.setOutCreatedStartAt(DateTime.now().withTimeAtStartOfDay().minusMonths(1).toDate());
+            }
+            if (middleOrderCriteria.getOutCreatedEndAt() == null) {
+                middleOrderCriteria.setOutCreatedEndAt(DateTime.now().withTimeAtStartOfDay().plusDays(1).toDate());
+            }
+            long diff = middleOrderCriteria.getOutCreatedEndAt().getTime() - middleOrderCriteria.getOutCreatedStartAt().getTime();
+            diff = diff / 1000 / 60 / 60 / 24;
+            if (diff > 32) {
+                return Response.fail("over 30 days");
+            }
         }
         // 不显示jit时效订单来源
         middleOrderCriteria.setExcludeOutFrom(JitConsts.YUNJU_REALTIME);
-
         // es 搜索
         Pagination<SearchedID> page = orderSearchComponent.search(middleOrderCriteria);
         if (page.getTotal() == 0 || page.getData().isEmpty()) {

@@ -30,8 +30,8 @@ public class SkuOrderProcessor implements IndexEventProcessor {
         idEventProcessor = new IDEventProcessor(orderSearchProperties.getIndexName(),
                 row -> Longs.tryParse(row.get(1)),
                 ids -> {
-                    if (ids.size() > 100) {
-                        List<List<Long>> slices = Lists.partition(new ArrayList<>(ids), 500);
+                    if (ids.size() > 10) {
+                        List<List<Long>> slices = Lists.partition(new ArrayList<>(ids), 100);
                         slices.forEach(orderIndexerManager::bulkIndex);
                     } else {
                         ids.forEach(orderIndexerManager::index);
@@ -43,7 +43,7 @@ public class SkuOrderProcessor implements IndexEventProcessor {
     public void process(IndexEvent event) {
         Stopwatch sw = Stopwatch.createStarted();
         idEventProcessor.process(event);
-        if (event.getData().size() > 100) {
+        if (event.getData().size() > 10) {
             log.info("total {} orders indexed, cost: {}", event.getData().size(), sw.elapsed(TimeUnit.MILLISECONDS));
         }
     }

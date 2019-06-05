@@ -9,6 +9,8 @@ terminus:
 
 mq:
   topic: scanner
+  consumeThreadMin: ${MQ_MIN_THREAD:4}
+  consumeThreadMax: ${MQ_MAX_THREAD:8}
   name-server-addr: ${MQ_NAME_ADDR:127.0.0.1:9876}
   consume-group: default-index-consumer
 

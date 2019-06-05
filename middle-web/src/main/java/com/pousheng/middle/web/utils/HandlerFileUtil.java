@@ -486,23 +486,20 @@ public class HandlerFileUtil<T> {
                         if (StringUtils.isEmpty(data[0])) {
                             hasError = true;
                             break;
-                        } else {
-                            bean.setOrderNumber(data[0].trim());
                         }
+                        bean.setOrderNumber(data[0].trim());
                         break;
                     case 1:
                         String type = data[1];
-                        if (StringUtils.isEmpty(data[1])) {
+                        if (StringUtils.isEmpty(type)) {
                             hasError = true;
                             break;
                         } else {
-                            //验证类型是否错误，当前只支持2退货退款
                             type = type.trim();
-                            if ("2".equals(type)) {
-                                bean.setType(Integer.valueOf(type));
-                            } else {
+                            bean.setType(type);
+                            //验证类型是否错误，当前只支持2退货退款
+                            if (! "2".equals(type)) {
                                 hasError = true;
-                                break;
                             }
                         }
                         break;
@@ -531,15 +528,15 @@ public class HandlerFileUtil<T> {
                             try {
                                 Integer quantity = Integer.valueOf(data[4].trim());
                                 if (quantity > 0) {
-                                    bean.setQuantity(quantity);
-                                } else {
-                                    hasError = true;
+                                    bean.setQuantity(quantity.toString());
                                     break;
                                 }
+                                hasError = true;
                             } catch (Exception e) {
                                 hasError = true;
                             }
                         }
+                        bean.setQuantity(data[4]);
                         break;
                 }
             }

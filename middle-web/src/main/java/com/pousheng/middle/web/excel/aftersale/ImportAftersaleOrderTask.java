@@ -144,7 +144,7 @@ public class ImportAftersaleOrderTask implements CompensateBizService {
                             List<EditSubmitRefundItem> editSubmitRefundItems = Lists.newArrayList();
                             EditSubmitRefundItem item = new EditSubmitRefundItem();
                             item.setRefundSkuCode(fileImportExcelBean.getBarCode());
-                            item.setRefundQuantity(fileImportExcelBean.getQuantity());
+                            item.setRefundQuantity(Integer.valueOf(fileImportExcelBean.getQuantity()));
                             //设置退货仓库
                             ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(fileImportExcelBean.getOrderNumber());
                             Long shopId = shopOrder.getShopId();

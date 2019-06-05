@@ -34,7 +34,6 @@ public class OrderIndexManager {
     private final OrderDocumentBuilder orderDocumentBuilder;
     private final OrderSearchProperties orderSearchProperties;
     private final IndexTaskBuilder indexTaskBuilder;
-    private final IndexExecutor indexExecutor;
     private final Indexer indexer;
 
     public OrderIndexManager(OrderSearchProperties orderSearchProperties,
@@ -45,7 +44,6 @@ public class OrderIndexManager {
         this.orderDocumentBuilder = new OrderDocumentBuilder();
         this.orderSearchProperties = orderSearchProperties;
         this.indexTaskBuilder = indexTaskBuilder;
-        this.indexExecutor = indexExecutor;
     }
 
     public void index(Long orderId) {
@@ -59,7 +57,7 @@ public class OrderIndexManager {
             IndexTask indexTask = indexTaskBuilder.indexName(orderSearchProperties.getIndexName())
                     .indexType(orderSearchProperties.getIndexType())
                     .indexAction(IndexAction.INDEX).build(orderDocument.getId(), orderDocument);
-            indexExecutor.submit(indexTask);
+            indexTask.run();
         } catch (Exception e) {
             log.error("failed to index order: {}, cause: {}", orderId, Throwables.getStackTraceAsString(e));
         }

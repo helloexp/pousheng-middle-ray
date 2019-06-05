@@ -34,13 +34,11 @@ public class RefundIndexManager {
     private final RefundDocumentBuilder refundDocumentBuilder;
     private final RefundSearchProperties refundSearchProperties;
     private final IndexTaskBuilder indexTaskBuilder;
-    private final IndexExecutor indexExecutor;
     private final Indexer indexer;
 
     public RefundIndexManager(RefundSearchProperties refundSearchProperties, IndexTaskBuilder indexTaskBuilder, IndexExecutor indexExecutor, Indexer indexer) {
         this.refundSearchProperties = refundSearchProperties;
         this.indexTaskBuilder = indexTaskBuilder;
-        this.indexExecutor = indexExecutor;
         this.indexer = indexer;
         refundDocumentBuilder = new RefundDocumentBuilder();
     }
@@ -55,7 +53,7 @@ public class RefundIndexManager {
                     .indexType(refundSearchProperties.getIndexType())
                     .indexAction(IndexAction.INDEX)
                     .build(id, refundDocument);
-            indexExecutor.submit(task);
+            task.run();
         } catch (Exception e) {
             log.error("failed to index refund {}, cause: {}", id, Throwables.getStackTraceAsString(e));
         }

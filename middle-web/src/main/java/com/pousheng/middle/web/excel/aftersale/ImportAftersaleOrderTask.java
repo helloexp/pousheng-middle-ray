@@ -137,7 +137,7 @@ public class ImportAftersaleOrderTask implements CompensateBizService {
                             submitRefundInfo.setShipmentCode(fileImportExcelBean.getShipmentOrderNumber());
                             submitRefundInfo.setReleOrderNo(fileImportExcelBean.getOrderNumber());
                             //子单
-                            submitRefundInfo.setReleOrderType(2);
+                            submitRefundInfo.setReleOrderType(1);
                             //操作方式是保存，状态就会是待处理
                             submitRefundInfo.setOperationType(1);
                             //添加售后单sku信息

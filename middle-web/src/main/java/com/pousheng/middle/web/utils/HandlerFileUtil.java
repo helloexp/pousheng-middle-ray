@@ -12,6 +12,9 @@ import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 import com.pousheng.middle.common.utils.batchhandle.ExcelUtil;
 import com.pousheng.middle.common.utils.batchhandle.ExcelUtilSkuGroupSpuImport;
 import com.pousheng.middle.order.dto.MiddleOrderInfo;
+import com.pousheng.middle.web.biz.Exception.BizException;
+import com.pousheng.middle.web.excel.aftersale.FileImportExcelBean;
+import com.pousheng.middle.web.excel.aftersale.FileImportExcelBeanWrapper;
 import com.pousheng.middle.web.utils.export.ExcelCovertCsvReader;
 import com.pousheng.middle.web.warehouses.dto.PoushengChannelImportDTO;
 import io.terminus.common.exception.JsonResponseException;
@@ -22,6 +25,7 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -177,6 +181,47 @@ public class HandlerFileUtil<T> {
             bufferedInputStream.close();
         }
         return channelDTOS;
+    }
+
+
+    /**
+     * 处理售后单导入
+     * @return
+     * @throws IOException
+     */
+    public List<FileImportExcelBeanWrapper> handleAftersaleOrderExcel(String filePath) throws Exception {
+        List<FileImportExcelBeanWrapper> resultData = Lists.newArrayList();
+        BufferedInputStream bufferedInputStream = null;
+        try {
+            URL url = new URL(filePath);
+            InputStream insr = url.openConnection().getInputStream();
+            bufferedInputStream = new BufferedInputStream(insr);
+            List<String[]> list = ExcelCovertCsvReader.readerExcelAt(bufferedInputStream, 5, 502);
+            if (list != null && list.size() > 0) {
+                if (list.size() > 501) {
+                    throw new BizException("excel数据超过500条");
+                }
+                //TODOGF 验证表头
+                //TODOGF 空行问题
+                //从第二行开始获取数据
+                for(Integer i = 1; i < list.size(); i++) {
+                    FileImportExcelBeanWrapper fileImportExcelBeanWrapper = makeFileImportExcelBean(list.get(i));
+                    if (fileImportExcelBeanWrapper == null) {
+                        continue;
+                    }
+                    resultData.add(fileImportExcelBeanWrapper);
+                }
+            }
+        } catch (Exception e) {
+            log.error("读取售后单excel数据出错:{}", e.getMessage());
+            e.printStackTrace();
+            throw new BizException(e.getMessage());
+        } finally {
+            if (bufferedInputStream != null) {
+                bufferedInputStream.close();
+            }
+        }
+        return resultData;
     }
 
     public List<MiddleOrderInfo> handlerExcelOrder(InputStream insr) throws IOException {
@@ -426,6 +471,83 @@ public class HandlerFileUtil<T> {
         } catch (Exception e) {
             log.error("analysis channel inventory import excel fail, cause:{}", Throwables.getStackTraceAsString(e));
             throw new ServiceException("analysis.channel.inventory.import.excel.fail");
+        }
+    }
+
+    private FileImportExcelBeanWrapper makeFileImportExcelBean(String[] data) {
+        if (data != null && data.length > 0) {
+            int length = data.length;
+            FileImportExcelBean bean = new FileImportExcelBean();
+            FileImportExcelBeanWrapper wrapper = new FileImportExcelBeanWrapper();
+            boolean hasError = false;
+            for (int i = 0; i < length; i ++) {
+                switch (i) {
+                    case 0:
+                        if (StringUtils.isEmpty(data[0])) {
+                            hasError = true;
+                            break;
+                        }
+                        bean.setOrderNumber(data[0].trim());
+                        break;
+                    case 1:
+                        String type = data[1];
+                        if (StringUtils.isEmpty(type)) {
+                            hasError = true;
+                            break;
+                        } else {
+                            type = type.trim();
+                            bean.setType(type);
+                            //验证类型是否错误，当前只支持2退货退款
+                            if (! "2".equals(type)) {
+                                hasError = true;
+                            }
+                        }
+                        break;
+                    case 2:
+                        if (StringUtils.isEmpty(data[2])) {
+                            hasError = true;
+                            break;
+                        } else {
+                            bean.setShipmentOrderNumber(data[2].trim());
+                        }
+                        break;
+                    case 3:
+                        if (StringUtils.isEmpty(data[3])) {
+                            hasError = true;
+                            break;
+                        } else {
+                            bean.setBarCode(data[3].trim());
+                        }
+                        break;
+                    case 4:
+                        if (StringUtils.isEmpty(data[4])) {
+                            hasError = true;
+                            break;
+                        } else {
+                            //验证数字是否错误
+                            try {
+                                Integer quantity = Integer.valueOf(data[4].trim());
+                                if (quantity > 0) {
+                                    bean.setQuantity(quantity.toString());
+                                    break;
+                                }
+                                hasError = true;
+                            } catch (Exception e) {
+                                hasError = true;
+                            }
+                        }
+                        bean.setQuantity(data[4]);
+                        break;
+                }
+            }
+            if (hasError == true) {
+                wrapper.setErrorMsg("导入的参数错误,请核验");
+                wrapper.setHasError(true);
+            }
+            wrapper.setFileImportExcelBean(bean);
+            return wrapper;
+        } else {
+            return null;
         }
     }
 

@@ -1114,8 +1114,9 @@ public class RefundWriteLogic {
                 //判断申请售后的商品数量和已经退货的商品数量之和是否大于发货单中商品的数量
                 int currentRefundApplyQuantity = editSubmitRefundItem.getRefundQuantity();
                 int alreadyRefundApplyQuantity = skuCodesAndShipmentItems.get(key).getRefundQuantity() == null ? 0 : skuCodesAndShipmentItems.get(key).getRefundQuantity();
-                if ((currentRefundApplyQuantity + alreadyRefundApplyQuantity) > skuCodesAndQuantity.get(key)) {
-                    log.error("refund applyQuantity:{} gt available applyQuantity:{}", editSubmitRefundItem.getRefundQuantity(), skuCodesAndQuantity.get(key));
+                int remainQuantuty = skuCodesAndQuantity.get(key) == null ? 0 : skuCodesAndQuantity.get(key);
+                if ((currentRefundApplyQuantity + alreadyRefundApplyQuantity) > remainQuantuty) {
+                    log.error("refund applyQuantity:{} gt available applyQuantity:{}", editSubmitRefundItem.getRefundQuantity(), remainQuantuty);
                     throw new JsonResponseException("refund.apply.quantity.invalid");
                 }
                 RefundItem refundItem = new RefundItem();
@@ -2215,9 +2216,9 @@ public class RefundWriteLogic {
                     WarehouseDTO refundWarehousedto = findWarehouseById(submitRefundInfo.getWarehouseId());
                     // 场景2：如果来源单的发货店账套不是325，则校验来源单的店铺账套与退货仓的账套是否一致
                     String shopOrderCompanyCode1 = getCompanyCodeOrderShop(shopOrder.getShopId());
-                    if (refundWarehousedto != null) {
-                        if (!Objects.equals(refundWarehousedto.getCompanyId(), shopOrderCompanyCode1)) {
-                            log.error("warehouse of refund(companycode:{}) companyCode is different ", shopOrderCompanyCode1);
+                    if (refundWarehousedto != null){
+                        if(!Objects.equals(refundWarehousedto.getCompanyId(),shopOrderCompanyCode1)){
+                            log.error("shop warehouse(warehouse company:{}) of refund(companycode:{}) companyCode is different ", refundWarehousedto.getCompanyId(), shopOrderCompanyCode1);
                             throw new JsonResponseException("退货仓账套与订单店铺账套不一致");
                         }
                     }
@@ -2240,9 +2241,9 @@ public class RefundWriteLogic {
                     WarehouseDTO refundWarehousedto = findWarehouseById(submitRefundInfo.getWarehouseId());
                     // 场景2：如果来源单的发货店账套不是325，则校验来源单的店铺账套与退货仓的账套是否一致
                     String shopOrderCompanyCode2 = getCompanyCodeOrderShop(shopOrder.getShopId());
-                    if (refundWarehousedto != null) {
-                        if (!Objects.equals(refundWarehousedto.getCompanyId(), shopOrderCompanyCode2)) {
-                            log.error("warehouse of refund(companycode:{}) companyCode is different ", shopOrderCompanyCode2);
+                    if (refundWarehousedto != null){
+                        if(!Objects.equals(refundWarehousedto.getCompanyId(),shopOrderCompanyCode2)){
+                            log.error("warehouse(warehouse company:{}) of refund(companycode:{}) companyCode is different ", refundWarehousedto.getCompanyId(), shopOrderCompanyCode2);
                             throw new JsonResponseException("退货仓账套与订单店铺账套不一致");
                         }
                     }

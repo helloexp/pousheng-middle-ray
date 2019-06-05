@@ -83,4 +83,16 @@ public class ShopsExportEntity {
      */
     @ExportTitle("门店状态")
     private String shopStatus;
+    
+    /**
+     * 创建时间
+     */
+    @ExportTitle("创建时间")
+    private String createdAt;
+    
+    /**
+     * 更新时间
+     */
+    @ExportTitle("更新时间")
+    private String updatedAt;
 }

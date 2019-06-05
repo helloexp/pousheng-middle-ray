@@ -845,7 +845,7 @@ public class AdminOrderWriter {
 
 
     /**
-     * 创建订单
+     * 创建订单 manual
      *
      * @param openFullOrderInfo
      * @return
@@ -871,7 +871,7 @@ public class AdminOrderWriter {
     }
 
     /**
-     * 导入订单
+     * 导入订单 manual
      *
      * @param file
      * @return

@@ -28,7 +28,7 @@ public class FaildExcelBean {
      * 6 拒收单
      */
     @ExportTitle("售后类型")
-    private Integer type;
+    private String type;
 
     @ExportTitle("发货单号")
     private String shipmentOrderNumber;
@@ -37,7 +37,7 @@ public class FaildExcelBean {
     private String barCode;
 
     @ExportTitle("申请数量")
-    private Integer quantity;
+    private String quantity;
 
     @ExportTitle("导入失败原因")
     private String faildReason;

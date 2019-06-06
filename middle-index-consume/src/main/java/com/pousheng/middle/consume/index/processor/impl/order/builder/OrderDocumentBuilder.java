@@ -32,7 +32,9 @@ public class OrderDocumentBuilder extends CommonBuilder {
 
         if (!CollectionUtils.isEmpty(shopOrder.getExtra())) {
             String status = shopOrder.getExtra().getOrDefault("ecpOrderStatus", "0");
-            if ("1".equals(status)) {
+            if ("-1".equals(status)) {
+                orderDocument.setEcpOrderStatus(-1);
+            } else if ("1".equals(status)) {
                 orderDocument.setEcpOrderStatus(1);
             } else {
                 orderDocument.setEcpOrderStatus(0);

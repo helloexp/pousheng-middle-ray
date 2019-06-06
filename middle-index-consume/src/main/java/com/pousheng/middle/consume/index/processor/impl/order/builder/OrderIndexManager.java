@@ -8,7 +8,6 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShopOrderReadService;
-import io.terminus.search.api.IndexExecutor;
 import io.terminus.search.api.IndexTaskBuilder;
 import io.terminus.search.api.Indexer;
 import io.terminus.search.api.model.BulkIndexTask;
@@ -38,7 +37,6 @@ public class OrderIndexManager {
 
     public OrderIndexManager(OrderSearchProperties orderSearchProperties,
                              IndexTaskBuilder indexTaskBuilder,
-                             IndexExecutor indexExecutor,
                              Indexer indexer) {
         this.indexer = indexer;
         this.orderDocumentBuilder = new OrderDocumentBuilder();

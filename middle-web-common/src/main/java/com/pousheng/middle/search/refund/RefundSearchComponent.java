@@ -45,20 +45,20 @@ public class RefundSearchComponent {
     private final Searcher searcher;
     private final RefundReadService refundReadService;
     private final MiddleRefundReadService middleRefundReadService;
-    private final RefundSearchArgsBuilder refundSearchArgsBuilder;
+    private final RefundCriteriaBuilder refundCriteriaBuilder;
 
     public RefundSearchComponent(Searcher searcher,
                                  RefundReadService refundReadService,
                                  MiddleRefundReadService middleRefundReadService,
-                                 RefundSearchArgsBuilder refundSearchArgsBuilder) {
+                                 RefundCriteriaBuilder refundCriteriaBuilder) {
         this.searcher = searcher;
         this.refundReadService = refundReadService;
         this.middleRefundReadService = middleRefundReadService;
-        this.refundSearchArgsBuilder = refundSearchArgsBuilder;
+        this.refundCriteriaBuilder = refundCriteriaBuilder;
     }
 
     public Paging<RefundPaging> search(MiddleRefundCriteria criteria) {
-        CriteriasWithShould c = refundSearchArgsBuilder.build(criteria);
+        CriteriasWithShould c = refundCriteriaBuilder.build(criteria);
         Pagination<SearchedID> result = searcher.search(indexName, indexType, searchTemplate, c, SearchedID.class);
         return buildSearchReasult(result);
     }

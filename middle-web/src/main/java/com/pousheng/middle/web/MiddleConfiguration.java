@@ -3,7 +3,6 @@ package com.pousheng.middle.web;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.AsyncEventBus;
@@ -72,7 +71,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -223,12 +221,7 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         return new AsyncEventBus(
                 new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors() * 2, 5, TimeUnit.MINUTES,
                         new ArrayBlockingQueue<>(100000), (new ThreadFactoryBuilder()).setNameFormat("event-bus-%d").build(),
-                        new RejectedExecutionHandler() {
-                            @Override
-                            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                                log.error("event {} is rejected", r);
-                            }
-                        }));
+                        (r, executor) -> log.error("event {} is rejected", r)));
     }
 
     @Override
@@ -239,17 +232,14 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
 
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-        Iterables.removeIf(converters, new Predicate<HttpMessageConverter<?>>() {
-            @Override
-            public boolean apply(HttpMessageConverter<?> input) {
-                if (input instanceof AbstractJackson2HttpMessageConverter) {
-                    return true;
-                }
-                if (input instanceof StringHttpMessageConverter) {
-                    return true;
-                }
-                return false;
+        Iterables.removeIf(converters, input -> {
+            if (input instanceof AbstractJackson2HttpMessageConverter) {
+                return true;
             }
+            if (input instanceof StringHttpMessageConverter) {
+                return true;
+            }
+            return false;
         });
 
         //force utf-8 encode

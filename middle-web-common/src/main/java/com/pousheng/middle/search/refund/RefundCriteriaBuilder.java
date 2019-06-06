@@ -23,7 +23,7 @@ import java.util.List;
  * @date 2019-05-30 17:25<br/>
  */
 @Component
-public class RefundSearchArgsBuilder {
+public class RefundCriteriaBuilder {
     public CriteriasWithShould build(MiddleRefundCriteria criteria) {
         PsCriteriasBuilder builder = new PsCriteriasBuilder();
         // 精确查询

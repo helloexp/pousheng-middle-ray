@@ -49,20 +49,6 @@ public class AdminOrderSearcher {
         if (middleOrderCriteria.getOutCreatedEndAt() != null) {
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt()).plusDays(1).minusSeconds(1).toDate());
         }
-        if (middleOrderCriteria.getStatus() != null && middleOrderCriteria.getStatus().contains(99)) {
-            // 开始结束时间
-            if (middleOrderCriteria.getOutCreatedStartAt() == null) {
-                middleOrderCriteria.setOutCreatedStartAt(DateTime.now().withTimeAtStartOfDay().minusMonths(1).toDate());
-            }
-            if (middleOrderCriteria.getOutCreatedEndAt() == null) {
-                middleOrderCriteria.setOutCreatedEndAt(DateTime.now().withTimeAtStartOfDay().plusDays(1).toDate());
-            }
-            long diff = middleOrderCriteria.getOutCreatedEndAt().getTime() - middleOrderCriteria.getOutCreatedStartAt().getTime();
-            diff = diff / 1000 / 60 / 60 / 24;
-            if (diff > 32) {
-                return Response.fail("over 30 days");
-            }
-        }
         // 不显示jit时效订单来源
         middleOrderCriteria.setExcludeOutFrom(JitConsts.YUNJU_REALTIME);
         // es 搜索

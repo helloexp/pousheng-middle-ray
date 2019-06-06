@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:d@terminus.io">张成栋</a> at 2019
@@ -99,8 +100,12 @@ public class OrderCriteriaBuilder {
         if (ECP_SYNC_FAIL.equals(criteria.getStatusStr())) {
             terms.add(new Terms("status", Lists.newArrayList(4, 5)));
         }
+        // 状态
         if (!CollectionUtils.isEmpty(criteria.getStatus())) {
-            terms.add(new Terms("status", criteria.getStatus()));
+            List<Integer> status = criteria.getStatus().stream().filter(it -> !it.equals(99)).collect(Collectors.toList());
+            if (!status.isEmpty()) {
+                terms.add(new Terms("status", status));
+            }
         }
         return terms;
     }
@@ -118,9 +123,6 @@ public class OrderCriteriaBuilder {
             term.add(new Term("outId", criteria.getOutId()));
         }
         // 状态
-        if (StringUtils.hasText(criteria.getStatusStr()) && !ECP_SYNC_FAIL.equals(criteria.getStatusStr())) {
-            term.add(new Term("status", criteria.getStatusStr()));
-        }
         if (criteria.getHandleStatus() != null) {
             term.add(new Term("handleStatus", criteria.getHandleStatus()));
         }

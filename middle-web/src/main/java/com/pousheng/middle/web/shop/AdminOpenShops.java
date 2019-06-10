@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.shop;
 
+import com.google.common.base.Throwables;
 import com.pousheng.middle.enums.GateWayEnum;
 import com.pousheng.middle.enums.OpenShopEnum;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -20,6 +21,7 @@ import io.terminus.open.client.common.shop.service.OpenShopWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -289,32 +291,67 @@ public class AdminOpenShops {
     												  @RequestParam(required = false) String shopName) {
     	log.info("upgradeOpenShopExtPickup ===> params: channel={},shopName={}", channel, shopName);
     	if (StringUtils.isEmpty(channel) || StringUtils.isEmpty(shopName)) {
-    		log.warn("upgradeOpenShopExtPickup ===> find openshop(shopName={} channel:{} not be null.)");
+    		log.warn("upgradeOpenShopExtPickup ===> find openshop null by shopName={} channel:{}", shopName, channel);
     		return Response.fail("find.openshop.condition.can.not.be.null");
     	} else {
-    		return Objects.equals(MiddleChannel.JD.getValue(), channel) 
+    		return !Objects.equals(MiddleChannel.JD.getValue(), channel) 
     				? Response.fail("find.openshop.channel.mismatched")
     				: executeUpgradeOpenShopExtPickup(channel, shopName);
     	}
     }
-
+    /**
+     * ext新增字段,批量修改
+     * @param channel
+     * @param shopNames
+     * @return
+     */
+    @GetMapping(value = "/update/batch/extPickup", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Boolean> upgradeBatchOpenShopExtPickup(@RequestParam(required = false) String channel,
+    													   @RequestParam(required = false) List<String> shopNames) {
+    	log.info("upgradeBatchOpenShopExtPickup ===> params: channel={},shopNames={}", channel, shopNames);
+    	if (CollectionUtils.isEmpty(shopNames) || StringUtils.isEmpty(channel)) {
+    		log.warn("upgradeOpenShopExtPickup ===> find openshops null by shopNames={} channel:{}", shopNames, channel);
+    		return Response.fail("find.openshop.condition.can.not.be.null");
+    	} else {
+    		if (!Objects.equals(MiddleChannel.JD.getValue(), channel)) {
+    			return Response.fail("find.openshop.channel.mismatched");
+    		} else {
+    			try {
+    				shopNames.stream().forEach( shopName -> { executeUpgradeOpenShopExtPickup(channel, shopName);});
+    				return Response.ok(Boolean.TRUE);
+				} catch (Exception var1) {
+					log.error("upgradeOpenShopExtPickup ===> update openshop:({}) failed, cause:{}", 
+							shopNames, Throwables.getStackTraceAsString(var1));
+					return Response.fail(Throwables.getStackTraceAsString(var1));
+				}
+    		}
+    	}
+    }
+    
 	private Response<Boolean> executeUpgradeOpenShopExtPickup(String channel, String shopName) {
+		OpenShop checkExistOp = checkOpenShopNameIfDuplicated(channel, shopName);
+		if (Arguments.isNull(checkExistOp)) {
+			log.warn("executeUpgradeOpenShopExtPickup ===> open shop name has not exist");
+			return Response.fail("open.shop.name.has.not.exist");
+		}
 		Response<OpenShop> opResponse = openShopReadService.findByChannelAndName(channel, shopName);
     	if (!opResponse.isSuccess()) {
-    		log.error("upgradeOpenShopExtPickup ===> find openshop(shopName={} channel:{} failed.)", shopName, channel);
+    		log.error("executeUpgradeOpenShopExtPickup ===> find openshop(shopName={} channel:{} failed.)", shopName, channel);
     		throw new JsonResponseException(opResponse.getError());
     	}
     	OpenShop existOp = opResponse.getResult();
     	Map<String, String> jsonMap = existOp.getExtra();
     	if (!jsonMap.containsKey(TradeConstants.OPENSHOP_MAPPING_PICKUP)) {
     		jsonMap.put(TradeConstants.OPENSHOP_MAPPING_PICKUP, "false");//默认不支持门店自提
+    		existOp.setExtra(jsonMap);
+    		Response<Boolean> opUpdateResponse = openShopWriteService.update(existOp);
+    		if (!opUpdateResponse.isSuccess()) {
+    			log.error("executeUpgradeOpenShopExtPickup ===> update openshop(shopId={},shopName={}) channel:{} failed, cause:{}.)", 
+    					existOp.getId(), shopName, channel, opUpdateResponse.getError());
+    			throw new JsonResponseException(opUpdateResponse.getError());
+    		}
+    		return Response.ok(Boolean.TRUE);
     	}
-    	Response<Boolean> opUpdateResponse = openShopWriteService.update(existOp);
-    	if (!opUpdateResponse.isSuccess()) {
-    		log.error("upgradeOpenShopExtPickup ===> update openshop(shopId={},shopName={}) channel:{} failed, cause:{}.)", 
-    				existOp.getId(), shopName, channel, opUpdateResponse.getError());
-    		throw new JsonResponseException(opUpdateResponse.getError());
-    	}
-    	return opUpdateResponse;
+    	return Response.ok(Boolean.TRUE);
 	}
 }

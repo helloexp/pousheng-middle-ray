@@ -20,6 +20,7 @@ import io.terminus.open.client.common.shop.service.OpenShopWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -199,6 +200,12 @@ public class AdminOpenShops {
                 jsonMap.put(TradeConstants.EXCHANGE_PULL, jsonMap.get(TradeConstants.EXCHANGE_PULL));
             }
         }
+        // 京东渠道门店是否支持自提
+        if (Objects.equals(MiddleChannel.JD.getValue(), openShop.getChannel())) {
+        	if (jsonMap.containsKey(TradeConstants.OPENSHOP_MAPPING_PICKUP)) {
+        		jsonMap.put(TradeConstants.OPENSHOP_MAPPING_PICKUP, jsonMap.get(TradeConstants.OPENSHOP_MAPPING_PICKUP));
+        	}
+        }
         openShop.setExtra(jsonMap);
     }
 
@@ -263,6 +270,51 @@ public class AdminOpenShops {
             // 待上架商品映射开关
             map.put(TradeConstants.UN_SALE_ITEM_FETCH_ENABLED, jsonMap.get(TradeConstants.UN_SALE_ITEM_FETCH_ENABLED));
         }
+        // 京东渠道门店是否支持自提
+        if (Objects.equals(MiddleChannel.JD.getValue(), openShop.getChannel())) {
+        	if (jsonMap.containsKey(TradeConstants.OPENSHOP_MAPPING_PICKUP)) {
+            	map.put(TradeConstants.OPENSHOP_MAPPING_PICKUP, jsonMap.get(TradeConstants.OPENSHOP_MAPPING_PICKUP));
+            }
+        }
         openShop.setExtra(map);
     }
+    /**
+     * ext新增字段,需修改
+     * @param channel
+     * @param shopName
+     * @return
+     */
+    @GetMapping(value = "/update/extPickup", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Boolean> upgradeOpenShopExtPickup(@RequestParam(required = false) String channel,
+    												  @RequestParam(required = false) String shopName) {
+    	log.info("upgradeOpenShopExtPickup ===> params: channel={},shopName={}", channel, shopName);
+    	if (StringUtils.isEmpty(channel) || StringUtils.isEmpty(shopName)) {
+    		log.warn("upgradeOpenShopExtPickup ===> find openshop(shopName={} channel:{} not be null.)");
+    		return Response.fail("find.openshop.condition.can.not.be.null");
+    	} else {
+    		return Objects.equals(MiddleChannel.JD.getValue(), channel) 
+    				? Response.fail("find.openshop.channel.mismatched")
+    				: executeUpgradeOpenShopExtPickup(channel, shopName);
+    	}
+    }
+
+	private Response<Boolean> executeUpgradeOpenShopExtPickup(String channel, String shopName) {
+		Response<OpenShop> opResponse = openShopReadService.findByChannelAndName(channel, shopName);
+    	if (!opResponse.isSuccess()) {
+    		log.error("upgradeOpenShopExtPickup ===> find openshop(shopName={} channel:{} failed.)", shopName, channel);
+    		throw new JsonResponseException(opResponse.getError());
+    	}
+    	OpenShop existOp = opResponse.getResult();
+    	Map<String, String> jsonMap = existOp.getExtra();
+    	if (!jsonMap.containsKey(TradeConstants.OPENSHOP_MAPPING_PICKUP)) {
+    		jsonMap.put(TradeConstants.OPENSHOP_MAPPING_PICKUP, "false");//默认不支持门店自提
+    	}
+    	Response<Boolean> opUpdateResponse = openShopWriteService.update(existOp);
+    	if (!opUpdateResponse.isSuccess()) {
+    		log.error("upgradeOpenShopExtPickup ===> update openshop(shopId={},shopName={}) channel:{} failed, cause:{}.)", 
+    				existOp.getId(), shopName, channel, opUpdateResponse.getError());
+    		throw new JsonResponseException(opUpdateResponse.getError());
+    	}
+    	return opUpdateResponse;
+	}
 }

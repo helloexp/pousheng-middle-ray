@@ -531,6 +531,10 @@ public class TradeConstants {
      */
     public static final String EXCHANGE_PULL = "exchangePull";
     /**
+     * 是否支持门店自提
+     */
+    public static final String OPENSHOP_MAPPING_PICKUP = "openShopMappingPickup";
+    /**
      * 派单规则：同公司账套优先/优先发货优先
      */
     public static final String IS_NEW_DISPATCH_ORDER_LOGIC = "isNewDispatchOrderLogic";

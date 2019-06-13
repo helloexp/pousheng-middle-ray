@@ -37,6 +37,9 @@ public class ShipmentExportEntity {
     @ExportTitle("快递单号")
     private String carrNo;
 
+    @ExportTitle("回传单号")
+    private String callbackMailNo;
+    
     @ExportTitle("收件人")
     private String reciverName;
 

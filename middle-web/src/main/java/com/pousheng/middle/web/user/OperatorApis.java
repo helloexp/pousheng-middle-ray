@@ -6,7 +6,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.auth.model.MiddleUser;
+import com.pousheng.auth.model.OperatorExt;
 import com.pousheng.auth.service.MiddleOperatorReadService;
+import com.pousheng.auth.service.OperatorExtReadService;
+import com.pousheng.auth.service.OperatorExtWriteService;
 import com.pousheng.auth.service.PsUserReadService;
 import com.pousheng.auth.service.PsUserWriteService;
 import com.pousheng.middle.constants.Constants;
@@ -38,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -66,7 +70,10 @@ public class OperatorApis {
     private UserManageShopReader userManageShopReader;
     @Autowired
     private MiddleOperatorReadService middleOperatorReadService;
-
+    @Autowired
+    private OperatorExtWriteService operatorExtWriteService;
+    @Autowired
+    private OperatorExtReadService operatorExtReadService;
 
     /**
      * ADMIN 创建运营
@@ -97,11 +104,12 @@ public class OperatorApis {
             judgePassword(operator.getPassword());
         }
         judgeUsername(operator.getUsername());
-
+        judgeUsername(operator.getRealname());
         checkUserExist(un);
 
-        Operator toCreateOperator = new Operator();
+        OperatorExt toCreateOperator = new OperatorExt();
         toCreateOperator.setUserName(operator.getUsername());
+        toCreateOperator.setRealName(operator.getRealname());
         toCreateOperator.setRoleId(operator.getRoleId());
         Map<String, String> extraMap = Maps.newHashMap();
         extraMap.put(Constants.MANAGE_SHOP_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageShopIds())));
@@ -139,7 +147,7 @@ public class OperatorApis {
         // 创建operator
         Long userId = userCreateResp.getResult();
         toCreateOperator.setUserId(userId);
-        Response<Long> resp = operatorWriteService.create(toCreateOperator);
+        Response<Long> resp = operatorExtWriteService.create(toCreateOperator);
         if(log.isDebugEnabled()){
             log.debug("API-OPERATOR-CREATEOPERATOR-END param: operator [{}] ,resp: [{}]",operatorStr,resp.getResult());
         }
@@ -164,12 +172,12 @@ public class OperatorApis {
         MiddleUser existMiddleUser = userRes.getResult();
 
 
-        Response<Operator> operatorResp = operatorReadService.findByUserId(userId);
+        Response<OperatorExt> operatorResp = operatorExtReadService.findByUserId(userId);
         if (!operatorResp.isSuccess()) {
             log.warn("operator find fail, userId={}, error={}", userId, operatorResp.getError());
             throw new JsonResponseException(operatorResp.getError());
         }
-        Operator existOp = operatorResp.getResult();
+        OperatorExt existOp = operatorResp.getResult();
 
         MiddleUser toUpdateMiddleUser = new MiddleUser();
         toUpdateMiddleUser.setId(userId);
@@ -180,6 +188,11 @@ public class OperatorApis {
             toUpdateMiddleUser.setName(username);
         }
 
+        String realName = Params.trimToNull(operator.getRealname());
+        if (!StringUtils.isEmpty(realName)) {
+        	judgeUsername(realName);
+        }
+        
         String password = Params.trimToNull(operator.getPassword());
         if (password != null) {
             judgePassword(password);
@@ -198,16 +211,17 @@ public class OperatorApis {
             throw new JsonResponseException(userResp.getError());
         }
 
-        Operator toUpdateOperator = new Operator();
+        OperatorExt toUpdateOperator = new OperatorExt();
         toUpdateOperator.setId(existOp.getId());
         toUpdateOperator.setUserName(toUpdateMiddleUser.getName());
+        toUpdateOperator.setRealName(realName);
         toUpdateOperator.setRoleId(operator.getRoleId());
         Map<String, String> extraMap = existOp.getExtra();//这里就不判断extra是否为空了，创建时会塞入管理店铺id，所以这里一定不会为空
         extraMap.put(Constants.MANAGE_SHOP_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageShopIds())));
         extraMap.put(Constants.MANAGE_ZONE_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageZoneIds())));
         toUpdateOperator.setExtra(extraMap);
 
-        Response<Boolean> opUpdateResp = operatorWriteService.update(toUpdateOperator);
+        Response<Boolean> opUpdateResp = operatorExtWriteService.update(toUpdateOperator);
         if (!opUpdateResp.isSuccess()) {
             log.warn("operator update failed, error={}", opUpdateResp.getError());
             throw new JsonResponseException(opUpdateResp.getError());
@@ -343,7 +357,7 @@ public class OperatorApis {
     }
 
     @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Paging<Operator>> pagingOperator(@RequestParam(required = false) Long roleId,
+    public Response<Paging<OperatorExt>> pagingOperator(@RequestParam(required = false) Long roleId,
                                                      @RequestParam(required = false) Long userId,
                                                      @RequestParam(required = false) String roleName,
                                                      @RequestParam(required = false) String userName,
@@ -374,6 +388,8 @@ public class OperatorApis {
         //用户中心用户id（绑定已有账户时）
         @LogMeId
         private Long userId;
+        
+        private String realname;
     }
 
 

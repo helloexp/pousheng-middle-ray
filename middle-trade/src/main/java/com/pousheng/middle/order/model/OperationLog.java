@@ -27,6 +27,11 @@ public class OperationLog implements Serializable {
     private String operatorName;
     
     /**
+     * 真实姓名
+     */
+    private String realName;
+    
+    /**
      * 操作的实体ID
      */
     private String operateId;

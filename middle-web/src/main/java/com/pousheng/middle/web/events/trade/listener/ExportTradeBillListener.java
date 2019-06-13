@@ -587,6 +587,7 @@ public class ExportTradeBillListener {
                     entity.setItemNo(item.getSkuCode());
                     entity.setShipmentCorpName(shipmentExtra.getShipmentCorpName());
                     entity.setCarrNo(shipmentExtra.getShipmentSerialNo());
+                    entity.setCallbackMailNo(shipmentExtra.getCallbackMailNo());
                     entity.setExpressOrderId(shipmentExtra.getExpressOrderId());
                     ReceiverInfo receiverInfo = receiverInfoMap.get(shipmentContext.getOrderShipment().getOrderId());
                     if (!Objects.isNull(receiverInfo)) {

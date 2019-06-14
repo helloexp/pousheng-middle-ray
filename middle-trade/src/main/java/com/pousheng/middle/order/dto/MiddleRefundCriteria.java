@@ -68,4 +68,27 @@ public class MiddleRefundCriteria extends RefundCriteria implements Serializable
 
 
     private Integer pageSize;
+	/**
+	 * RAY 2019.04.19 POUS-476: 退貨入庫時間起，對應資料庫，轉LONG
+	 * 
+	 * @return
+	 */
+	public Long getTimeReturnReceiveStartAt() {
+		if (returnReceiveStartAt != null) {
+			return returnReceiveStartAt.getTime();
+		}
+		return null;
+	}
+
+	/**
+	 * RAY 2019.04.19 POUS-476: 退貨入庫時間迄，對應資料庫，轉LONG
+	 * 
+	 * @return
+	 */
+	public Long getTimeReturnReceiveEndAt() {
+		if (returnReceiveEndAt != null) {
+			return returnReceiveEndAt.getTime();
+		}
+		return null;
+	}
 }

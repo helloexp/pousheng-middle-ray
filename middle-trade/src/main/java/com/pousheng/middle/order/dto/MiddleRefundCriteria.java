@@ -60,12 +60,6 @@ public class MiddleRefundCriteria extends RefundCriteria implements Serializable
      * 退回快递单号
      */
     private String shipmentSerialNo;
-
-    /**
-     * 是否完善退货物流
-     */
-    private Integer completeReturn;
-
     /**
      * 退货入库时间
      */

@@ -929,6 +929,25 @@ public class AdminOrderWriter {
         return downLoadFile(fileName);
 
     }
+    
+	/**
+	 * XXX RAY 2019.06.14 下載批量修改条码模板
+	 * 
+	 * @param response
+	 * @param request
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	@GetMapping("/api/batch/update/sku/template")
+	public ResponseEntity<byte[]> getBatchUpdateSkuTemplate(HttpServletResponse response,
+			HttpServletRequest request) {
+
+		final String fileName = filePath + "/批量修改条码模板.xlsx";
+		List<String[]> fields = new ArrayList<String[]>();
+		fields.add(new String[] { "订单来源渠道", "外部订单号", "原货品条码", "修改后货品条码" });
+		HandlerFileUtil.getInstance().writerExcel(fields, fileName);
+		return downLoadFile(fileName);
+	}
 
     private String getExtName(MultipartFile file) {
         log.info("file name ={}", file.getOriginalFilename());
@@ -1204,7 +1223,7 @@ public class AdminOrderWriter {
 					failList.add("第" + (index.get() + 1) + "條單據修改失敗，原因："
 							+ opMessageSources.get(ex.getError(), ex.getParams()));
 				}
-				index.getAndIncrement();
+				index.getAndIncrement(); // 紀錄foreach的INDEX
 			});
 			inputStream.close(); // 關閉串流
 			return Response.ok(

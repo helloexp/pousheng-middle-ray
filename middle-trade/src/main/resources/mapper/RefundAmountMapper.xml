@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2017 杭州端点网络科技有限公司
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="RefundAmount">
+    <resultMap id="RefundAmountMap" type="RefundAmount">
+        <id column="id" property="id"/>
+        <result column="refund_no" property="refundNo"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="shop_id" property="shopId"/>
+        <result column="performance_shop_id" property="performanceShopId"/>
+        <result column="stock_id" property="stockId"/>
+        <result column="refund_order_amount" property="refundOrderAmount"/>
+        <result column="type" property="type"/>
+        <result column="total_refund" property="totalRefund"/>
+        <result column="online_order_no" property="onlineOrderNo"/>
+        <result column="hk_order_no" property="hkOrderNo"/>
+        <result column="pos_no" property="posNo"/>
+        <result column="refund_sub_no" property="refundSubNo"/>
+        <result column="order_sub_no" property="orderSubNo"/>
+        <result column="bar_code" property="barCode"/>
+        <result column="item_num" property="itemNum"/>
+        <result column="sale_price" property="salePrice"/>
+        <result column="refund_amount" property="refundAmount"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        
+    </resultMap>
+
+    <sql id="tb">
+        refund_amount
+    </sql>
+
+    <sql id="cols_all">
+        id, <include refid="cols_exclude_id" />
+    </sql>
+
+    <sql id="cols_exclude_id">
+        refund_no, order_no, shop_id, performance_shop_id,stock_id,refund_order_amount,`type`,total_refund,online_order_no,hk_order_no,pos_no,refund_sub_no,order_sub_no,bar_code,item_num,sale_price,refund_amount,created_at, updated_at
+    </sql>
+
+    <sql id="vals">
+        #{refundNo}, #{orderNo}, #{shopId}, #{performanceShopId},#{stockId}, #{refundOrderAmount}, #{type}, #{totalRefund},#{onlineOrderNo}, #{hkOrderNo}, #{posNo}, #{refundSubNo}, #{orderSubNo}, #{barCode}, #{itemNum},#{salePrice},#{refundAmount},now(), now()
+    </sql>
+
+    <insert id="create" parameterType="RefundAmount" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO
+        <include refid="tb" />
+        (<include refid="cols_exclude_id" />)
+        VALUES
+        (<include refid="vals" />)
+    </insert>
+
+</mapper>

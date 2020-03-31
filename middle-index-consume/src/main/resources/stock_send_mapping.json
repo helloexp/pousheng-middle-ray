@@ -1,0 +1,54 @@
+{
+  "stock_send": {
+    "_all": {
+      "enabled": false
+    },
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "shopId": {
+        "type": "long"
+      },
+      "shopType": {
+        "type": "long"
+      },
+      "ruleId": {
+        "type": "long"
+      },
+      "shopName": {
+        "type": "keyword"
+      },
+      "companyCode": {
+        "type": "keyword"
+      },
+      "shopOutCode": {
+        "type": "keyword"
+      },
+      "zoneId": {
+        "type": "long"
+      },
+      "zoneName": {
+        "type": "keyword"
+      },
+      "warehouseId": {
+        "type": "long"
+      },
+      "warehouseName": {
+        "type": "keyword"
+      },
+      "warehouseOutCode": {
+        "type": "keyword"
+      },
+      "warehouseCompanyCode": {
+        "type": "keyword"
+      },
+      "warehouseType": {
+        "type": "integer"
+      },
+      "warehouseStatus": {
+        "type": "integer"
+      }
+    }
+  }
+}

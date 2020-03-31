@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- ~ Copyright (c) 2016 杭州端点网络科技有限公司 -->
+
+<mapper namespace="ChannelItemPushLog">
+    <resultMap id="ChannelItemPushLogMap" type="ChannelItemPushLog">
+        <id column="id" property="id"/>
+        <result column="channel" property="channel"/>
+        <result column="spu_code" property="spuCode"/>
+        <result column="sku_code" property="skuCode"/>
+        <result column="brand_id" property="brandId"/>
+        <result column="channel_item_id" property="channelItemId"/>
+        <result column="channel_sku_id" property="channelSkuId"/>
+        <result column="extra_json" property="extraJson"/>
+        <result column="status" property="status"/>
+        <result column="cause" property="cause"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="tb">parana_channel_item_push_log</sql>
+
+    <sql id="cols_all">
+        id,<include refid="cols_exclude_id"/>
+    </sql>
+
+    <sql id="cols_exclude_id">
+       `channel`,`spu_code`,`sku_code`,`brand_id`,`channel_item_id`, `channel_sku_id`, `extra_json`, `status`, `cause`, `created_at`, `updated_at`
+    </sql>
+
+    <sql id="vals">
+        #{channel}, #{spuCode},#{skuCode},#{brandId},#{channelItemId},#{channelSkuId},#{extraJson}, #{status}, #{cause}, now(),now()
+    </sql>
+
+    <sql id="criteria">
+        <if test="id != null">id = #{id}</if>
+        <if test="channel != null">and channel = #{channel}</if>
+        <if test="spuCode != null">and spu_code = #{spuCode}</if>
+        <if test="skuCode != null">and sku_code = #{skuCode}</if>
+        <if test="brandId != null">and brand_id = #{brandId}</if>
+        <if test="status != null">and status = #{status}</if>
+    </sql>
+
+    <insert id="create" parameterType="ChannelItemPushLog" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO <include refid="tb"/>
+        (<include refid="cols_exclude_id"/>)
+        VALUES
+        (<include refid="vals"/>)
+    </insert>
+
+    <insert id="creates" parameterType="list">
+        INSERT INTO
+        <include refid="tb"/>
+        (<include refid="cols_exclude_id"/>)
+        VALUES
+        <foreach collection="list" item="i" index="index" separator=",">
+            (
+            #{i.channel}, #{i.spuCode},#{i.skuCode},#{i.brandId},#{i.channelItemId},#{i.channelSkuId},#{i.extraJson}, #{i.status}, #{i.cause}, now(),now()
+            )
+        </foreach>
+    </insert>
+
+    <select id="paging" parameterType="list" resultMap="ChannelItemPushLogMap">
+        select id,
+        <include refid="cols_exclude_id"/>
+        from
+        <include refid="tb"/>
+        <where>
+            <include refid="criteria"/>
+        </where>
+        order by id desc limit #{offset},#{limit}
+    </select>
+
+    <select id="count" parameterType="list" resultType="long">
+        select count(1)
+        from
+        <include refid="tb"/>
+        <where>
+            <include refid="criteria"/>
+        </where>
+    </select>
+</mapper>

@@ -1,0 +1,421 @@
+logging:
+  level:
+    root: INFO
+    org.springframework: INFO
+    io.terminus.session: ERROR
+    com.alibaba.dubbo: ERROR
+    io.terminus.open.client: DEBUG
+    MiddleUser: DEBUG
+    com.pousheng: DEBUG
+  path: /var/logs/pousheng
+
+
+server:
+  context-path: /
+  port: 8082
+  jetty.max-http-post-size: 10000000
+
+spring:
+  datasource:
+    url: jdbc:mysql://${POUSHENG_MIDDLE_EXPORT_MYSQL_HOST}:${POUSHENG_MIDDLE_EXPORT_MYSQL_PORT}/${POUSHENG_MIDDLE_EXPORT_MYSQL_DATABASE}?useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&autoReconnect=true
+    username: ${POUSHENG_MIDDLE_EXPORT_MYSQL_USERNAME}
+    password: ${POUSHENG_MIDDLE_EXPORT_MYSQL_PASSWORD}
+    initialize: false
+    continue-on-error: false
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      maximum-pool-size: 100
+      minimum-idle: 0
+      leak-detection-threshold: 180000
+      connection-timeout: 180000
+      validation-timeout: 180000
+      idle-timeout: 180000
+  #用户登陆和分布式缓存使用的redis
+  redis:
+    host: ${POUSHENG_REDIS_SESSION_HOST}
+    port: ${POUSHENG_REDIS_SESSION_PORT}
+    password: ${POUSHENG_REDIS_SESSION_PASSWORD}
+    pool:
+      max-idle: 100
+      max-wait: -1
+      max-active: 1000
+  application:
+    name: pousheng-middle
+  messages:
+    basename: middle_messages
+  batch:
+    job:
+      enabled: false
+
+
+
+mybatis:
+  mapper-locations: classpath*:mapper/*Mapper.xml
+  configuration:
+    default-statement-timeout: 60
+  type-aliases-package: >
+        com.pousheng.(erp|auth).model,
+        com.pousheng.middle.(group|task).model,
+        com.pousheng.middle.warehouse.model,
+        com.pousheng.middle.order.model,
+        io.terminus.parana.user.address.model,
+        io.terminus.parana.user.model,
+        io.terminus.parana.(item|category|brand|spu|shop).model,
+        io.terminus.parana.(order|cart|express|promotion|delivery|settle|auth).model,
+        io.terminus.open.client.common.(mappings|token|shop).model,
+        io.terminus.open.client.item.model,
+        io.terminus.applog.core.model
+
+
+session:
+  cookie-context-path: /
+  #cookie-domain: pousheng.com
+  cookie-name: msidPousheng
+  cookie-max-age: 604800
+  max-inactive-interval: 604800
+  source: redis
+  serialize-type: json
+  redis-host: ${POUSHENG_REDIS_SESSION_HOST}
+  redis-port: ${POUSHENG_REDIS_SESSION_PORT}
+  redis-auth: ${POUSHENG_REDIS_SESSION_PASSWORD}
+  redis-index: 0
+  redis-cluster: false
+  redis-test-on-borrow: true
+  redis-max-total: 10
+  redis-max-idle: 0
+  redis-prefix: afsession
+
+# 代码中redis操作使用的redis
+redis:
+  host: ${POUSHENG_REDIS_SESSION_HOST}
+  port: ${POUSHENG_REDIS_SESSION_PORT}
+  auth: ${POUSHENG_REDIS_SESSION_PASSWORD}
+  max-total: 10
+  max-idle: 100
+  test-on-borrow: true
+
+rpc.mode: false
+rpc.dubbo:
+  module: pousheng-middle
+  registryAddress: ${POUSHENG_ZK_HOST}:${POUSHENG_ZK_PORT}
+
+gateway:
+  erp:
+    host: ${ERP_HOST}
+    accessKey: ${ERP_ACCESS_KEY}
+  member:
+    host: ${MEMBER_CENTER_GATEWAY}
+  hk:
+    host: ${HK_HOST}
+    accessKey: ${HK_ACCESS_KEY}
+  parana:
+    host: ${PARANA_HOST}
+  yyedi:
+      host: ${YYEDI_HOST}
+      accessKey: ${YYEDI_ACCESS_KEY}
+  inventory:
+      host: ${POUSHENG_INVENTORY_HOST}
+  esb:
+    host: ${ESB_HOST}
+    accessKey: ${ESB_ACCESS_KEY}
+
+open.api.app.key: ${OPEN_API_APP_KEY}
+open.api.secret: ${OPEN_API_SECRET}
+open.api.gateway: ${OPEN_API_GATEWAY}
+middle.api.gateway: ${MIDDLE_API_GATEWAY}
+
+
+azure:
+  oss:
+    defaultEndpointsProtocol: https
+    accountName: f2wossfilehdd
+    accountKey: GiDg58DcAx8fLBQYqhjnMmKiOgHntWlexP1ZIDwCIdOEQr/IuAl6NQiy6m7Zl+rSU6ynxUJXufAEGYG3+NB2MQ==
+    endpointSuffix: core.chinacloudapi.cn
+
+erp.token:
+  appKey: terminus-erp
+  secret: anywhere-erp
+  gateway: http://erp-api.terminus.io/api/gateway
+
+ych.token:
+  appKey: 68757056
+  secret: 2jodLU2IMIwn0cH8kcIY
+  gateway: http://account.ose.aliyun.com
+  gatewayOfLog: http://gw.ose.aliyun.com/event
+  clientIp: 42.159.144.178
+
+taobao.token:
+  appKey: 24581672
+  appName: 端点中台
+
+
+curator:
+  zk.host: ${POUSHENG_ZK_HOST}
+  zk.port: ${POUSHENG_ZK_PORT}
+  leader.path: ${POUSHENG_ZK_PATH}
+## 这个是开启写入订单和售后单，供roger进行压测，压测后去掉这个配置
+open.client.import.enable: true
+
+
+# es基础配置
+search:
+  host: ${POUSHENG_ES_HOST}
+  port: ${POUSHENG_ES_PORT}
+
+# 商品信息的es配置
+skutemplate:
+  search:
+    index-name: skutemplates
+    index-type: skutemplate
+    mapping-path: ps_sku_template_mapping.json
+    full-dump-range: -1
+    batch-size: 10000
+
+# 库存日志es的配置
+stocklog:
+  search:
+    index-name: stocklogs
+    index-type: stocklog
+    mapping-path: stock_log_mapping.json
+    full-dump-range: -1
+    batch-size: 100
+
+gd_map:
+  searchApi: 'http://restapi.amap.com/v3/place/text'
+  districtApi: 'http://restapi.amap.com/v3/place/text'
+  webKey: 'd6e5c2d8e1ae82dd53e5829034145b64'
+
+index.queue.size: 500000
+
+
+# mpos系统调用的api白名单
+mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*,/api/middle/task/count/stock/.*'
+
+# mpos总单OpenShopId
+mpos.open.shop.id: ${MPOS_OPEN_SHOP_ID}
+
+
+# skx店铺OpenShopId
+skx.open.shop.id: ${SKX_OPEN_SHOP_ID}
+# skx仓库id
+skx.warehouse.id: ${SKX_WAREHOUSE_ID}
+
+# 325账套的退货仓id
+baowei.refund.warehouse.id: ${BAOWEI_REFUND_WAREHOUSE_ID}
+
+# pos单仓库
+pos.stock.code: ${POS.STOCK.CODE}
+
+msg:
+  current:
+    emailService: javaxEmailService
+  javaxemail:
+    mailServerHost: mail.pousheng.com
+    fromAddress: mpos_order_notify@pousheng.com
+    userName: mpos_order_notify@pousheng.com
+    password: ps_1233
+
+#邮件开关
+pousheng.msg.send: ${EMAIL_LOCK}
+
+msg.template.list:
+  - key: email.order.confirm
+    title: 派单提醒
+    content: >
+        {{shopName}} 店铺，你有一张订单待接单，订单号为:{{orderId}}，请立即处理
+
+# mpos邮件组
+pousheng.order.email.confirm.group: ${EMAIL_GROUP}
+
+# 预警邮件组
+pousheng.order.email.remind.group: ${EMAIL_REMIND_GROUP}
+
+#中台biz任务处理失败邮件
+pousheng.middle.email.remind.group: ${MIDDLE_BIZ_EMAIL_GROUP}
+
+
+suning.selfmarket.supplier.code: ${SUNING_SALE_SUPPLIER_CODE}
+suning.sale.warehouseCode: ${SUNING_SALE_WAREHOUSE_CODE}
+
+jd.yunding.app.key: pousheng
+jd.yunding.secret: 6a0e@93204aefe45d47f6e488
+jd.yunding.gateway: http://yunding.yysports.com/api/gateway
+
+#middle的订单商品库存等job开关
+trade.job.enable: ${TRADE_JOB_ENABLE}
+
+open.client.sync.after.sale.job.enable: ${TRADE_JOB_ENABLE}
+open.client.sync.after.sale.exchange.job.enable: ${TRADE_JOB_ENABLE}
+
+#拉取商品映射job开关
+open.client.sync.item.mapping.job.enable: ${TRADE_JOB_ENABLE}
+
+open.client.sync.item.open.id.job.enable: ${TRADE_JOB_ENABLE}
+
+#同步订单job开关
+open.client.sync.order.job.enable: ${TRADE_JOB_ENABLE}
+
+#中台拉取订单时间范围（拉取前多少分钟）
+open.client.sync.paid.order.duration.in.minute: ${PULL_PAID_ORDER_DUARATION}
+
+#中台拉取确认收货时间范围（拉取前多少分钟）
+open.client.sync.confirmed.order.duration.in.minute: ${PULL_CONFIRMED_ORDER_DUARATION}
+
+#中台拉取售后单时间范围(拉取前多少分钟)
+open.client.sync.after.sale.duration.in.minute: ${PULL_AFTER_SALE_ORDER_DURATION}
+
+#中台拉取映射关系时间范围(拉取前多少分钟发生变动的)
+open.client.sync.item.duration.in.minute: ${PULL_ITEM_MAPPING_DURATION}
+#中台拉取映射关系的频率(几分钟拉取一次)
+open.client.fetch.item.cron: ${PULL_ITEM_MAPPING_CRON}
+
+#中台拉取前3天的映射关系时间范围(前3天的数据)
+open.client.sync.item.ThreeDays.in.minute: ${PULL_ITEM_MAPPING_DURATION_BEFORETHREEDAYS}
+#中台定时任务凌晨拉取映射关系(每天凌晨3:20同步一次)
+open.client.fetch.item.threeTime.cron: ${PULL_ITEM_MAPPING_CRON_THREETIME}
+
+#获取宿主机ip
+order.current.ip: ${TERMINUS_HOST:localhost}
+current.ip: ${TERMINUS_HOST:localhost}
+# 官网订单可以拉取订单的服务器地址，具体由业务配置
+official.order.ip: ${OFFICIAL_ORDER_IP:localhost}
+
+#大促模式开关,平时可以关闭，在paas中设置为false；大促期间设置为true
+is.pousheng.activity.mode:${IS_POUSHENG_ACTIVITY_MODE: false}
+
+
+# mq的基础信息配置
+terminus:
+  rocketmq:
+    nameServerAddress: ${MQ_NAME_ADDR}
+    producerGroup: ${MQ_PRODUCER_GROUP}
+    poushengInventoryTopic: ${MQ_TOPIC_POUSHENG_INVENTORY}
+    cacherClearTopic: cacherClearTopic
+    consumeMaxTpsConfig:
+      poushengInventoryTopic: ${MQ_TOPIC_INVENTORY_CONSUME_MAX_TPS:20}
+
+
+# 网易邮箱,exchange服务器
+outlook.mail.server: fastsmtphz.qiye.163.com
+outlook.mail.username: mpos_order_notify@store.pousheng.com
+outlook.mail.password: ps_1233
+outlook.mail.title: 派单提醒
+outlook.mail.copy: mpos_order_notify@store.pousheng.com
+
+
+#是否为库存推送第三方的消息消费节点
+inventory.push.topic.consume.enable: ${INV_PUSH_TOPIC_CONSUME_ENABLE}
+
+# 失败订单和发货单邮件通知的接受邮箱 多个账号以逗号分隔
+failed.order.warning.email.receives: ${FAILED_ORDER_WARNING_EMAIL_RECEIVES}
+
+# 失败订单和发货单邮件通知JOB的触发器表达式
+failed.order.warning.job.cron: ${FAILED_ORDER_WARNING_JOB_CRON}
+
+# job开关 用于商品分组
+is.item.group.task.consume: ${IS_ITEM_GROUP_TASK_CONSUME}
+
+# job开关 用于商品分组创建任务
+is.item.group.task.create:  ${IS_ITEM_GROUP_TASK_CREATE}
+
+# 用于接受日志信息
+is.stock.log.consume: ${IS_STOCK_LOG_CONSUME}
+
+# 用于唯品会定时任务
+is.vip.task.consume: ${IS_VIP_TASK_CONSUME}
+
+# 库存日志mq消息的topic
+terminus.rocketmq.stockLogTopic: stockLogTopic
+
+#最后库存推送记录缓存开关
+stock.push.cache.enable: ${STOCK_PUSH_CACHE_ENABLE}
+#最后库存推送记录缓存失效时间
+stock.push.cache.duration.in.hours: ${STOCK_PUSH_CACHE_DURATION_IN_HOURS}
+
+# JIT订单邮件通知的接受邮箱 多个账号以逗号分隔
+jit.order.warning.email.receives: ${JIT_ORDER_WARNING_EMAIL_RECEIVES}
+
+# JIT订单邮件通知JOB的触发器表达式
+jit.order.warning.job.cron: ${JIT_ORDER_WARNING_JOB_CRON}
+
+# jit店铺OpenShopId
+jit.open.shop.id: ${JIT_OPEN_SHOP_ID}
+
+# 调用淘宝api统计地址
+open.client.statistics.center.gate.way: ${STATISTICS_CENTER_GATEWAY}
+
+# 端点统一接入层回调中台获取收货人信息url
+redirect.erp.gateway: ${REDIRECT_ERP_GATEWAY}
+
+# 拉取映射关系默认30条
+open.client.sync.item.fetch.size: 30
+
+
+# 线程池核心线程默认数目
+thread.executor.core.pool.size: 2
+# 线程池最大线程默认数目
+thread.executor.max.pool.size: 4
+#线程池默认队列默认最大数量
+thread.executor.queue.capacity: 5000
+
+
+is.open.test: ${IS_TEST}
+
+# 通用biz的mq处理类的开关
+biz.common.topic.enable: ${BIZ_COMMON_TOPIC_ENABLE:true}
+
+# 导出biz的mq处理类的开关
+biz.export.topic.enable: ${BIZ_EXPORT_TOPIC_ENABLE:true}
+
+# 通用biz的补偿任务开关
+biz.common.wait.handle.job.enable: ${BIZ_COMMON_WAIT_HANDLE_JOB_ENABLE:true}
+
+# 导出biz的补偿任务开关
+biz.export.wait.handle.job.enable: ${BIZ_EXPORT_WAIT_HANDLE_JOB_ENABLE:true}
+
+# 失败任务补偿开关
+biz.failed.job.enable: ${BIZ_FAILED_JOB_ENABLE:true}
+
+### 中台补拍邮费商品SKU_CODE
+postage.sku.code: ${POSTAGE_SKU_CODE:BYC0001$}
+
+### 补偿bizMq队列大小
+common.biz.mq.queue.size: ${COMMON_BIZ_MQ_QUEUE_SIZE:0}
+
+### 供货导入队列index
+item.supply.import.mq.queue.index: ${ITEM_SUPPLY_IMPORT_MQ_QUEUE_INDEX:0}
+
+### 拉单 mq 队列大小
+order.fetch.mq.queue.size: ${ORDER_FETCH_MQ_QUEUE_SIZE:0}
+
+
+# 银泰推送商品
+yintai.item.push.job.enable: ${YINTAI_ITEM_PUSH_JOB_ENABLE:false}
+yintai.item.push.cron: ${YINTAI_ITEM_PUSH_CRON:0 0 * * * ?}
+yintai.item.push.consumer.enable: ${YINTAI_ITEM_PUSH_CONSUMER_ENABLE:false}
+yintai.item.mapping.openShopId: ${YINTAI_ITEM_MAPPING_OPENSHOPID:0}
+yintai.item.full.push.hour: ${YINTAI_ITEM_FULL_PUSH_HOUR:72}
+yintai.item.increment.push.hour: ${YINTAI_ITEM_INCREMENT_PUSH_HOUR:3}
+yintai.item.push.day.cron: ${YINTAI_ITEM_PUSH_DAY_CRON:0 0 * * * ?}
+yintai.item.push.hour.cron: ${YINTAI_ITEM_PUSH_DAY_CRON:0 1-23 * * * ?}
+
+#CAS SSO
+pousheng:
+  system:
+    cas:
+      #應用訪問地址 (必填)
+      apServerUrl: 'http://middle-api-prepub.pousheng.com'
+      #應用登入地址 (選填)
+      apLoginUrl: 'http://middle-api-prepub.pousheng.com/cas-user/by-name'
+      #應用登出地址 (選填)
+      apLogoutUrl: '/cas-user/logout'   
+      #應用除外URLs (選填)   
+      #excludedUrls: '/api/'
+      #應用系統名稱 (必填)
+      apName: MIDDLE
+      #filter生效URL
+      filterUrlPattern: '/cas-user/*'
+      #前台處理CAS登入回傳用接口
+      frontedCasApi: 'http://middle-prepub.pousheng.com/api/user/user-login'
+      #CAS COOKIE作用的DOMAIN
+      apCookieDomain: '.pousheng.com' 

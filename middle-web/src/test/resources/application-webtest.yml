@@ -1,0 +1,173 @@
+logging:
+  file: logs/middle-web.log
+  path: logs/
+
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/middle_migration?useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull
+    username: root
+    password: root1234
+
+mybatis:
+  mapper-locations: classpath*:mapper/*Mapper.xml
+  type-aliases-package: >
+      com.pousheng.(erp|auth).model,
+      com.pousheng.middle.(group|task).model,
+      com.pousheng.middle.warehouse.model,
+      com.pousheng.middle.order.model,
+      io.terminus.parana.user.address.model,
+      io.terminus.parana.user.model,
+      io.terminus.parana.(item|category|brand|spu|shop).model,
+      io.terminus.parana.(order|cart|express|promotion|delivery|settle|auth).model,
+      io.terminus.open.client.common.(mappings|token|shop).model,
+      io.terminus.open.client.item.model,
+      io.terminus.applog.core.model
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  max-total: 100
+  max-idle: 10
+
+session:
+  cookie-context-path: /
+#  cookie-domain: pousheng.com
+  cookie-name: msidPousheng
+  cookie-max-age: 1800
+  source: redis
+  serialize-type: json
+  redis-host: 127.0.0.1
+  redis-port: 6379
+  redis-index: 0
+  redis-cluster: false
+  redis-test-on-borrow: true
+  redis-max-total: 10
+  redis-max-idle: 0
+  redis-prefix: afsession
+
+
+gateway:
+  erp:
+    host: http://esbt.pousheng.com
+    accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
+  member:
+    host: http://api-test-member.pousheng.com
+  hk:
+    host: http://esbt.pousheng.com
+    accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
+  yyedi:
+      host: https://esbt.pousheng.com
+      accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
+
+gateway.parana.host:
+
+#gateway.inventory.host: http://devt-inventory-web.pousheng.com
+gateway.inventory.host: http://127.0.0.1:8090
+
+open.api.app.key: terminus
+open.api.secret: anywhere
+open.api.gateway: http://127.0.0.1:8090/api/gateway
+
+azure:
+  oss:
+    defaultEndpointsProtocol: https
+    accountName: devdiag685
+    accountKey: ibH/7kzCiXTXAN+tEI4TGKc8xwpXQtGYTb3b3Pv1xE0SVct5apwwKbKCwybSWnY1Grp8ioh8N1VGjhlzvvf/dA==
+    endpointSuffix: core.chinacloudapi.cn
+    #timeout: 8000 #不配置不启用
+
+export:
+  local.temp.file.location: /var/local/dd/rr #导出时生成的临时文件目录，不存在自动创建，不指定默认项目所在路径
+
+erp.token:
+  appKey: terminus-erp
+  secret: anywhere-erp
+  gateway: http://127.0.0.1:8080/api/gateway
+
+ych.token:
+  appKey: xxx
+  secret: yyy
+  gateway: http://account.ose.aliyun.com
+  gatewayOfLog: http://gw.ose.aliyun.com/event
+  clientIp: 42.159.144.178
+
+
+taobao.token:
+  appKey: xxx
+  appName: 端点中台
+
+
+## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
+open.client.sync.item.mapping.job.enable: false
+
+search:
+  host: 127.0.0.1
+  port: 9200
+
+skutemplate:
+  search:
+    index-name: skutemplates
+    index-type: skutemplate
+    mapping-path: ps_sku_template_mapping.json
+    full-dump-range: -1
+    batch-size: 100
+
+# mpos系统调用的api白名单
+mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*'
+
+# mpos总单OpenShopId
+mpos.open.shop.id: 1
+
+msg:
+  current:
+    emailService: javaxEmailService
+  javaxemail:
+    mailServerHost: smtp.163.com
+    fromAddress: yyecsys@163.com
+    userName: yyecsys
+    password: yyec1qaz2wsx
+
+
+msg.template.list:
+  - key: email.order.confirm
+    title: 派单提醒
+    content: >
+        {{shopName}} 店铺，你有一张订单待接单，订单号为:{{orderId}}，请立即处理
+
+
+# pos单仓库
+pos.stock.code: xxx
+
+# mpos邮件组
+pousheng.order.email.confirm.group:
+pousheng.order.email.remind.group:
+
+
+suning.selfmarket.supplier.code:
+suning.sale.warehouseCode:
+
+skx.open.shop.id:
+
+skx.warehouse.id:
+server:
+  port: 8089
+
+gd_map:
+  searchApi: 'http://restapi.amap.com/v3/place/text'
+  districtApi: 'http://restapi.amap.com/v3/place/text'
+  webKey: 'd6e5c2d8e1ae82dd53e5829034145b64'
+
+jd.yunding.app.key: pousheng
+jd.yunding.secret: 6a0e@93204aefe45d47f6e488
+jd.yunding.gateway: http://yunding.yysports.com/api/gateway
+
+trade.job.enable: false
+
+order.current.ip: ${TERMINUS_HOST:localhost}
+
+terminus:
+  rocketmq:
+    nameServerAddress: localhost:9876
+    producerGroup: testGroup

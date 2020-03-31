@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2016. 杭州端点网络科技有限公司.  All rights reserved.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SkuTemplate">
+
+    <!-- for search -->
+    <select id="maxId" resultType="long">
+        SELECT MAX(id) FROM
+        <include refid="tb"/>
+    </select>
+
+    <select id="listSince" resultMap="SkuTemplateMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        WHERE  <![CDATA[
+          id < #{lastId} AND updated_at > #{since}
+        ]]>
+        ORDER BY id DESC LIMIT #{limit}
+    </select>
+
+
+    <update id="updateImageByIds" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET image = #{imageUrl}, updated_at = now()
+        WHERE id IN
+        <foreach collection="ids" separator="," open="("
+                 close=")" item="id">
+            #{id}
+        </foreach>
+    </update>
+
+
+
+    <update id="updateTypeByIds" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET `type` = #{type}, updated_at = now()
+        WHERE id IN
+        <foreach collection="ids" separator="," open="("
+                 close=")" item="id">
+            #{id}
+        </foreach>
+    </update>
+
+
+    <update id="updateTypeAndExtraById" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET `type` = #{type},extra = #{extraJson},price =#{price}, updated_at = now()
+        WHERE id = #{id}
+    </update>
+
+
+    <update id="updateBatch" parameterType="list">
+        update
+        <include refid="tb"/>
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="type =case" suffix="end,">
+                <foreach collection="list" item="i" index="index">
+                    <if test="i.type!=null">
+                        when id=#{i.id} then #{i.type}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix=" extra =case" suffix="end,">
+                <foreach collection="list" item="i" index="index">
+                    <if test="i.extraJson!=null">
+                        when id=#{i.id} then #{i.extraJson}
+                    </if>
+                </foreach>
+            </trim>
+
+            <trim prefix="price =case" suffix="end," >
+                <foreach collection="list" item="i" index="index">
+                    <if test="i.price!=null">
+                        when id=#{i.id} then #{i.price}
+                    </if>
+                </foreach>
+            </trim>
+        </trim>
+        where
+        <foreach collection="list" separator="or" item="i" index="index" >
+            id=#{i.id}
+        </foreach>
+    </update>
+
+    <select id="findByMaterial" parameterType="map" resultMap="SkuTemplateMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        WHERE json_unquote(json_extract(extra,'$.materialCode')) = #{material}
+        <if test="statuses != null">AND status IN
+            <foreach collection="statuses" open="(" separator="," close=")" item="status">
+                #{status}
+            </foreach>
+        </if>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="findByMaterialCount" parameterType="map" resultType="long">
+        SELECT count(*)
+        FROM
+        <include refid="tb"/>
+        WHERE json_unquote(json_extract(extra,'$.materialCode')) = #{material}
+        <if test="statuses != null">AND status IN
+            <foreach collection="statuses" open="(" separator="," close=")" item="status">
+                #{status}
+            </foreach>
+        </if>
+    </select>
+
+    <select id="pagingBySpuIdsCount" parameterType="map" resultType="long">
+        SELECT count(*)
+        FROM
+        <include refid="tb"/>
+        WHERE
+        spu_id IN
+        <foreach collection="spuIds" open="(" separator="," close=")" item="id">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="pagingBySpuIds" parameterType="map" resultMap="SkuTemplateMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        WHERE
+        spu_id IN
+        <foreach collection="spuIds" open="(" separator="," close=")" item="id">
+            #{id}
+        </foreach>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="findBySpuIds" parameterType="map" resultMap="SkuTemplateMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        WHERE
+        spu_id in
+        <foreach collection="spuIds" open="(" separator="," close=")" item="id">
+            #{id}
+        </foreach>
+        AND `status`!=-3
+        <if test="updatedAt != null">
+            and updated_at >= #{updatedAt}
+        </if>
+    </select>
+
+</mapper>

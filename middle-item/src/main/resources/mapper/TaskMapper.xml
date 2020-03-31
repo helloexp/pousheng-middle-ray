@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+ ~
+ ~ @author <a href="mailto:d@terminus.io">张成栋</a>
+ ~ @date 2019-04-09 15:33:31
+ ~ Created by CodeGen .
+-->
+
+<mapper namespace="Task">
+    <resultMap id="TaskMap" type="Task">
+        <id property="id" column="id"/>
+        <result property="status" column="status"/>
+        <result property="type" column="type"/>
+        <result property="detailJson" column="detail_json"/>
+        <result property="contextJson" column="context_json"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="table_name">
+        pousheng_tasks
+    </sql>
+
+    <sql id="columns_all">
+        id,
+        <include refid="columns_exclude_id"/>
+    </sql>
+
+    <sql id="columns_exclude_id">
+        `status`, `type`, `detail_json`, `context_json`, created_at, updated_at
+    </sql>
+
+    <sql id="values_exclude_id">
+        #{status}, #{type}, #{detailJson}, #{contextJson}, now(), now()
+    </sql>
+
+    <sql id="sort">
+        <choose>
+            <when test="sort == 'id_asc'">order by id asc</when>
+            <otherwise>order by id desc</otherwise>
+        </choose>
+    </sql>
+
+    <sql id="criteria">
+        <where>
+            <if test="status != null">AND `status` = #{status}</if>
+            <if test="type != null">AND `type` = #{type}</if>
+            <if test="createdAt != null">AND <![CDATA[created_at >= #{createdAt}]]> </if>
+            <if test="updatedAt != null">AND <![CDATA[updated_at < #{updatedAt}]]> </if>
+            <if test="exclude != null">
+                AND id not in
+                <foreach collection="exclude" open="(" separator="," close=")" item="e">
+                    #{e}
+                </foreach>
+            </if>
+        </where>
+    </sql>
+
+    <insert id="create" parameterType="Task" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO
+        <include refid="table_name"/>
+        (<include refid="columns_exclude_id"/>)
+        VALUES
+        (<include refid="values_exclude_id"/>)
+    </insert>
+
+    <insert id="creates" parameterType="Task" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO
+        <include refid="table_name"/>
+        (<include refid="columns_exclude_id"/>)
+        VALUES
+        <foreach collection="list" item="i" index="index" separator=",">
+            (#{i.status}, #{i.type}, #{i.detailJson}, #{i.contextJson}, now(), now())
+        </foreach>
+    </insert>
+
+    <select id="findById" parameterType="long" resultMap="TaskMap">
+        SELECT
+        <include refid="columns_all"/>
+        FROM
+        <include refid="table_name"/>
+        WHERE id = #{id} LIMIT 1
+    </select>
+
+    <select id="findByIds" parameterType="list" resultMap="TaskMap">
+        SELECT
+        <include refid="columns_all"/>
+        FROM
+        <include refid="table_name"/>
+        WHERE id IN
+        <foreach item="id" collection="list" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <update id="update" parameterType="Task">
+        UPDATE
+        <include refid="table_name"/>
+        <set>
+            <if test="status != null">`status` = #{status},</if>
+            <if test="type != null">`type` = #{type},</if>
+            <if test="detailJson != null">`detail_json` = #{detailJson},</if>
+            <if test="contextJson != null">`context_json` = #{contextJson},</if>
+            updated_at = now()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="long">
+        DELETE FROM
+        <include refid="table_name"/>
+        WHERE id = #{id}
+    </delete>
+
+    <select id="count" parameterType="map" resultType="long">
+        SELECT COUNT(1)
+        FROM
+        <include refid="table_name"/>
+        <include refid="criteria"/>
+    </select>
+
+    <select id="paging" parameterType="map" resultMap="TaskMap">
+        SELECT
+        <include refid="columns_all"/>
+        FROM
+        <include refid="table_name"/>
+        <include refid="criteria"/>
+        <include refid="sort"/>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="list" parameterType="map" resultMap="TaskMap">
+        SELECT
+        <include refid="columns_all"/>
+        FROM
+        <include refid="table_name"/>
+        <include refid="criteria"/>
+        ORDER BY `id` DESC
+    </select>
+</mapper>

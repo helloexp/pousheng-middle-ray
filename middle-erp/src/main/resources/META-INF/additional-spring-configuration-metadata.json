@@ -1,0 +1,61 @@
+{
+  "groups": [
+    {
+      "name": "shards",
+      "type": "com.pousheng.erp.config.ShardProperties",
+      "sourceType": "com.pousheng.erp.config.ShardProperties",
+      "description": "Welcome to use shards."
+    }
+  ],
+  "properties": [
+    {
+      "name": "shards.datasources",
+      "type": "java.util.List<com.pousheng.erp.config.DataSourceConf>",
+      "sourceType": "com.pousheng.erp.config.DataSourceConf"
+    },
+    {
+      "name": "shards.datasources.name",
+      "type": "java.lang.String",
+      "sourceType": "com.pousheng.erp.config.DataSourceConf"
+    },
+    {
+      "name": "shards.datasources.driver-class-name",
+      "type": "java.lang.String",
+      "sourceType": "com.pousheng.erp.config.DataSourceConf"
+    },
+    {
+      "name": "shards.datasources.url",
+      "type": "java.lang.String",
+      "sourceType": "com.pousheng.erp.config.DataSourceConf"
+    },
+    {
+      "name": "shards.datasources.username",
+      "type": "java.lang.String",
+      "sourceType": "com.pousheng.erp.config.DataSourceConf"
+    },
+    {
+      "name": "shards.datasources.password",
+      "type": "java.lang.String",
+      "sourceType": "com.pousheng.erp.config.DataSourceConf"
+    }
+  ],
+  "hints": [
+    {
+      "name": "shards.datasources.driver-class-name",
+      "values": [
+        {
+          "value": "com.mysql.jdbc.Driver",
+          "description": "Driver class name for MYSQL."
+        },
+        {
+          "value": "org.h2.Driver",
+          "description": "Driver class name for H2."
+        },
+        {
+          "value": "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+          "description": "Driver class name for MSSQL."
+        }
+      ]
+    }
+  ]
+}

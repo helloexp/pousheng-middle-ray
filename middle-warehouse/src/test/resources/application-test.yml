@@ -1,0 +1,30 @@
+logging:
+  file: logs/warehouse.log
+
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:test;MODE=MySQL
+    schema: classpath:schema.sql
+
+mybatis:
+  mapper-locations: classpath*:mapper/*Mapper.xml
+  type-aliases-package: com.pousheng.middle.warehouse.model,io.terminus.open.client.common.(mappings|token|shop).model,
+    io.terminus.open.client.item.model,
+    io.terminus.applog.core.model,
+    com.pousheng.middle.order.model,
+    io.terminus.parana.order.model,
+    io.terminus.parana.settle.model,
+    io.terminus.parana.cart.model,
+    io.terminus.parana.promotion.model,
+    io.terminus.parana.express.model
+
+gateway:
+  erp:
+    host: http://esbt.pousheng.com
+    accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
+  inventory:
+    host: http://devt-inventory-web.pousheng.com
+
+
+rpc.mode: false

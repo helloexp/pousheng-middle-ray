@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2017 杭州端点网络科技有限公司
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="StockRecordLog">
+    <resultMap id="StockRecordLogMap" type="StockRecordLog">
+        <id column="id" property="id"/>
+        <result column="shipment_id" property="shipmentId"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="shop_id" property="shopId"/>
+        <result column="sku_code" property="skuCode"/>
+        <result column="sku_order_id" property="skuOrderId"/>
+        <result column="context" property="context"/>
+        <result column="type" property="type"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        
+    </resultMap>
+
+    <sql id="tb">
+        pousheng_stock_record_log
+    </sql>
+
+    <sql id="cols_all">
+        id, <include refid="cols_exclude_id" />
+    </sql>
+
+    <sql id="cols_exclude_id">
+        shipment_id, warehouse_id, shop_id, sku_code, sku_order_id, context, type, created_at, updated_at
+    </sql>
+
+    <sql id="vals">
+        #{shipmentId}, #{warehouseId}, #{shopId}, #{skuCode}, #{skuOrderId}, #{context}, #{type}, now(), now()
+    </sql>
+
+    <sql id="criteria">
+        <where>
+            <if test="shipmentId!=null">and shipment_id = #{shipmentId}</if>
+            <if test="warehouseId!=null">and warehouse_id = #{warehouseId}</if>
+            <if test="skuCode!=null">and sku_code = #{skuCode}</if>
+            <if test="type!=null">and `type` = #{type}</if>
+            <if test="day!=null">and <![CDATA[created_at >= #{day}]]></if>
+        </where>
+    </sql>
+
+
+    <insert id="create" parameterType="StockRecordLog" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO
+        <include refid="tb" />
+        (<include refid="cols_exclude_id" />)
+        VALUES
+        (<include refid="vals" />)
+    </insert>
+
+    <select id="paging" parameterType="map" resultMap="StockRecordLogMap">
+        select id,
+        <include refid="cols_exclude_id"/>
+        from
+        <include refid="tb"/>
+        <include refid="criteria"/>
+        order by `id` desc
+        limit #{offset}, #{limit}
+    </select>
+
+    <select id="count" parameterType="map" resultType="long">
+        select count(1) from
+        <include refid="tb"/>
+        <include refid="criteria"/>
+    </select>
+
+    <select id="findRejectHistoryOfThreeDay" parameterType="map" resultMap="StockRecordLogMap">
+        select
+        <include refid="cols_all"/>
+        from
+        <include refid="tb"/>
+        where sku_code = #{skuCode} and warehouse_id in
+        <foreach collection="warehouseIds" item="wid" open="(" separator="," close=")">
+            #{wid}
+        </foreach>
+        and type = #{type}
+        and created_at >= date_sub(now(), interval 3 DAY)
+    </select>
+</mapper>

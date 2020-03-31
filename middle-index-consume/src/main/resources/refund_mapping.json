@@ -1,0 +1,63 @@
+{
+  "refund": {
+    "_all": {
+      "enabled": false
+    },
+    "properties": {
+      "id": {
+        "type": "long"
+      },
+      "refundCode": {
+        "type": "keyword"
+      },
+      "releOrderCode": {
+        "type": "keyword"
+      },
+      "buyerName": {
+        "type": "keyword"
+      },
+      "status": {
+        "type": "integer"
+      },
+      "refundType": {
+        "type": "integer"
+      },
+      "completeReturn": {
+        "type": "integer"
+      },
+      "returnSerialNo": {
+        "type": "keyword"
+      },
+      "shipmentSerialNo": {
+        "type": "keyword"
+      },
+      "shipmentCorpCode": {
+        "type": "keyword"
+      },
+      "shipmentCorpName": {
+        "type": "keyword"
+      },
+      "shopId": {
+        "type": "long"
+      },
+      "shopName": {
+        "type": "keyword"
+      },
+      "updatedAt": {
+        "type": "date"
+      },
+      "createdAt": {
+        "type": "date"
+      },
+      "refundAt": {
+        "type": "date"
+      },
+      "receivedDate": {
+        "type": "date"
+      },
+      "hkReturnDoneAt": {
+        "type": "date"
+      }
+    }
+  }
+}

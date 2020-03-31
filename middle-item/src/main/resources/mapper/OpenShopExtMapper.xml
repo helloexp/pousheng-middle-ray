@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2016. 杭州端点网络科技有限公司.  All rights reserved.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="OpenShop">
+
+    <select id="searchByOuterIdAndBusinessId" parameterType="map" resultMap="OpenShopMap">
+        SELECT * FROM
+        <include refid="tb"/>
+        WHERE extra_json like concat('%hkPerformanceShopOutCode\":\"',#{outerId},'%')
+        and extra_json like concat('%companyCode\":\"',#{businessId},'%');
+    </select>
+
+    <select id="searchByNameAndCompanyCode" parameterType="map" resultMap="OpenShopMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        <where>
+            <if test="notChannel != null">
+                and channel not in
+                <foreach item="item" collection="notChannel" open="(" separator="," close=")">
+                #{item}
+                </foreach>
+            </if>
+            <if test="allowIds != null">
+                and id in
+                <foreach item="itemId" collection="allowIds" open="(" separator="," close=")">
+                    #{itemId}
+                </foreach>
+            </if>
+            <if test="shopName != null">and shop_name like concat('%',#{shopName},'%') </if>
+            <if test="companyCode != null" >and extra_json like concat('%companyCode":"',#{companyCode},'%')</if>
+        </where>
+        LIMIT #{offsetNum}, #{limitNum}
+    </select>
+
+    <select id="searchByNameAndCompanyCodeCount" parameterType="map" resultType="long">
+        SELECT
+        count(id)
+        FROM
+        <include refid="tb"/>
+        <where>
+            <if test="notChannel != null">
+                and channel not in
+                <foreach item="item" collection="notChannel" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="allowIds != null">
+                and id in
+                <foreach item="itemId" collection="allowIds" open="(" separator="," close=")">
+                    #{itemId}
+                </foreach>
+            </if>
+            <if test="shopName != null">and shop_name like concat('%',#{shopName},'%') </if>
+            <if test="companyCode != null" >and extra_json like concat('%companyCode":"',#{companyCode},'%')</if>
+        </where>
+    </select>
+
+
+
+</mapper>

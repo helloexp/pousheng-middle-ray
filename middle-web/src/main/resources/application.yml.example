@@ -1,0 +1,267 @@
+logging:
+  file: logs/middle-web.log
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/pousheng?useUnicode=true&characterEncoding=UTF8&autoReconnect=true
+    username: root
+    password: anywhere
+
+
+
+
+mybatis:
+  mapper-locations: classpath*:mapper/*Mapper.xml
+  configuration:
+    default-statement-timeout: 60
+  type-aliases-package: >
+      com.pousheng.(erp|auth).model,
+      com.pousheng.middle.(group|task).model,
+      com.pousheng.middle.warehouse.model,
+      com.pousheng.middle.order.model,
+      io.terminus.parana.user.address.model,
+      io.terminus.parana.user.model,
+      io.terminus.parana.(item|category|brand|spu|shop).model,
+      io.terminus.parana.(order|cart|express|promotion|delivery|settle|auth).model,
+      io.terminus.open.client.common.(mappings|token|shop).model,
+      io.terminus.open.client.item.model
+
+
+
+session:
+  cookie-context-path: /
+  cookie-domain: pousheng.com
+  cookie-name: msid
+  cookie-max-age: 1800
+  source: redis
+  serialize-type: json
+  redis-host: 127.0.0.1
+  redis-port: 6379
+  redis-index: 0
+  redis-cluster: false
+  redis-test-on-borrow: true
+  redis-max-total: 10
+  redis-max-idle: 0
+  redis-prefix: afsession
+
+
+gateway:
+  erp:
+    host: http://esbt.pousheng.com
+    accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
+  member:
+    host: http://api-test-member.pousheng.com
+  hk:
+    host: http://esbt.pousheng.com
+    accessKey: 646edef40c9c481fb9cd9c61a41dabc1
+  yyedi:
+      host: https://esbt.pousheng.com
+      accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
+  inventory:
+      host: http://devt-inventory-web.pousheng.com
+
+open.api.app.key: terminus
+open.api.secret: anywhere
+open.api.gateway: http://127.0.0.1:8090/api/gateway
+
+azure:
+  oss:
+    defaultEndpointsProtocol: https
+    accountName: devdiag685
+    accountKey: ibH/7kzCiXTXAN+tEI4TGKc8xwpXQtGYTb3b3Pv1xE0SVct5apwwKbKCwybSWnY1Grp8ioh8N1VGjhlzvvf/dA==
+    endpointSuffix: core.chinacloudapi.cn
+    #timeout: 8000 #不配置不启用
+
+export:
+  local.temp.file.location: /var/local/dd/rr #导出时生成的临时文件目录，不存在自动创建，不指定默认项目所在路径
+
+erp.token:
+  appKey: terminus-erp
+  secret: anywhere-erp
+  gateway: http://127.0.0.1:8080/api/gateway
+
+ych.token:
+  appKey: xxx
+  secret: yyy
+  gateway: http://account.ose.aliyun.com
+  gatewayOfLog: http://gw.ose.aliyun.com/event
+  clientIp: 42.159.144.178
+
+
+taobao.token:
+  appKey: xxx
+  appName: 端点中台
+
+
+## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
+open.client.sync.item.mapping.job.enable: false
+
+search:
+  host: 127.0.0.1
+  port: 9200
+
+skutemplate:
+  search:
+    index-name: skutemplates
+    index-type: skutemplate
+    mapping-path: ps_sku_template_mapping.json
+    full-dump-range: -1
+    batch-size: 100
+## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
+open.client.sync.item.mapping.job.enable: false
+
+# mpos系统调用的api白名单
+mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*'
+
+# mpos总单OpenShopId
+mpos.open.shop.id: xxx
+
+msg:
+  current:
+    emailService: javaxEmailService
+  javaxemail:
+    mailServerHost: smtp.163.com
+    fromAddress: yyecsys@163.com
+    userName: yyecsys
+    password: yyec1qaz2wsx
+
+
+msg.template.list:
+  - key: email.order.confirm
+    title: 派单提醒
+    content: >
+        {{shopName}} 店铺，你有一张订单待接单，订单号为:{{orderId}}，请立即处理
+
+# pos单仓库
+pos.stock.code: ${POS.STOCK.CODE}
+
+# mpos邮件组
+pousheng.order.email.confirm.group:
+
+
+suning.selfmarket.supplier.code:
+suning.sale.warehouseCode:
+
+jd.yunding.app.key:pousheng
+jd.yunding.secret: 6a0e@93204aefe45d47f6e488
+jd.yunding.gateway: http://yunding.yysports.com/api/gateway
+
+trade.job.enable: true
+
+order.current.ip: ${TERMINUS_HOST:localhost}
+
+# 官网订单可以拉取订单的服务器地址，具体由业务配置
+official.order.ip: ${OFFICIAL_ORDER_IP:localhost}
+
+#大促模式开关,平时可以关闭，在paas中设置为false；大促期间设置为true
+is.pousheng.activity.mode:${IS_POUSHENG_ACTIVITY_MODE: false}
+
+terminus:
+  rocketmq:
+    nameServerAddress: localhost:9876
+    producerGroup: testGroup
+    consumeMaxTpsConfig:
+      poushengInventoryTopic: ${MQ_TOPIC_INVENTORY_CONSUME_MAX_TPS:20}
+
+# 失败订单和发货单邮件通知的接受邮箱 多个账号以逗号分隔
+failed.order.warning.email.receives: longjun.tlj@alibaba-inc.com
+
+# 失败订单和发货单邮件通知JOB的触发器表达式
+failed.order.warning.job.cron: 0 0 6,18 * * ?
+
+#jit订单邮件通知的接受邮箱 多个账号以逗号分隔
+jit.order.warning.email.receives: longjun.tlj@alibaba-inc.com
+
+# JIT订单邮件通知JOB的触发器表达式
+jit.order.warning.job.cron: 0 0/30 * * * ?
+
+# jit店铺OpenShopId
+jit.open.shop.id: 1008
+
+#调用淘宝api统计地址
+open.client.statistics.center.gate.way: ${STATISTICS.CENTER.GATEWAY}
+terminus.rocketmq.cacherClearTopic: cacherClearTopic
+
+# 端点统一接入层回调中台获取收货人信息url
+redirect.erp.gateway: http://middle-test.pousheng.com/api/qm/pousheng/wms-order
+
+# 拉取映射关系默认30条
+open.client.sync.item.fetch.size: 30
+
+# 线程池核心线程默认数目
+thread.executor.core.pool.size: 2
+# 线程池最大线程默认数目
+thread.executor.max.pool.size: 4
+#线程池默认队列默认最大数量
+thread.executor.queue.capacity: 5000
+
+# job开关 用于商品分组
+is.item.group.task.consume: true
+
+# job开关 用于商品分组创建任务
+is.item.group.task.create: true
+
+is.stock.task.consume: true
+
+# 用于接受日志信息
+is.stock.log.consume: true
+
+# 用于唯品会定时任务
+is.vip.task.consume: true
+
+
+# 通用biz的mq处理类的开关
+biz.common.topic.enable: true
+
+# 导出biz的mq处理类的开关
+biz.export.topic.enable: true
+
+# 通用biz的补偿任务开关
+biz.common.wait.handle.job.enable: true
+
+# 导出biz的补偿任务开关
+biz.export.wait.handle.job.enable: true
+
+# 失败任务补偿开关
+biz.failed.job.enable: false
+
+baowei.refund.warehouse.id=24774
+
+middle.api.gateway: http://api-middle-test.pousheng.com
+
+# 定时刷新Token开关
+open.client.refresh.token.job.enable: false
+
+# 统一接入层地址
+terminus.erp.gateway: https://retail-gateway-pagoda-prod.app.terminus.io/api/gateway
+### 中台补拍邮费商品SKU_CODE
+postage.sku.code: ${POSTAGE_SKU_CODE:BYC0001$}
+
+### 补偿bizMq队列大小
+common.biz.mq.queue.size: ${COMMON_BIZ_MQ_QUEUE_SIZE:0}
+
+### 供货导入队列index
+item.supply.import.mq.queue.index: ${ITEM_SUPPLY_IMPORT_MQ_QUEUE_INDEX:0}
+
+# 钉钉通知开关，默认是关闭的，需要配置开启
+dingtalk.robot.flag: true
+# 钉钉机器人 webhook
+dingtalk.robot.webhook: https://oapi.dingtalk.com/robot/send?access_token=4804cb399541e684fcf95353fbd572f29d1ea5a57c1844975a40f65191273797
+
+### 拉单 mq 队列大小
+order.fetch.mq.queue.size: ${ORDER_FETCH_MQ_QUEUE_SIZE:0}
+
+# 拉单消费模块开关
+order.fetch.topic.consume.enable: ${ORDER_FETCH_TOPIC_CONSUME_ENABLE:false}
+
+# 银泰推送商品
+yintai.item.push.job.enable: ${YINTAI_ITEM_PUSH_JOB_ENABLE:false}
+yintai.item.push.cron: ${YINTAI_ITEM_PUSH_CRON:0 0 * * * ?}
+yintai.item.push.consumer.enable: ${YINTAI_ITEM_PUSH_CONSUMER_ENABLE:false}
+yintai.item.mapping.openShopId: ${YINTAI_ITEM_MAPPING_OPENSHOPID:0}
+yintai.item.full.push.hour: ${YINTAI_ITEM_FULL_PUSH_HOUR:72}
+yintai.item.increment.push.hour: ${YINTAI_ITEM_INCREMENT_PUSH_HOUR:3}
+yintai.item.push.day.cron: ${YINTAI_ITEM_PUSH_DAY_CRON:0 0 3 * * ?}
+yintai.item.push.hour.cron: ${YINTAI_ITEM_PUSH_HOUR_CRON:0 0 1-23 * * ?}
+yintai.brand.mapping.full.push.enable: ${YINTAI_BRAND_MAPPING_FULL_PUSH_ENABLE:false}

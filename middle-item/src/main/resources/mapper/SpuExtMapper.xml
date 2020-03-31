@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+ ~
+ ~ @author <a href="mailto:d@terminus.io">张成栋</a>
+ ~ @date 2019-04-09 15:33:31
+ ~ Created by CodeGen .
+-->
+
+<mapper namespace="Spu">
+
+    <select id="findByBrandId" parameterType="map" resultMap="SpuMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        WHERE brand_id = #{brandId} AND id > #{id} AND status = 1 ORDER BY id ASC LIMIT 1000
+    </select>
+</mapper>
